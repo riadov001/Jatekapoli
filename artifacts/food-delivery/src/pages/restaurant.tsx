@@ -48,7 +48,7 @@ export default function RestaurantPage() {
     ? menuItems ?? []
     : (menuItems ?? []).filter((i) => i.category === activeCategory);
 
-  const handleAddToCart = (item: typeof menuItems extends Array<infer T> | undefined ? (typeof menuItems extends Array<infer T> ? T : never) : never) => {
+  const handleAddToCart = (item: NonNullable<typeof menuItems>[number]) => {
     if (!item) return;
     if (!user) {
       toast({ title: "Please login to add items to cart", variant: "destructive" });
