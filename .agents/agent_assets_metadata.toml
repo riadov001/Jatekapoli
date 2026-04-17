@@ -1,0 +1,20 @@
+uploads = []
+outputs = []
+
+[[generated]]
+id = "_G9HVGn2OT66Yz62LvAIq"
+uri = "file://artifacts/food-delivery/public/images/restaurant-1.png"
+type = "image"
+title = "Moroccan street food stall"
+
+[[generated]]
+id = "8tBlNWnf9MNKgvJe_wruH"
+uri = "file://artifacts/food-delivery/public/images/restaurant-2.png"
+type = "image"
+title = "Traditional tagine dish"
+
+[[generated]]
+id = "Md63YuiUs5YvDrB5xHYGE"
+uri = "file://artifacts/food-delivery/public/images/restaurant-3.png"
+type = "image"
+title = "Modern cafe in Morocco"

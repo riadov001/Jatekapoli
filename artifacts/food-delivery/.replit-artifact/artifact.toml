@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "Tawsila - Food Delivery"
+version = "1.0.0"
+id = "artifacts/food-delivery"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 18244
+
+[services.development]
+run = "pnpm --filter @workspace/food-delivery run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/food-delivery", "run", "build" ]
+publicDir = "artifacts/food-delivery/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "18244"
+BASE_PATH = "/"
