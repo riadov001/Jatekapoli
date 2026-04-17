@@ -73,6 +73,46 @@ export const LogoutResponse = zod.object({
 });
 
 /**
+ * @summary Send OTP to phone number
+ */
+export const SendOtpBody = zod.object({
+  phone: zod.string(),
+  name: zod.string().optional(),
+});
+
+export const SendOtpResponse = zod.object({
+  success: zod.boolean(),
+  message: zod.string(),
+  demoOtp: zod.string().optional(),
+});
+
+/**
+ * @summary Verify OTP and authenticate
+ */
+export const VerifyOtpBody = zod.object({
+  phone: zod.string(),
+  code: zod.string(),
+  name: zod.string().optional(),
+  role: zod.string().optional(),
+});
+
+export const VerifyOtpResponse = zod.object({
+  token: zod.string(),
+  user: zod.object({
+    id: zod.number(),
+    name: zod.string(),
+    email: zod.string(),
+    role: zod.string(),
+    phone: zod.string().nullish(),
+    address: zod.string().nullish(),
+    avatarUrl: zod.string().nullish(),
+    isActive: zod.boolean(),
+    loyaltyPoints: zod.number(),
+    createdAt: zod.coerce.date(),
+  }),
+});
+
+/**
  * @summary List restaurants
  */
 export const ListRestaurantsQueryParams = zod.object({

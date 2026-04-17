@@ -1,58 +1,82 @@
 import { Link, useLocation } from "wouter";
-import { ShoppingBag, Home, UtensilsCrossed, Package, Gift, User, LogOut, ChevronDown, MapPin, Truck, LayoutDashboard, Users, Store, Settings } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  ShoppingBag, Home, UtensilsCrossed, Package, Gift, User, LogOut,
+  ChevronDown, MapPin, Truck, LayoutDashboard, Store
+} from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCart } from "@/contexts/CartContext";
 import { Button } from "@/components/ui/button";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem,
+  DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import { ReactNode } from "react";
 
-interface LayoutProps {
-  children: ReactNode;
-}
+interface LayoutProps { children: ReactNode; }
+
+const BOTTOM_NAV = [
+  { href: "/", icon: Home, label: "Home" },
+  { href: "/restaurants", icon: UtensilsCrossed, label: "Browse" },
+  { href: "/orders", icon: Package, label: "Orders" },
+  { href: "/rewards", icon: Gift, label: "Rewards" },
+];
 
 export function Layout({ children }: LayoutProps) {
   const { user, logout, isAuthenticated } = useAuth();
   const { itemCount } = useCart();
   const [location, setLocation] = useLocation();
 
+  const isCustomer = !user?.role || user.role === "customer";
+
   return (
     <div className="min-h-screen bg-background">
       {/* Top Nav */}
-      <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-md border-b border-border/60 shadow-sm">
+      <header className="sticky top-0 z-50 bg-background/85 backdrop-blur-xl border-b border-border/50 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2 font-display font-bold text-xl text-primary shrink-0">
-            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-              <Truck className="w-4 h-4 text-white" />
+            <div className="w-9 h-9 bg-primary rounded-xl flex items-center justify-center shadow-sm shadow-primary/30">
+              <Truck className="w-4.5 h-4.5 text-white" style={{ width: "18px", height: "18px" }} />
             </div>
-            <span>Tawsila</span>
+            <span className="tracking-tight">Tawsila</span>
           </Link>
 
-          {/* Location */}
-          <button className="hidden sm:flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
-            <MapPin className="w-4 h-4 text-primary" />
-            <span>Oujda, Maroc</span>
+          {/* Location pill */}
+          <button className="hidden sm:flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors bg-secondary/60 hover:bg-secondary rounded-full px-3 py-1.5">
+            <MapPin className="w-3.5 h-3.5 text-primary" />
+            <span className="font-medium">Oujda</span>
             <ChevronDown className="w-3 h-3" />
           </button>
 
           {/* Right side */}
           <div className="flex items-center gap-2">
-            {/* Cart */}
-            {isAuthenticated && user?.role === "customer" && (
-              <Button variant="ghost" size="icon" className="relative" onClick={() => setLocation("/cart")} data-testid="button-cart">
+            {/* Cart button */}
+            {isAuthenticated && isCustomer && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="relative rounded-xl w-10 h-10"
+                onClick={() => setLocation("/cart")}
+                data-testid="button-cart"
+              >
                 <ShoppingBag className="w-5 h-5" />
-                {itemCount > 0 && (
-                  <Badge className="absolute -top-1 -right-1 w-5 h-5 flex items-center justify-center p-0 text-xs bg-primary text-white">
-                    {itemCount}
-                  </Badge>
-                )}
+                <AnimatePresence>
+                  {itemCount > 0 && (
+                    <motion.div
+                      key="badge"
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      exit={{ scale: 0 }}
+                      className="absolute -top-0.5 -right-0.5"
+                    >
+                      <Badge className="w-5 h-5 flex items-center justify-center p-0 text-[10px] font-bold bg-primary text-white rounded-full border-2 border-background">
+                        {itemCount > 9 ? "9+" : itemCount}
+                      </Badge>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </Button>
             )}
 
@@ -60,23 +84,23 @@ export function Layout({ children }: LayoutProps) {
             {isAuthenticated && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className="gap-1.5 text-sm" data-testid="button-role-switcher">
-                    <span className="capitalize">{user?.role?.replace("_", " ")}</span>
+                  <Button variant="outline" size="sm" className="gap-1.5 text-sm h-9 rounded-xl border-border/70" data-testid="button-role-switcher">
+                    <span className="capitalize hidden sm:inline">{user?.role?.replace("_", " ")}</span>
                     <ChevronDown className="w-3 h-3" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-48">
-                  <DropdownMenuItem onClick={() => setLocation("/")} data-testid="menu-item-customer">
-                    <Home className="w-4 h-4 mr-2" /> Customer View
+                <DropdownMenuContent align="end" className="w-52 rounded-2xl p-1">
+                  <DropdownMenuItem onClick={() => setLocation("/")} className="rounded-xl gap-2.5 py-2.5" data-testid="menu-item-customer">
+                    <Home className="w-4 h-4 text-primary" /> Customer View
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setLocation("/restaurant/dashboard")} data-testid="menu-item-restaurant">
-                    <Store className="w-4 h-4 mr-2" /> Restaurant Panel
+                  <DropdownMenuItem onClick={() => setLocation("/restaurant/dashboard")} className="rounded-xl gap-2.5 py-2.5" data-testid="menu-item-restaurant">
+                    <Store className="w-4 h-4 text-orange-500" /> Restaurant Panel
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setLocation("/driver/dashboard")} data-testid="menu-item-driver">
-                    <Truck className="w-4 h-4 mr-2" /> Driver App
+                  <DropdownMenuItem onClick={() => setLocation("/driver/dashboard")} className="rounded-xl gap-2.5 py-2.5" data-testid="menu-item-driver">
+                    <Truck className="w-4 h-4 text-blue-500" /> Driver App
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setLocation("/admin/dashboard")} data-testid="menu-item-admin">
-                    <LayoutDashboard className="w-4 h-4 mr-2" /> Admin Panel
+                  <DropdownMenuItem onClick={() => setLocation("/admin/dashboard")} className="rounded-xl gap-2.5 py-2.5" data-testid="menu-item-admin">
+                    <LayoutDashboard className="w-4 h-4 text-purple-500" /> Admin Panel
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -86,36 +110,36 @@ export function Layout({ children }: LayoutProps) {
             {isAuthenticated ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" data-testid="button-user-menu">
-                    <div className="w-8 h-8 rounded-full bg-primary/15 flex items-center justify-center text-sm font-semibold text-primary">
+                  <Button variant="ghost" size="icon" className="rounded-xl w-10 h-10" data-testid="button-user-menu">
+                    <div className="w-8 h-8 rounded-xl bg-primary/15 flex items-center justify-center text-sm font-bold text-primary">
                       {user?.name?.charAt(0).toUpperCase()}
                     </div>
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-48">
-                  <div className="px-2 py-1.5">
-                    <p className="text-sm font-medium">{user?.name}</p>
-                    <p className="text-xs text-muted-foreground">{user?.email}</p>
+                <DropdownMenuContent align="end" className="w-56 rounded-2xl p-1">
+                  <div className="px-3 py-2 mb-1">
+                    <p className="text-sm font-semibold">{user?.name}</p>
+                    <p className="text-xs text-muted-foreground truncate">{user?.phone || user?.email}</p>
                   </div>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => setLocation("/profile")}>
-                    <User className="w-4 h-4 mr-2" /> Profile
+                  <DropdownMenuSeparator className="mx-1" />
+                  <DropdownMenuItem onClick={() => setLocation("/profile")} className="rounded-xl gap-2.5 py-2.5">
+                    <User className="w-4 h-4 text-muted-foreground" /> Profile
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setLocation("/rewards")}>
-                    <Gift className="w-4 h-4 mr-2" /> Rewards
+                  <DropdownMenuItem onClick={() => setLocation("/rewards")} className="rounded-xl gap-2.5 py-2.5">
+                    <Gift className="w-4 h-4 text-yellow-500" /> Rewards
                   </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={logout} className="text-destructive" data-testid="button-logout">
-                    <LogOut className="w-4 h-4 mr-2" /> Logout
+                  <DropdownMenuSeparator className="mx-1" />
+                  <DropdownMenuItem onClick={logout} className="rounded-xl gap-2.5 py-2.5 text-destructive focus:text-destructive" data-testid="button-logout">
+                    <LogOut className="w-4 h-4" /> Logout
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : (
               <div className="flex items-center gap-2">
-                <Button variant="ghost" size="sm" onClick={() => setLocation("/login")} data-testid="button-login">
+                <Button variant="ghost" size="sm" className="h-9 rounded-xl" onClick={() => setLocation("/login")} data-testid="button-login">
                   Login
                 </Button>
-                <Button size="sm" onClick={() => setLocation("/register")} data-testid="button-register">
+                <Button size="sm" className="h-9 rounded-xl font-semibold shadow-sm shadow-primary/20" onClick={() => setLocation("/register")} data-testid="button-register">
                   Sign up
                 </Button>
               </div>
@@ -129,25 +153,49 @@ export function Layout({ children }: LayoutProps) {
         {children}
       </main>
 
-      {/* Bottom nav for mobile */}
-      {isAuthenticated && user?.role === "customer" && (
-        <nav className="fixed bottom-0 left-0 right-0 z-50 sm:hidden bg-background border-t border-border/60 flex items-center justify-around h-16">
-          <Link href="/" className={`flex flex-col items-center gap-1 text-xs ${location === "/" ? "text-primary" : "text-muted-foreground"}`}>
-            <Home className="w-5 h-5" />
-            <span>Home</span>
-          </Link>
-          <Link href="/restaurants" className={`flex flex-col items-center gap-1 text-xs ${location === "/restaurants" ? "text-primary" : "text-muted-foreground"}`}>
-            <UtensilsCrossed className="w-5 h-5" />
-            <span>Restaurants</span>
-          </Link>
-          <Link href="/orders" className={`flex flex-col items-center gap-1 text-xs ${location === "/orders" ? "text-primary" : "text-muted-foreground"}`}>
-            <Package className="w-5 h-5" />
-            <span>Orders</span>
-          </Link>
-          <Link href="/rewards" className={`flex flex-col items-center gap-1 text-xs ${location === "/rewards" ? "text-primary" : "text-muted-foreground"}`}>
-            <Gift className="w-5 h-5" />
-            <span>Rewards</span>
-          </Link>
+      {/* Bottom nav for mobile (customer only) */}
+      {isAuthenticated && isCustomer && (
+        <nav className="fixed bottom-0 left-0 right-0 z-50 sm:hidden bg-background/90 backdrop-blur-xl border-t border-border/60 safe-area-pb">
+          <div className="flex items-center justify-around h-16 px-2">
+            {BOTTOM_NAV.map(({ href, icon: Icon, label }) => {
+              const isActive = location === href || (href === "/restaurants" && location.startsWith("/restaurants/"));
+              return (
+                <Link
+                  key={href}
+                  href={href}
+                  className={`flex flex-col items-center gap-0.5 min-w-[56px] py-1 rounded-xl transition-all duration-200 ${
+                    isActive ? "text-primary" : "text-muted-foreground"
+                  }`}
+                >
+                  <div className={`relative p-1.5 rounded-xl transition-all duration-200 ${isActive ? "bg-primary/12" : ""}`}>
+                    <Icon className={`w-5 h-5 transition-transform duration-200 ${isActive ? "scale-110" : ""}`} />
+                    {label === "Orders" && itemCount > 0 && (
+                      <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-primary rounded-full" />
+                    )}
+                  </div>
+                  <span className={`text-[10px] font-medium leading-none ${isActive ? "text-primary" : ""}`}>{label}</span>
+                </Link>
+              );
+            })}
+            {/* Cart in bottom nav on mobile */}
+            <button
+              onClick={() => setLocation("/cart")}
+              className={`flex flex-col items-center gap-0.5 min-w-[56px] py-1 rounded-xl transition-all duration-200 ${
+                location === "/cart" ? "text-primary" : "text-muted-foreground"
+              }`}
+              data-testid="button-cart-mobile"
+            >
+              <div className={`relative p-1.5 rounded-xl transition-all duration-200 ${location === "/cart" ? "bg-primary/12" : ""}`}>
+                <ShoppingBag className={`w-5 h-5 transition-transform duration-200 ${location === "/cart" ? "scale-110" : ""}`} />
+                {itemCount > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-primary rounded-full flex items-center justify-center text-[9px] font-bold text-white">
+                    {itemCount > 9 ? "9+" : itemCount}
+                  </span>
+                )}
+              </div>
+              <span className={`text-[10px] font-medium leading-none ${location === "/cart" ? "text-primary" : ""}`}>Cart</span>
+            </button>
+          </div>
         </nav>
       )}
     </div>

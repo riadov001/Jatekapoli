@@ -62,6 +62,24 @@ export interface AuthResponse {
   user: User;
 }
 
+export interface SendOtpBody {
+  phone: string;
+  name?: string;
+}
+
+export interface SendOtpResponse {
+  success: boolean;
+  message: string;
+  demoOtp?: string;
+}
+
+export interface VerifyOtpBody {
+  phone: string;
+  code: string;
+  name?: string;
+  role?: string;
+}
+
 export interface UpdateUserBody {
   name?: string;
   phone?: string;
