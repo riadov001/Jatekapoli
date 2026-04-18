@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import {
-  StyleSheet, Text, View, FlatList, TouchableOpacity,
+  StyleSheet, Text, View, TouchableOpacity,
   TextInput, ActivityIndicator, Platform, Alert,
 } from "react-native";
 import { router } from "expo-router";
@@ -12,6 +12,7 @@ import { useCart } from "@/contexts/CartContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
+import { AddressAutocomplete } from "@/components/AddressAutocomplete";
 
 const DELIVERY_FEE = 15;
 
@@ -23,6 +24,11 @@ export default function CartScreen() {
   const createOrder = useCreateOrder();
   const [address, setAddress] = useState((user as any)?.address ?? "");
   const [notes, setNotes] = useState("");
+  const [addressInZone, setAddressInZone] = useState(true);
+
+  const handleZoneChange = (inZone: boolean) => {
+    setAddressInZone(inZone);
+  };
 
   const handlePlaceOrder = () => {
     if (!token) {
@@ -36,6 +42,15 @@ export default function CartScreen() {
       Alert.alert("Address required", "Please enter your delivery address.");
       return;
     }
+    if (!addressInZone) {
+      Alert.alert(
+        "Outside delivery zone",
+        "Sorry, we currently only deliver within 15 km of Oujda city centre. Please choose a closer address.",
+        [{ text: "OK" }]
+      );
+      if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      return;
+    }
     createOrder.mutate({
       data: {
         restaurantId: restaurantId!,
@@ -45,12 +60,12 @@ export default function CartScreen() {
       },
     }, {
       onSuccess: (order) => {
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         clearCart();
         router.replace({ pathname: "/order/[id]", params: { id: String(order.id) } });
       },
       onError: () => {
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+        if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
         Alert.alert("Error", "Could not place order. Please try again.");
       },
     });
@@ -74,6 +89,8 @@ export default function CartScreen() {
     );
   }
 
+  const orderDisabled = createOrder.isPending || !addressInZone;
+
   return (
     <View style={[styles.flex, { backgroundColor: colors.background }]}>
       {/* Header */}
@@ -82,15 +99,20 @@ export default function CartScreen() {
           <Ionicons name="arrow-back" size={24} color={colors.foreground} />
         </TouchableOpacity>
         <Text style={[styles.headerTitle, { color: colors.foreground }]}>Cart</Text>
-        <TouchableOpacity onPress={() => { Alert.alert("Clear cart?", "", [{ text: "Cancel" }, { text: "Clear", style: "destructive", onPress: clearCart }]); }}>
+        <TouchableOpacity onPress={() => {
+          Alert.alert("Clear cart?", "Remove all items?", [
+            { text: "Cancel" },
+            { text: "Clear", style: "destructive", onPress: clearCart },
+          ]);
+        }}>
           <Ionicons name="trash-outline" size={22} color={colors.destructive} />
         </TouchableOpacity>
       </View>
 
       <KeyboardAwareScrollView
         style={styles.flex}
-        contentContainerStyle={{ paddingBottom: insets.bottom + (Platform.OS === "web" ? 34 : 0) + 100 }}
-        bottomOffset={100}
+        contentContainerStyle={{ paddingBottom: insets.bottom + (Platform.OS === "web" ? 34 : 0) + 120 }}
+        bottomOffset={120}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
@@ -107,33 +129,40 @@ export default function CartScreen() {
                   <Text style={[styles.cartItemPrice, { color: colors.primary }]}>{item.price.toFixed(0)} MAD each</Text>
                 </View>
                 <View style={styles.qtyRow}>
-                  <TouchableOpacity onPress={() => updateQuantity(item.menuItemId, item.quantity - 1)} style={[styles.qtyBtn, { backgroundColor: colors.muted }]}>
-                    <Ionicons name={item.quantity === 1 ? "trash-outline" : "remove"} size={16} color={item.quantity === 1 ? colors.destructive : colors.foreground} />
+                  <TouchableOpacity
+                    onPress={() => updateQuantity(item.menuItemId, item.quantity - 1)}
+                    style={[styles.qtyBtn, { backgroundColor: colors.muted }]}
+                  >
+                    <Ionicons
+                      name={item.quantity === 1 ? "trash-outline" : "remove"}
+                      size={16}
+                      color={item.quantity === 1 ? colors.destructive : colors.foreground}
+                    />
                   </TouchableOpacity>
                   <Text style={[styles.qty, { color: colors.foreground }]}>{item.quantity}</Text>
-                  <TouchableOpacity onPress={() => updateQuantity(item.menuItemId, item.quantity + 1)} style={[styles.qtyBtn, { backgroundColor: colors.primary }]}>
+                  <TouchableOpacity
+                    onPress={() => updateQuantity(item.menuItemId, item.quantity + 1)}
+                    style={[styles.qtyBtn, { backgroundColor: colors.primary }]}
+                  >
                     <Ionicons name="add" size={16} color="#fff" />
                   </TouchableOpacity>
                 </View>
-                <Text style={[styles.cartItemTotal, { color: colors.foreground }]}>{(item.price * item.quantity).toFixed(0)} MAD</Text>
+                <Text style={[styles.cartItemTotal, { color: colors.foreground }]}>
+                  {(item.price * item.quantity).toFixed(0)} MAD
+                </Text>
               </View>
               {idx < items.length - 1 && <View style={[styles.divider, { backgroundColor: colors.border }]} />}
             </View>
           ))}
         </View>
 
-        {/* Delivery address */}
+        {/* Delivery address with autocomplete + GPS */}
         <Text style={[styles.sectionLabel, { color: colors.foreground }]}>Delivery address</Text>
-        <View style={[styles.inputWrap, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <Ionicons name="location-outline" size={18} color={colors.primary} />
-          <TextInput
-            style={[styles.addressInput, { color: colors.foreground }]}
-            placeholder="Enter your delivery address in Oujda"
-            placeholderTextColor={colors.mutedForeground}
+        <View style={styles.addressWrap}>
+          <AddressAutocomplete
             value={address}
-            onChangeText={setAddress}
-            multiline
-            returnKeyType="done"
+            onChange={setAddress}
+            onZoneChange={handleZoneChange}
           />
         </View>
 
@@ -142,7 +171,7 @@ export default function CartScreen() {
         <View style={[styles.inputWrap, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <Ionicons name="chatbubble-outline" size={18} color={colors.mutedForeground} />
           <TextInput
-            style={[styles.addressInput, { color: colors.foreground }]}
+            style={[styles.notesInput, { color: colors.foreground }]}
             placeholder="Any special requests..."
             placeholderTextColor={colors.mutedForeground}
             value={notes}
@@ -153,6 +182,7 @@ export default function CartScreen() {
 
         {/* Summary */}
         <View style={[styles.summary, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <Text style={[styles.summaryTitle, { color: colors.foreground }]}>Order Summary</Text>
           <View style={styles.summaryRow}>
             <Text style={[styles.summaryLabel, { color: colors.mutedForeground }]}>Subtotal</Text>
             <Text style={[styles.summaryValue, { color: colors.foreground }]}>{subtotal.toFixed(0)} MAD</Text>
@@ -171,20 +201,36 @@ export default function CartScreen() {
 
       {/* Place order button */}
       <View style={[styles.footer, { paddingBottom: insets.bottom + (Platform.OS === "web" ? 34 : 16), borderTopColor: colors.border }]}>
+        {!addressInZone && (
+          <View style={styles.zoneBlocker}>
+            <Ionicons name="warning" size={14} color="#DC2626" />
+            <Text style={styles.zoneBlockerText}>Address is outside our delivery zone</Text>
+          </View>
+        )}
         <TouchableOpacity
-          style={[styles.orderBtn, { backgroundColor: colors.primary, opacity: createOrder.isPending ? 0.7 : 1 }]}
+          style={[
+            styles.orderBtn,
+            {
+              backgroundColor: orderDisabled ? colors.muted : colors.primary,
+              shadowColor: orderDisabled ? "transparent" : "#F97316",
+            },
+          ]}
           onPress={handlePlaceOrder}
-          disabled={createOrder.isPending}
+          disabled={orderDisabled}
           activeOpacity={0.85}
         >
           {createOrder.isPending ? (
             <ActivityIndicator color="#fff" size="small" />
           ) : (
             <>
-              <Text style={styles.orderBtnText}>Place Order</Text>
-              <Text style={[styles.orderBtnPrice, { backgroundColor: "rgba(255,255,255,0.25)" }]}>
-                {(subtotal + DELIVERY_FEE).toFixed(0)} MAD
+              <Text style={[styles.orderBtnText, { color: orderDisabled ? colors.mutedForeground : "#fff" }]}>
+                {!addressInZone ? "Address out of zone" : "Place Order"}
               </Text>
+              {!orderDisabled && (
+                <Text style={[styles.orderBtnPrice, { backgroundColor: "rgba(255,255,255,0.25)" }]}>
+                  {(subtotal + DELIVERY_FEE).toFixed(0)} MAD
+                </Text>
+              )}
             </>
           )}
         </TouchableOpacity>
@@ -196,7 +242,10 @@ export default function CartScreen() {
 const styles = StyleSheet.create({
   flex: { flex: 1 },
   center: { alignItems: "center", justifyContent: "center", padding: 32, gap: 10 },
-  header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 16, paddingBottom: 12, borderBottomWidth: 1 },
+  header: {
+    flexDirection: "row", alignItems: "center", justifyContent: "space-between",
+    paddingHorizontal: 16, paddingBottom: 12, borderBottomWidth: 1,
+  },
   headerTitle: { fontSize: 18, fontFamily: "Inter_600SemiBold" },
   fromText: { fontSize: 13, fontFamily: "Inter_500Medium", paddingHorizontal: 16, paddingVertical: 10 },
   section: { marginHorizontal: 16, borderRadius: 14, borderWidth: 1, overflow: "hidden", marginBottom: 16 },
@@ -208,23 +257,44 @@ const styles = StyleSheet.create({
   qtyBtn: { width: 30, height: 30, borderRadius: 15, alignItems: "center", justifyContent: "center" },
   qty: { fontSize: 15, fontFamily: "Inter_600SemiBold", minWidth: 20, textAlign: "center" },
   cartItemTotal: { fontSize: 14, fontFamily: "Inter_600SemiBold", minWidth: 56, textAlign: "right" },
-  divider: { height: 1, marginHorizontal: 14 },
+  divider: { height: StyleSheet.hairlineWidth, marginHorizontal: 14 },
   sectionLabel: { fontSize: 14, fontFamily: "Inter_600SemiBold", paddingHorizontal: 16, marginBottom: 8 },
-  inputWrap: { marginHorizontal: 16, borderRadius: 12, borderWidth: 1, flexDirection: "row", alignItems: "flex-start", gap: 10, paddingHorizontal: 14, paddingVertical: 12, marginBottom: 16 },
-  addressInput: { flex: 1, fontSize: 14, fontFamily: "Inter_400Regular", minHeight: 40 },
+  addressWrap: { marginHorizontal: 16, marginBottom: 16, zIndex: 10 },
+  inputWrap: {
+    marginHorizontal: 16, borderRadius: 12, borderWidth: 1,
+    flexDirection: "row", alignItems: "flex-start", gap: 10,
+    paddingHorizontal: 14, paddingVertical: 12, marginBottom: 16,
+  },
+  notesInput: { flex: 1, fontSize: 14, fontFamily: "Inter_400Regular", minHeight: 40 },
   summary: { marginHorizontal: 16, borderRadius: 14, borderWidth: 1, padding: 16, gap: 10 },
+  summaryTitle: { fontSize: 15, fontFamily: "Inter_600SemiBold", marginBottom: 2 },
   summaryRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
   summaryLabel: { fontSize: 14, fontFamily: "Inter_400Regular" },
   summaryValue: { fontSize: 14, fontFamily: "Inter_500Medium" },
   totalLabel: { fontSize: 16, fontFamily: "Inter_700Bold" },
   totalValue: { fontSize: 18, fontFamily: "Inter_700Bold" },
-  footer: { paddingHorizontal: 16, paddingTop: 12, borderTopWidth: 1 },
-  orderBtn: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", height: 56, borderRadius: 16, paddingHorizontal: 20, shadowColor: "#F97316", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 12, elevation: 8 },
-  orderBtnText: { color: "#fff", fontSize: 16, fontFamily: "Inter_600SemiBold" },
-  orderBtnPrice: { color: "#fff", fontSize: 14, fontFamily: "Inter_600SemiBold", paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
+  footer: { paddingHorizontal: 16, paddingTop: 10, borderTopWidth: 1 },
+  zoneBlocker: {
+    flexDirection: "row", alignItems: "center", gap: 6,
+    marginBottom: 8, paddingHorizontal: 4,
+  },
+  zoneBlockerText: { fontSize: 12, fontFamily: "Inter_500Medium", color: "#DC2626" },
+  orderBtn: {
+    flexDirection: "row", alignItems: "center", justifyContent: "space-between",
+    height: 56, borderRadius: 16, paddingHorizontal: 20,
+    shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 12, elevation: 8,
+  },
+  orderBtnText: { fontSize: 16, fontFamily: "Inter_600SemiBold" },
+  orderBtnPrice: {
+    color: "#fff", fontSize: 14, fontFamily: "Inter_600SemiBold",
+    paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8,
+  },
   emptyIcon: { width: 80, height: 80, borderRadius: 40, alignItems: "center", justifyContent: "center", marginBottom: 8 },
   emptyTitle: { fontSize: 20, fontFamily: "Inter_600SemiBold" },
   emptyText: { fontSize: 14, fontFamily: "Inter_400Regular", textAlign: "center" },
-  browseBtn: { paddingHorizontal: 28, paddingVertical: 14, borderRadius: 14, marginTop: 8, shadowColor: "#F97316", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 12, elevation: 6 },
+  browseBtn: {
+    paddingHorizontal: 28, paddingVertical: 14, borderRadius: 14, marginTop: 8,
+    shadowColor: "#F97316", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 12, elevation: 6,
+  },
   browseBtnText: { color: "#fff", fontSize: 15, fontFamily: "Inter_600SemiBold" },
 });
