@@ -212,7 +212,7 @@ export default function CartScreen() {
             styles.orderBtn,
             {
               backgroundColor: orderDisabled ? colors.muted : colors.primary,
-              shadowColor: orderDisabled ? "transparent" : "#F97316",
+              shadowColor: orderDisabled ? "transparent" : "#E2006A",
             },
           ]}
           onPress={handlePlaceOrder}
@@ -294,7 +294,7 @@ const styles = StyleSheet.create({
   emptyText: { fontSize: 14, fontFamily: "Inter_400Regular", textAlign: "center" },
   browseBtn: {
     paddingHorizontal: 28, paddingVertical: 14, borderRadius: 14, marginTop: 8,
-    shadowColor: "#F97316", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 12, elevation: 6,
+    shadowColor: "#E2006A", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 12, elevation: 6,
   },
   browseBtnText: { color: "#fff", fontSize: 15, fontFamily: "Inter_600SemiBold" },
 });

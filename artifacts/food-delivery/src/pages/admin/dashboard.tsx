@@ -50,7 +50,7 @@ export default function AdminDashboardPage() {
         {usersLoading ? [...Array(4)].map((_, i) => <Skeleton key={i} className="h-24 rounded-2xl" />) : (
           <>
             <StatCard label={t("admin.users")} value={users?.length ?? 0} icon={Users} color="bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400" />
-            <StatCard label={t("admin.restaurants")} value={restaurants?.length ?? 0} icon={Store} color="bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400" />
+            <StatCard label={t("admin.restaurants")} value={restaurants?.length ?? 0} icon={Store} color="bg-accent text-accent-foreground" />
             <StatCard label={t("admin.orders")} value={orders?.length ?? 0} icon={Package} color="bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400" />
             <StatCard label={t("admin.revenue")} value={totalRevenue.toFixed(0)} icon={TrendingUp} color="bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400" />
           </>

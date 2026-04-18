@@ -22,7 +22,7 @@ function buildHtml(driverLat: number, driverLng: number, destLat?: number, destL
     destLat != null && destLng != null
       ? `
     var destIcon = L.divIcon({
-      html: '<div style="background:#F97316;width:28px;height:28px;border-radius:50%;border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,0.3);display:flex;align-items:center;justify-content:center;font-size:14px;">📍</div>',
+      html: '<div style="background:#E2006A;width:28px;height:28px;border-radius:50%;border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,0.3);display:flex;align-items:center;justify-content:center;font-size:14px;">📍</div>',
       className: '', iconAnchor: [14, 14]
     });
     L.marker([${destLat}, ${destLng}], {icon: destIcon}).addTo(map)

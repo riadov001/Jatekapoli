@@ -188,7 +188,7 @@ const styles = StyleSheet.create({
   cartBtn: {
     flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10,
     height: 54, borderRadius: 16,
-    shadowColor: "#F97316", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 12, elevation: 8,
+    shadowColor: "#E2006A", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 12, elevation: 8,
   },
   cartQty: { width: 26, height: 26, borderRadius: 13, alignItems: "center", justifyContent: "center" },
   cartQtyText: { color: "#fff", fontSize: 13, fontFamily: "Inter_700Bold" },

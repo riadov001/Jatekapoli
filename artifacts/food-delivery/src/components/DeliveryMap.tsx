@@ -54,7 +54,7 @@ export function DeliveryMap({
       }).addTo(map);
 
       const driverIcon = L.divIcon({
-        html: `<div style="background:#EA580C;width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:3px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.3);font-size:18px;">🛵</div>`,
+        html: `<div style="background:#E2006A;width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:3px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.3);font-size:18px;">🛵</div>`,
         className: "",
         iconSize: [36, 36],
         iconAnchor: [18, 18],

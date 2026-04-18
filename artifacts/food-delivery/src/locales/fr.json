@@ -20,9 +20,9 @@
     "fr": "Français"
   },
   "home": {
-    "orderFast": "Commandez vite !",
+    "orderFast": "Livraison ultra-rapide.",
     "hungry": "Faim, {{name}} ?",
-    "tagline": "Vos restaurants préférés livrés en quelques minutes.",
+    "tagline": "Courses et repas livrés en quelques minutes.",
     "search": "Rechercher restaurants ou plats...",
     "supportLocal": "Soutenir le local",
     "realOujdaFlavors": "Les vraies saveurs d'Oujda",

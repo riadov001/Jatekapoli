@@ -12,7 +12,7 @@ import { useTranslation } from "react-i18next";
 const statusColors: Record<string, string> = {
   pending: "bg-yellow-100 text-yellow-700 border-yellow-200",
   accepted: "bg-blue-100 text-blue-700 border-blue-200",
-  preparing: "bg-orange-100 text-orange-700 border-orange-200",
+  preparing: "bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800/40",
   ready: "bg-purple-100 text-purple-700 border-purple-200",
   picked_up: "bg-indigo-100 text-indigo-700 border-indigo-200",
   delivered: "bg-green-100 text-green-700 border-green-200",
@@ -48,7 +48,7 @@ function ActionButtons({ order, onAction }: {
       return (
         <Button
           size="sm"
-          className="bg-orange-500 hover:bg-orange-600 text-white gap-1.5 font-semibold shrink-0"
+          className="bg-primary hover:bg-primary/90 text-white gap-1.5 font-semibold shrink-0"
           onClick={() => onAction(order.id, "preparing")}
         >
           <ChefHat className="w-4 h-4" /> Start Preparing
@@ -233,7 +233,7 @@ export default function RestaurantDashboardPage() {
           )}
         </div>
         <div className="bg-card rounded-2xl border border-card-border p-4">
-          <Clock className="w-5 h-5 text-orange-600 mb-2" />
+          <Clock className="w-5 h-5 text-primary mb-2" />
           <p className="font-bold text-2xl">{myRestaurant.deliveryTime ?? "—"}</p>
           <p className="text-xs text-muted-foreground">{t("restaurantPanel.avgDelivery")}</p>
         </div>

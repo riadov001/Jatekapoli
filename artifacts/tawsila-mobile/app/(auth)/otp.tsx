@@ -249,7 +249,7 @@ const styles = StyleSheet.create({
   btn: {
     width: "100%", height: 54, borderRadius: 14,
     flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8,
-    shadowColor: "#F97316", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 12, elevation: 6,
+    shadowColor: "#E2006A", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 12, elevation: 6,
   },
   btnText: { color: "#fff", fontSize: 16, fontFamily: "Inter_600SemiBold" },
   successIcon: { width: 80, height: 80, borderRadius: 40, alignItems: "center", justifyContent: "center" },

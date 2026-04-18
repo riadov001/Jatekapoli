@@ -83,7 +83,7 @@ export default function HomePage() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
         className="relative rounded-3xl overflow-hidden"
-        style={{ background: "linear-gradient(135deg, #EA580C 0%, #F97316 45%, #FB923C 70%, #FDBA74 100%)" }}
+        style={{ background: "linear-gradient(135deg, #B0004F 0%, #E2006A 45%, #FF1A85 75%, #FF66AC 100%)" }}
       >
         {/* Decorative food emojis */}
         <div className="absolute inset-0 pointer-events-none overflow-hidden">
@@ -208,7 +208,7 @@ export default function HomePage() {
       {/* All / Featured Restaurants */}
       <section>
         <div className="flex items-center gap-2 mb-4">
-          <div className="w-8 h-8 rounded-2xl bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
+          <div className="w-8 h-8 rounded-2xl bg-accent flex items-center justify-center">
             {search || activeCategory !== "All" ? (
               <Sparkles className="w-4 h-4 text-primary" />
             ) : (

@@ -47,7 +47,7 @@ export function RestaurantCard({ restaurant }: { restaurant: Restaurant }) {
               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
             />
           ) : (
-            <div className="w-full h-full bg-gradient-to-br from-primary/15 via-primary/8 to-orange-50 dark:to-orange-950/20 flex items-center justify-center">
+            <div className="w-full h-full bg-gradient-to-br from-primary/15 via-primary/8 to-accent flex items-center justify-center">
               <span className="text-5xl">{categoryEmoji}</span>
             </div>
           )}

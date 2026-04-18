@@ -132,6 +132,6 @@ const styles = StyleSheet.create({
   rowLabel: { flex: 1, fontSize: 15, fontFamily: "Inter_500Medium" },
   signInTitle: { fontSize: 20, fontFamily: "Inter_600SemiBold", marginTop: 12 },
   signInSub: { fontSize: 14, fontFamily: "Inter_400Regular", textAlign: "center" },
-  signInBtn: { paddingHorizontal: 40, paddingVertical: 14, borderRadius: 14, marginTop: 8, shadowColor: "#F97316", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 12, elevation: 6 },
+  signInBtn: { paddingHorizontal: 40, paddingVertical: 14, borderRadius: 14, marginTop: 8, shadowColor: "#E2006A", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 12, elevation: 6 },
   signInBtnText: { color: "#fff", fontSize: 16, fontFamily: "Inter_600SemiBold" },
 });

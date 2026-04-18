@@ -8,7 +8,7 @@ import { useListOrders } from "@workspace/api-client-react";
 const statusColors: Record<string, string> = {
   pending: "bg-yellow-100 text-yellow-700",
   accepted: "bg-blue-100 text-blue-700",
-  preparing: "bg-orange-100 text-orange-700",
+  preparing: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
   ready: "bg-purple-100 text-purple-700",
   picked_up: "bg-indigo-100 text-indigo-700",
   delivered: "bg-green-100 text-green-700",

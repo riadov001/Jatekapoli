@@ -38,8 +38,8 @@ export default function HomeScreen() {
       <View style={[styles.header, { paddingTop: insets.top + 16 + webTopPad, paddingBottom: 12, backgroundColor: colors.background, borderBottomColor: colors.border }]}>
         <View style={styles.headerTop}>
           <View>
-            <Text style={[styles.greeting, { color: colors.mutedForeground }]}>Good day 👋</Text>
-            <Text style={[styles.name, { color: colors.foreground }]}>{user?.name ?? "Guest"}</Text>
+            <Text style={[styles.greeting, { color: colors.primary }]}>Ultra-fast delivery</Text>
+            <Text style={[styles.name, { color: colors.foreground }]}>Hi, {user?.name ?? "Guest"} 👋</Text>
           </View>
           <TouchableOpacity onPress={() => router.push("/cart")} style={styles.cartBtn}>
             <Ionicons name="bag-outline" size={24} color={colors.foreground} />
