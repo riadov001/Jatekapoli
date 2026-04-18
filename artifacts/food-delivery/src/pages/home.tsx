@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useLocation } from "wouter";
+import { useState, useMemo } from "react";
+import { useLocation, useSearch } from "wouter";
 import { Search, Award, ChevronRight, Flame, Sparkles, MapPin } from "lucide-react";
 import { motion } from "framer-motion";
 import { Input } from "@/components/ui/input";
@@ -53,15 +53,26 @@ export default function HomePage() {
   const [search, setSearch] = useState("");
   const [activeCategory, setActiveCategory] = useState("All");
   const [_, setLocation] = useLocation();
+  const queryString = useSearch();
   const { user, isAuthenticated } = useAuth();
   const { t } = useTranslation();
 
-  const { data: restaurants, isLoading } = useListRestaurants({
+  const isLocalOnly = useMemo(
+    () => new URLSearchParams(queryString).get("isLocal") === "true",
+    [queryString]
+  );
+
+  const { data: allRestaurants, isLoading } = useListRestaurants({
     ...(activeCategory !== "All" ? { category: activeCategory } : {}),
     ...(search ? { search } : {}),
   });
 
-  const localRestaurants = restaurants?.filter((r) => r.isLocal) ?? [];
+  const restaurants = useMemo(
+    () => (isLocalOnly ? allRestaurants?.filter((r) => r.isLocal) : allRestaurants),
+    [allRestaurants, isLocalOnly]
+  );
+
+  const localRestaurants = allRestaurants?.filter((r) => r.isLocal) ?? [];
 
   return (
     <div className="space-y-8 pb-24 sm:pb-8">
@@ -207,6 +218,8 @@ export default function HomePage() {
           <h2 className="font-display font-bold text-lg text-foreground">
             {search
               ? t("home.resultsFor", { search })
+              : isLocalOnly
+              ? t("home.supportLocal")
               : activeCategory !== "All"
               ? t("home.categoryRestaurants", { category: activeCategory })
               : t("home.allRestaurants")}

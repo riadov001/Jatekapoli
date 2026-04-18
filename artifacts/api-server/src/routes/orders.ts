@@ -1,6 +1,7 @@
 import { Router, type IRouter } from "express";
 import { db, ordersTable, orderItemsTable, menuItemsTable, restaurantsTable, usersTable, driversTable } from "@workspace/db";
-import { eq, and, inArray } from "drizzle-orm";
+import { eq, and, inArray, isNull } from "drizzle-orm";
+import { requireAuth, type AuthedRequest } from "../middlewares/auth";
 import {
   CreateOrderBody,
   GetOrderParams,
@@ -39,7 +40,7 @@ router.get("/orders/available", async (req, res): Promise<void> => {
   const orders = await db
     .select()
     .from(ordersTable)
-    .where(and(eq(ordersTable.status, "ready"), eq(ordersTable.driverId, null as any)));
+    .where(and(eq(ordersTable.status, "ready"), isNull(ordersTable.driverId)));
 
   const ordersWithItems = await Promise.all(
     orders.map(async (o) => {
@@ -78,7 +79,7 @@ router.get("/orders", async (req, res): Promise<void> => {
   res.json(ordersWithItems);
 });
 
-router.post("/orders", async (req, res): Promise<void> => {
+router.post("/orders", requireAuth, async (req: AuthedRequest, res): Promise<void> => {
   const parsed = CreateOrderBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
@@ -86,7 +87,7 @@ router.post("/orders", async (req, res): Promise<void> => {
   }
 
   const { restaurantId, deliveryAddress, notes, items } = parsed.data;
-  const userId = (req as any).userId || 1;
+  const userId = req.userId!;
 
   const [restaurant] = await db.select().from(restaurantsTable).where(eq(restaurantsTable.id, restaurantId)).limit(1);
   if (!restaurant) {
@@ -169,7 +170,7 @@ router.get("/orders/:id", async (req, res): Promise<void> => {
   res.json(order);
 });
 
-router.patch("/orders/:id/status", async (req, res): Promise<void> => {
+router.patch("/orders/:id/status", requireAuth, async (req: AuthedRequest, res): Promise<void> => {
   const params = UpdateOrderStatusParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
@@ -229,7 +230,7 @@ router.patch("/orders/:id/status", async (req, res): Promise<void> => {
 });
 
 /** Driver accepts a "ready" order — assigns themselves to it */
-router.post("/orders/:id/accept-delivery", async (req, res): Promise<void> => {
+router.post("/orders/:id/accept-delivery", requireAuth, async (req: AuthedRequest, res): Promise<void> => {
   const orderId = parseInt(req.params.id, 10);
   if (isNaN(orderId)) { res.status(400).json({ error: "Invalid order id" }); return; }
 

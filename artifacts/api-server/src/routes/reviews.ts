@@ -6,6 +6,7 @@ import {
   DeleteReviewParams,
   ListReviewsQueryParams,
 } from "@workspace/api-zod";
+import { requireAuth, type AuthedRequest } from "../middlewares/auth";
 
 const router: IRouter = Router();
 
@@ -27,19 +28,19 @@ router.get("/reviews", async (req, res): Promise<void> => {
   res.json(reviews);
 });
 
-router.post("/reviews", async (req, res): Promise<void> => {
+router.post("/reviews", requireAuth, async (req: AuthedRequest, res): Promise<void> => {
   const parsed = CreateReviewBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
     return;
   }
 
-  const userId = (req as any).userId || 1;
+  const userId = req.userId!;
 
   const [review] = await db.insert(reviewsTable).values({
     ...parsed.data,
     userId,
-    userName: (req as any).userName || "Customer",
+    userName: req.userName ?? "Customer",
     orderId: parsed.data.orderId ?? null,
     comment: parsed.data.comment ?? null,
   }).returning();
@@ -64,10 +65,20 @@ router.post("/reviews", async (req, res): Promise<void> => {
   res.status(201).json(review);
 });
 
-router.delete("/reviews/:id", async (req, res): Promise<void> => {
+router.delete("/reviews/:id", requireAuth, async (req: AuthedRequest, res): Promise<void> => {
   const params = DeleteReviewParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
+    return;
+  }
+
+  const [existing] = await db.select().from(reviewsTable).where(eq(reviewsTable.id, params.data.id)).limit(1);
+  if (!existing) {
+    res.status(404).json({ error: "Review not found" });
+    return;
+  }
+  if (existing.userId !== req.userId && req.userRole !== "admin") {
+    res.status(403).json({ error: "Not authorized to delete this review" });
     return;
   }
 
