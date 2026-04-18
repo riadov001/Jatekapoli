@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useLocation, useParams } from "wouter";
-import { ArrowLeft, Plus, Pencil, Trash2 } from "lucide-react";
+import { ArrowLeft, Plus, Pencil, Trash2, Upload } from "lucide-react";
+import { useUpload } from "@workspace/object-storage-web";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -55,6 +56,25 @@ export default function AdminRestaurantMenuPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<MenuItem | null>(null);
   const [form, setForm] = useState<FormState>(emptyForm);
+  const { uploadFile, isUploading } = useUpload({
+    getRequestHeaders: () => {
+      const token = localStorage.getItem("tawsila_token");
+      const headers: Record<string, string> = {};
+      if (token) headers.Authorization = `Bearer ${token}`;
+      return headers;
+    },
+    onSuccess: (resp) => {
+      setForm((f) => ({ ...f, imageUrl: `/api/storage${resp.objectPath}` }));
+      toast({ title: "Image uploaded" });
+    },
+    onError: (err) => toast({ title: "Upload failed", description: err.message, variant: "destructive" }),
+  });
+
+  const handlePickImage = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) uploadFile(file);
+    e.target.value = "";
+  };
 
   const openCreate = () => {
     setEditing(null);
@@ -167,8 +187,49 @@ export default function AdminRestaurantMenuPage() {
                 </div>
               </div>
               <div>
-                <Label>Image URL</Label>
-                <Input value={form.imageUrl} onChange={(e) => setForm({ ...form, imageUrl: e.target.value })} placeholder="https://..." className="mt-1" />
+                <Label>Image</Label>
+                <div className="mt-1 flex items-center gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    asChild
+                    disabled={isUploading}
+                    className="gap-2"
+                    data-testid="button-upload-menu-image"
+                  >
+                    <label className="cursor-pointer">
+                      <Upload className="w-4 h-4" />
+                      {isUploading ? "Uploading..." : "Upload image"}
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={handlePickImage}
+                        disabled={isUploading}
+                      />
+                    </label>
+                  </Button>
+                  {form.imageUrl && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setForm({ ...form, imageUrl: "" })}
+                    >
+                      Remove
+                    </Button>
+                  )}
+                </div>
+                <Input
+                  value={form.imageUrl}
+                  onChange={(e) => setForm({ ...form, imageUrl: e.target.value })}
+                  placeholder="…or paste an image URL"
+                  className="mt-2"
+                />
+                {form.imageUrl && (
+                  <img src={form.imageUrl} alt="" className="mt-2 w-full h-24 object-cover rounded-lg border" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
+                )}
               </div>
               <div className="flex items-center gap-2">
                 <Switch checked={form.isAvailable} onCheckedChange={(v) => setForm({ ...form, isAvailable: v })} data-testid="switch-menu-available" />

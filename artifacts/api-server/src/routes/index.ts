@@ -9,6 +9,7 @@ import driversRouter from "./drivers";
 import reviewsRouter from "./reviews";
 import rewardsRouter from "./rewards";
 import adminRouter from "./admin";
+import storageRouter from "./storage";
 import { subscribe } from "../lib/sse";
 
 const router: IRouter = Router();
@@ -23,6 +24,7 @@ router.use(driversRouter);
 router.use(reviewsRouter);
 router.use(rewardsRouter);
 router.use(adminRouter);
+router.use(storageRouter);
 
 /**
  * SSE endpoint — clients subscribe to one or more channels:
