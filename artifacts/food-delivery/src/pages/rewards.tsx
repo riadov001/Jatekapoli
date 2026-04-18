@@ -1,10 +1,11 @@
 import { useLocation } from "wouter";
-import { Gift, Star, Award, TrendingUp } from "lucide-react";
+import { Gift, Award, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useGetMyRewards } from "@workspace/api-client-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useTranslation } from "react-i18next";
 
 const tierConfig = {
   Bronze: { color: "text-amber-700", bg: "bg-amber-100 dark:bg-amber-900/30", icon: "🥉" },
@@ -12,24 +13,25 @@ const tierConfig = {
   Gold: { color: "text-yellow-600", bg: "bg-yellow-100 dark:bg-yellow-900/30", icon: "🥇" },
 };
 
-const discounts = [
-  { points: 50, discount: "5% off your next order", description: "Valid for 7 days" },
-  { points: 100, discount: "10% off your next order", description: "Valid for 14 days" },
-  { points: 200, discount: "Free delivery on next 3 orders", description: "Valid for 30 days" },
-  { points: 500, discount: "20% off any order", description: "Premium reward" },
+const DISCOUNTS = [
+  { points: 50, en: "5% off next order", fr: "5% de réduction", ar: "خصم 5% على الطلب التالي", days: 7 },
+  { points: 100, en: "10% off next order", fr: "10% de réduction", ar: "خصم 10% على الطلب التالي", days: 14 },
+  { points: 200, en: "Free delivery on next 3 orders", fr: "Livraison gratuite (3 commandes)", ar: "توصيل مجاني على 3 طلبات", days: 30 },
+  { points: 500, en: "20% off any order", fr: "20% de réduction sur tout", ar: "خصم 20% على أي طلب", days: null },
 ];
 
 export default function RewardsPage() {
   const { user } = useAuth();
   const [_, setLocation] = useLocation();
+  const { t, i18n } = useTranslation();
 
   const { data: rewards, isLoading } = useGetMyRewards({ query: { enabled: !!user } });
 
   if (!user) {
     return (
       <div className="text-center py-20">
-        <p className="text-muted-foreground mb-4">Please login to view your rewards</p>
-        <Button onClick={() => setLocation("/login")}>Login</Button>
+        <p className="text-muted-foreground mb-4">{t("rewards.loginRequired")}</p>
+        <Button onClick={() => setLocation("/login")}>{t("rewards.login")}</Button>
       </div>
     );
   }
@@ -46,15 +48,22 @@ export default function RewardsPage() {
 
   const tier = (rewards?.tier ?? "Bronze") as keyof typeof tierConfig;
   const tierInfo = tierConfig[tier] || tierConfig.Bronze;
+  const points = rewards?.loyaltyPoints ?? 0;
   const progress = tier === "Bronze"
-    ? Math.min(100, ((rewards?.loyaltyPoints ?? 0) / 100) * 100)
+    ? Math.min(100, (points / 100) * 100)
     : tier === "Silver"
-    ? Math.min(100, (((rewards?.loyaltyPoints ?? 0) - 100) / 400) * 100)
+    ? Math.min(100, ((points - 100) / 400) * 100)
     : 100;
+
+  const getLabel = (d: typeof DISCOUNTS[0]) => {
+    if (i18n.language === "ar") return d.ar;
+    if (i18n.language === "fr") return d.fr;
+    return d.en;
+  };
 
   return (
     <div className="max-w-2xl mx-auto space-y-6 pb-6">
-      <h1 className="font-display font-bold text-2xl">My Rewards</h1>
+      <h1 className="font-display font-bold text-2xl">{t("rewards.title")}</h1>
 
       {/* Points card */}
       <div className="relative bg-gradient-to-br from-primary to-amber-500 rounded-2xl p-6 overflow-hidden text-white">
@@ -62,10 +71,10 @@ export default function RewardsPage() {
         <div className="relative">
           <div className="flex items-center gap-2 mb-1">
             <Gift className="w-5 h-5" />
-            <span className="text-white/80 text-sm font-medium">Loyalty Points</span>
+            <span className="text-white/80 text-sm font-medium">{t("rewards.loyaltyPoints")}</span>
           </div>
-          <p className="font-display font-bold text-5xl mb-1" data-testid="text-loyalty-points">{rewards?.loyaltyPoints ?? 0}</p>
-          <p className="text-white/70 text-sm">pts</p>
+          <p className="font-display font-bold text-5xl mb-1" data-testid="text-loyalty-points">{points}</p>
+          <p className="text-white/70 text-sm">{t("rewards.pts")}</p>
         </div>
       </div>
 
@@ -75,8 +84,10 @@ export default function RewardsPage() {
           <div className="flex items-center gap-2">
             <span className="text-2xl">{tierInfo.icon}</span>
             <div>
-              <p className="font-bold text-base" data-testid="text-tier">{tier} Member</p>
-              <p className="text-xs text-muted-foreground">{rewards?.totalOrdersCount ?? 0} orders • {(rewards?.totalSpent ?? 0).toFixed(0)} MAD spent</p>
+              <p className="font-bold text-base" data-testid="text-tier">{t("rewards.member", { tier })}</p>
+              <p className="text-xs text-muted-foreground">
+                {rewards?.totalOrdersCount ?? 0} {t("profile.orders").toLowerCase()} • {(rewards?.totalSpent ?? 0).toFixed(0)} MAD
+              </p>
             </div>
           </div>
           <Award className={`w-6 h-6 ${tierInfo.color}`} />
@@ -84,17 +95,14 @@ export default function RewardsPage() {
         {tier !== "Gold" && (
           <>
             <div className="flex justify-between text-xs text-muted-foreground mb-1.5">
-              <span>{rewards?.loyaltyPoints ?? 0} pts</span>
-              <span>{(rewards?.nextTierPoints ?? 0) + (rewards?.loyaltyPoints ?? 0)} pts to {tier === "Bronze" ? "Silver" : "Gold"}</span>
+              <span>{points} {t("rewards.pts")}</span>
+              <span>{t("rewards.toNext", { count: rewards?.nextTierPoints ?? 0, tier: tier === "Bronze" ? "Silver" : "Gold" })}</span>
             </div>
             <Progress value={progress} className="h-2" />
-            <p className="text-xs text-muted-foreground mt-1.5">
-              {rewards?.nextTierPoints ?? 0} more points to reach {tier === "Bronze" ? "Silver" : "Gold"}
-            </p>
           </>
         )}
         {tier === "Gold" && (
-          <p className="text-sm font-medium text-yellow-700 dark:text-yellow-400">You've reached the highest tier!</p>
+          <p className="text-sm font-medium text-yellow-700 dark:text-yellow-400">{t("rewards.highestTier")}</p>
         )}
       </div>
 
@@ -102,46 +110,49 @@ export default function RewardsPage() {
       <div className="bg-card rounded-2xl border border-card-border p-5">
         <div className="flex items-center gap-2 mb-3">
           <TrendingUp className="w-4 h-4 text-primary" />
-          <h2 className="font-semibold text-sm">How to earn points</h2>
+          <h2 className="font-semibold text-sm">{t("rewards.howToEarn")}</h2>
         </div>
         <div className="space-y-2">
           <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">Per 10 MAD spent</span>
-            <span className="font-semibold text-primary">+1 point</span>
+            <span className="text-muted-foreground">{t("rewards.per10MAD")}</span>
+            <span className="font-semibold text-primary">+1 {t("rewards.pts")}</span>
           </div>
           <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">First order bonus</span>
-            <span className="font-semibold text-primary">+50 points</span>
+            <span className="text-muted-foreground">{t("rewards.firstOrderBonus")}</span>
+            <span className="font-semibold text-primary">+50 {t("rewards.pts")}</span>
           </div>
           <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">Leave a review</span>
-            <span className="font-semibold text-primary">+10 points</span>
+            <span className="text-muted-foreground">{t("rewards.leaveReview")}</span>
+            <span className="font-semibold text-primary">+10 {t("rewards.pts")}</span>
           </div>
         </div>
       </div>
 
       {/* Available rewards */}
       <div>
-        <h2 className="font-semibold text-base mb-3">Available Rewards</h2>
+        <h2 className="font-semibold text-base mb-3">{t("rewards.availableRewards")}</h2>
         <div className="space-y-3">
-          {discounts.map((d, i) => {
-            const canRedeem = (rewards?.loyaltyPoints ?? 0) >= d.points;
+          {DISCOUNTS.map((d, i) => {
+            const canRedeem = points >= d.points;
             return (
               <div key={i} className={`p-4 rounded-xl border border-card-border ${canRedeem ? "bg-card" : "bg-muted/50"}`} data-testid={`reward-card-${i}`}>
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className={`font-semibold text-sm ${!canRedeem ? "text-muted-foreground" : ""}`}>{d.discount}</p>
-                    <p className="text-xs text-muted-foreground">{d.description}</p>
+                    <p className={`font-semibold text-sm ${!canRedeem ? "text-muted-foreground" : ""}`}>{getLabel(d)}</p>
+                    {d.days ? (
+                      <p className="text-xs text-muted-foreground">{t("rewards.validDays", { days: d.days })}</p>
+                    ) : (
+                      <p className="text-xs text-muted-foreground">{t("rewards.premiumReward")}</p>
+                    )}
                   </div>
                   <div className="text-right">
-                    <p className={`font-bold text-sm ${canRedeem ? "text-primary" : "text-muted-foreground"}`}>{d.points} pts</p>
-                    {canRedeem && (
+                    <p className={`font-bold text-sm ${canRedeem ? "text-primary" : "text-muted-foreground"}`}>{d.points} {t("rewards.pts")}</p>
+                    {canRedeem ? (
                       <Button size="sm" variant="outline" className="mt-1 h-7 text-xs rounded-full">
-                        Redeem
+                        {t("rewards.redeem")}
                       </Button>
-                    )}
-                    {!canRedeem && (
-                      <p className="text-xs text-muted-foreground mt-1">Need {d.points - (rewards?.loyaltyPoints ?? 0)} more</p>
+                    ) : (
+                      <p className="text-xs text-muted-foreground mt-1">{t("rewards.needMore", { count: d.points - points })}</p>
                     )}
                   </div>
                 </div>

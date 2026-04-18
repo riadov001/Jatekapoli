@@ -7,15 +7,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 import { useGetOrder } from "@workspace/api-client-react";
 import { DeliveryMap } from "@/components/DeliveryMap";
-
-const steps = [
-  { key: "pending", label: "Order Placed", icon: Package },
-  { key: "accepted", label: "Accepted", icon: CheckCircle },
-  { key: "preparing", label: "Preparing", icon: Clock },
-  { key: "ready", label: "Ready", icon: CheckCircle },
-  { key: "picked_up", label: "On the way", icon: Truck },
-  { key: "delivered", label: "Delivered", icon: MapPin },
-];
+import { useTranslation } from "react-i18next";
 
 const statusOrder = ["pending", "accepted", "preparing", "ready", "picked_up", "delivered"];
 
@@ -29,13 +21,22 @@ interface DriverLocation {
 export default function OrderDetailPage() {
   const [match, params] = useRoute("/orders/:id");
   const [_, setLocation] = useLocation();
+  const { t } = useTranslation();
   const id = match ? parseInt(params!.id, 10) : 0;
 
   const { data: order, isLoading } = useGetOrder(id, { query: { enabled: !!id, refetchInterval: 15000 } });
 
   const [driverLocation, setDriverLocation] = useState<DriverLocation | null>(null);
 
-  // Poll driver location when order is picked_up (driver is heading to customer)
+  const steps = [
+    { key: "pending", label: t("step.orderPlaced"), icon: Package },
+    { key: "accepted", label: t("step.accepted"), icon: CheckCircle },
+    { key: "preparing", label: t("step.preparing"), icon: Clock },
+    { key: "ready", label: t("step.ready"), icon: CheckCircle },
+    { key: "picked_up", label: t("step.onTheWay"), icon: Truck },
+    { key: "delivered", label: t("step.delivered"), icon: MapPin },
+  ];
+
   useEffect(() => {
     if (!order?.driverId || order.status !== "picked_up") {
       setDriverLocation(null);
@@ -61,7 +62,7 @@ export default function OrderDetailPage() {
     return () => clearInterval(interval);
   }, [order?.driverId, order?.status]);
 
-  if (!match) return <div>Not found</div>;
+  if (!match) return <div>{t("orderDetail.notFound")}</div>;
 
   if (isLoading) {
     return (
@@ -73,7 +74,7 @@ export default function OrderDetailPage() {
     );
   }
 
-  if (!order) return <div>Order not found</div>;
+  if (!order) return <div>{t("orderDetail.notFound")}</div>;
 
   const currentStepIndex = order.status === "cancelled"
     ? -1
@@ -85,7 +86,7 @@ export default function OrderDetailPage() {
     <div className="max-w-2xl mx-auto space-y-6 pb-6">
       <Button variant="ghost" size="sm" onClick={() => setLocation("/orders")} className="gap-2">
         <ArrowLeft className="w-4 h-4" />
-        My Orders
+        {t("orderDetail.myOrders")}
       </Button>
 
       <div className="flex items-center justify-between">
@@ -94,7 +95,7 @@ export default function OrderDetailPage() {
           <p className="text-sm text-muted-foreground">{order.restaurantName}</p>
         </div>
         {order.status === "cancelled" ? (
-          <Badge className="bg-gray-100 text-gray-600 border-0">Cancelled</Badge>
+          <Badge className="bg-gray-100 text-gray-600 border-0">{t("orderDetail.cancelled")}</Badge>
         ) : null}
       </div>
 
@@ -103,7 +104,7 @@ export default function OrderDetailPage() {
         <div className="bg-card rounded-2xl border border-card-border overflow-hidden">
           <div className="p-3 border-b border-border flex items-center gap-2">
             <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-            <p className="text-sm font-semibold">Driver is on the way</p>
+            <p className="text-sm font-semibold">{t("orderDetail.driverOnWay")}</p>
             {driverLocation?.locationUpdatedAt && (
               <span className="text-xs text-muted-foreground ml-auto">
                 Updated {new Date(driverLocation.locationUpdatedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
@@ -113,7 +114,7 @@ export default function OrderDetailPage() {
           <DeliveryMap
             driverLat={driverLocation?.latitude}
             driverLng={driverLocation?.longitude}
-            driverName={driverLocation?.name || "Your driver"}
+            driverName={driverLocation?.name || t("orderDetail.yourDriver")}
             className="h-56"
           />
         </div>
@@ -122,7 +123,7 @@ export default function OrderDetailPage() {
       {/* Progress tracker */}
       {order.status !== "cancelled" && (
         <div className="bg-card rounded-2xl border border-card-border p-4 sm:p-6">
-          <h2 className="font-semibold mb-4 text-sm">Order Status</h2>
+          <h2 className="font-semibold mb-4 text-sm">{t("orderDetail.orderStatus")}</h2>
           <div className="relative">
             {steps.map((step, idx) => {
               const Icon = step.icon;
@@ -140,7 +141,7 @@ export default function OrderDetailPage() {
                       {step.label}
                     </p>
                     {isCurrent && order.estimatedDeliveryTime && (
-                      <p className="text-xs text-primary mt-0.5">Est. {order.estimatedDeliveryTime} min remaining</p>
+                      <p className="text-xs text-primary mt-0.5">{t("orderDetail.estRemaining", { time: order.estimatedDeliveryTime })}</p>
                     )}
                   </div>
                 </div>
@@ -155,7 +156,7 @@ export default function OrderDetailPage() {
         <div className="flex items-start gap-3">
           <MapPin className="w-4 h-4 text-primary mt-0.5 shrink-0" />
           <div>
-            <p className="text-sm font-semibold">Delivery to</p>
+            <p className="text-sm font-semibold">{t("orderDetail.deliveryTo")}</p>
             <p className="text-sm text-muted-foreground">{order.deliveryAddress}</p>
           </div>
         </div>
@@ -164,7 +165,7 @@ export default function OrderDetailPage() {
       {/* Items */}
       <div className="bg-card rounded-2xl border border-card-border overflow-hidden">
         <div className="p-4 border-b border-border">
-          <h2 className="font-semibold text-sm">Order Items</h2>
+          <h2 className="font-semibold text-sm">{t("orderDetail.orderItems")}</h2>
         </div>
         {order.items.map((item, idx) => (
           <div key={item.id}>
@@ -180,16 +181,16 @@ export default function OrderDetailPage() {
         <Separator />
         <div className="p-4 space-y-2">
           <div className="flex justify-between text-sm text-muted-foreground">
-            <span>Subtotal</span>
+            <span>{t("orderDetail.subtotal")}</span>
             <span>{order.subtotal.toFixed(0)} MAD</span>
           </div>
           <div className="flex justify-between text-sm text-muted-foreground">
-            <span>Delivery fee</span>
+            <span>{t("orderDetail.deliveryFee")}</span>
             <span>{order.deliveryFee.toFixed(0)} MAD</span>
           </div>
           <Separator />
           <div className="flex justify-between font-bold text-base">
-            <span>Total</span>
+            <span>{t("orderDetail.total")}</span>
             <span className="text-primary" data-testid="text-order-total">{order.total.toFixed(0)} MAD</span>
           </div>
         </div>
@@ -197,7 +198,7 @@ export default function OrderDetailPage() {
 
       {order.notes && (
         <div className="bg-accent rounded-xl p-4">
-          <p className="text-sm font-medium mb-1">Order Notes</p>
+          <p className="text-sm font-medium mb-1">{t("orderDetail.orderNotes")}</p>
           <p className="text-sm text-muted-foreground">{order.notes}</p>
         </div>
       )}

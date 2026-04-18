@@ -1,6 +1,7 @@
 import { Link } from "wouter";
 import { Star, Clock, Truck, Award, ChevronRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { useTranslation } from "react-i18next";
 
 interface Restaurant {
   id: number;
@@ -30,6 +31,7 @@ const CATEGORY_EMOJIS: Record<string, string> = {
 };
 
 export function RestaurantCard({ restaurant }: { restaurant: Restaurant }) {
+  const { t } = useTranslation();
   const categoryEmoji = CATEGORY_EMOJIS[restaurant.category] || "🍽️";
 
   return (
@@ -58,11 +60,11 @@ export function RestaurantCard({ restaurant }: { restaurant: Restaurant }) {
             {restaurant.isLocal && (
               <Badge className="bg-green-500 hover:bg-green-500 text-white text-xs gap-1 font-semibold shadow-sm" data-testid={`badge-local-${restaurant.id}`}>
                 <Award className="w-3 h-3" />
-                Local
+                {t("card.local")}
               </Badge>
             )}
             {!restaurant.isOpen && (
-              <Badge variant="secondary" className="text-xs bg-black/60 hover:bg-black/60 text-white border-0">Closed</Badge>
+              <Badge variant="secondary" className="text-xs bg-black/60 hover:bg-black/60 text-white border-0">{t("card.closed")}</Badge>
             )}
           </div>
 
@@ -101,20 +103,20 @@ export function RestaurantCard({ restaurant }: { restaurant: Restaurant }) {
             {restaurant.deliveryTime && (
               <span className="flex items-center gap-1">
                 <Clock className="w-3.5 h-3.5 text-primary/70" />
-                <span className="font-medium text-foreground">{restaurant.deliveryTime} min</span>
+                <span className="font-medium text-foreground">{restaurant.deliveryTime} {t("card.min")}</span>
               </span>
             )}
             {restaurant.deliveryFee !== null && restaurant.deliveryFee !== undefined && (
               <span className="flex items-center gap-1">
                 <Truck className="w-3.5 h-3.5 text-primary/70" />
                 <span className={`font-medium ${restaurant.deliveryFee === 0 ? "text-green-600 dark:text-green-400" : "text-foreground"}`}>
-                  {restaurant.deliveryFee === 0 ? "Free delivery" : `${restaurant.deliveryFee} MAD`}
+                  {restaurant.deliveryFee === 0 ? t("card.freeDelivery") : `${restaurant.deliveryFee} MAD`}
                 </span>
               </span>
             )}
             {restaurant.reviewCount > 0 && (
               <span className="text-muted-foreground ml-auto">
-                {restaurant.reviewCount} review{restaurant.reviewCount !== 1 ? "s" : ""}
+                {t("card.review", { count: restaurant.reviewCount })}
               </span>
             )}
           </div>

@@ -13,6 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
+import { useTranslation } from "react-i18next";
 
 async function updateDriverLocation(driverId: number, lat: number, lng: number) {
   const token = localStorage.getItem("tawsila_token");
@@ -30,6 +31,7 @@ async function updateDriverLocation(driverId: number, lat: number, lng: number) 
 export default function DriverDashboardPage() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { t } = useTranslation();
   const [locationSharing, setLocationSharing] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
   const watchIdRef = useRef<number | null>(null);
@@ -50,7 +52,6 @@ export default function DriverDashboardPage() {
   const updateDriver = useUpdateDriver();
   const updateStatus = useUpdateOrderStatus();
 
-  // Auto-start location sharing when driver becomes available
   useEffect(() => {
     if (myDriver?.isAvailable && !locationSharing) {
       startLocationSharing();
@@ -60,7 +61,6 @@ export default function DriverDashboardPage() {
     }
   }, [myDriver?.isAvailable]);
 
-  // Cleanup on unmount
   useEffect(() => {
     return () => {
       if (watchIdRef.current !== null) {
@@ -105,13 +105,13 @@ export default function DriverDashboardPage() {
   const toggleAvailable = () => {
     if (!myDriver) return;
     updateDriver.mutate({ id: myDriver.id, data: { isAvailable: !myDriver.isAvailable } }, {
-      onSuccess: () => { toast({ title: "Status updated" }); refetchDrivers(); },
+      onSuccess: () => { toast({ title: t("driver.statusUpdated") }); refetchDrivers(); },
     });
   };
 
   const handleStatusChange = (orderId: number, status: string) => {
     updateStatus.mutate({ id: orderId, data: { status: status as any } }, {
-      onSuccess: () => { toast({ title: "Status updated" }); refetchOrders(); },
+      onSuccess: () => { toast({ title: t("driver.statusUpdated") }); refetchOrders(); },
     });
   };
 
@@ -121,8 +121,8 @@ export default function DriverDashboardPage() {
     return (
       <div className="text-center py-20">
         <Truck className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
-        <p className="font-semibold mb-1">No driver profile found</p>
-        <p className="text-muted-foreground text-sm">Your account is not linked to a driver profile.</p>
+        <p className="font-semibold mb-1">{t("driver.noDriverProfile")}</p>
+        <p className="text-muted-foreground text-sm">{t("driver.notLinked")}</p>
       </div>
     );
   }
@@ -131,18 +131,18 @@ export default function DriverDashboardPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="font-display font-bold text-2xl">Driver Panel</h1>
-          <p className="text-muted-foreground text-sm">Welcome, {user?.name}</p>
+          <h1 className="font-display font-bold text-2xl">{t("driver.title")}</h1>
+          <p className="text-muted-foreground text-sm">{t("driver.welcome", { name: user?.name })}</p>
         </div>
         <div className="flex items-center gap-2">
           <Switch checked={myDriver.isAvailable} onCheckedChange={toggleAvailable} data-testid="switch-driver-available" />
-          <Label className="text-sm">{myDriver.isAvailable ? "Available" : "Offline"}</Label>
+          <Label className="text-sm">{myDriver.isAvailable ? t("driver.available") : t("driver.offline")}</Label>
         </div>
       </div>
 
-      {/* Status + location badge */}
+      {/* Status badge */}
       <div className={`p-4 rounded-xl text-center font-semibold ${myDriver.isAvailable ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" : "bg-muted text-muted-foreground"}`}>
-        {myDriver.isAvailable ? "You are available for deliveries" : "You are offline"}
+        {myDriver.isAvailable ? t("driver.availableForDeliveries") : t("driver.youAreOffline")}
       </div>
 
       {/* Location sharing panel */}
@@ -155,12 +155,10 @@ export default function DriverDashboardPage() {
             }
             <div>
               <p className="font-semibold text-sm">
-                {locationSharing ? "Sharing live location" : "Location sharing off"}
+                {locationSharing ? t("driver.sharingLocation") : t("driver.locationOff")}
               </p>
               <p className="text-xs text-muted-foreground">
-                {locationSharing
-                  ? "Customers can see where you are"
-                  : "Turn on so customers can track you"}
+                {locationSharing ? t("driver.customersCanSee") : t("driver.turnOnLocation")}
               </p>
             </div>
           </div>
@@ -171,9 +169,9 @@ export default function DriverDashboardPage() {
             onClick={locationSharing ? stopLocationSharing : startLocationSharing}
           >
             {locationSharing ? (
-              <><NavigationOff className="w-3.5 h-3.5" /> Stop</>
+              <><NavigationOff className="w-3.5 h-3.5" /> {t("driver.stop")}</>
             ) : (
-              <><Navigation className="w-3.5 h-3.5" /> Start</>
+              <><Navigation className="w-3.5 h-3.5" /> {t("driver.start")}</>
             )}
           </Button>
         </div>
@@ -187,37 +185,37 @@ export default function DriverDashboardPage() {
         <div className="bg-card rounded-2xl border border-card-border p-4">
           <Package className="w-5 h-5 text-primary mb-2" />
           <p className="font-bold text-2xl">{myDriver.totalDeliveries}</p>
-          <p className="text-xs text-muted-foreground">Total Deliveries</p>
+          <p className="text-xs text-muted-foreground">{t("driver.totalDeliveries")}</p>
         </div>
         <div className="bg-card rounded-2xl border border-card-border p-4">
           <Star className="w-5 h-5 text-yellow-500 mb-2" />
           <p className="font-bold text-2xl">{myDriver.rating?.toFixed(1) ?? "N/A"}</p>
-          <p className="text-xs text-muted-foreground">Rating</p>
+          <p className="text-xs text-muted-foreground">{t("driver.rating")}</p>
         </div>
         <div className="bg-card rounded-2xl border border-card-border p-4">
           <DollarSign className="w-5 h-5 text-green-600 mb-2" />
           {earningsLoading ? <Skeleton className="h-8 w-16" /> : (
             <p className="font-bold text-2xl">{((earnings as any)?.thisMonth ?? 0).toFixed(0)}</p>
           )}
-          <p className="text-xs text-muted-foreground">This Month (MAD)</p>
+          <p className="text-xs text-muted-foreground">{t("driver.thisMonth")}</p>
         </div>
         <div className="bg-card rounded-2xl border border-card-border p-4">
           <Truck className="w-5 h-5 text-blue-600 mb-2" />
           {earningsLoading ? <Skeleton className="h-8 w-16" /> : (
             <p className="font-bold text-2xl">{(earnings?.completedToday ?? 0)}</p>
           )}
-          <p className="text-xs text-muted-foreground">Today</p>
+          <p className="text-xs text-muted-foreground">{t("driver.today")}</p>
         </div>
       </div>
 
       {/* Active deliveries */}
       <div>
-        <h2 className="font-semibold mb-3">Active Deliveries</h2>
+        <h2 className="font-semibold mb-3">{t("driver.activeDeliveries")}</h2>
         {ordersLoading ? (
           <div className="space-y-3">{[...Array(2)].map((_, i) => <Skeleton key={i} className="h-20 rounded-2xl" />)}</div>
         ) : activeOrders.length === 0 ? (
           <div className="text-center py-12 text-muted-foreground bg-muted/30 rounded-2xl">
-            <p>No active deliveries</p>
+            <p>{t("driver.noActiveDeliveries")}</p>
           </div>
         ) : (
           <div className="space-y-3">
@@ -228,7 +226,7 @@ export default function DriverDashboardPage() {
                     <p className="font-semibold text-sm">Order #{order.id}</p>
                     <p className="text-xs text-muted-foreground">{order.restaurantName}</p>
                   </div>
-                  <Badge className="text-xs border-0 bg-primary/10 text-primary">{order.status}</Badge>
+                  <Badge className="text-xs border-0 bg-primary/10 text-primary">{t(`status.${order.status}`, { defaultValue: order.status })}</Badge>
                 </div>
                 <p className="text-xs text-muted-foreground mb-3">{order.deliveryAddress}</p>
                 <div className="flex items-center gap-2">
@@ -237,8 +235,8 @@ export default function DriverDashboardPage() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="picked_up">Picked Up</SelectItem>
-                      <SelectItem value="delivered">Delivered</SelectItem>
+                      <SelectItem value="picked_up">{t("driver.pickedUp")}</SelectItem>
+                      <SelectItem value="delivered">{t("driver.delivered")}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

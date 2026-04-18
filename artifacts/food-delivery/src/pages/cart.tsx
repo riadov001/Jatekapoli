@@ -10,13 +10,13 @@ import { useCart } from "@/contexts/CartContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCreateOrder } from "@workspace/api-client-react";
 import { useToast } from "@/hooks/use-toast";
+import { useTranslation } from "react-i18next";
 
 async function reverseGeocode(lat: number, lng: number): Promise<string> {
   const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}&accept-language=en`;
   const res = await fetch(url, { headers: { "User-Agent": "TawsilaApp/1.0" } });
   if (!res.ok) throw new Error("Geocoding failed");
   const data = await res.json();
-  // Build a short human-readable address
   const addr = data.address || {};
   const parts = [
     addr.road || addr.pedestrian,
@@ -32,6 +32,7 @@ export default function CartPage() {
   const { items, restaurantId, restaurantName, removeItem, updateQuantity, clearCart, subtotal, total } = useCart();
   const { user } = useAuth();
   const { toast } = useToast();
+  const { t } = useTranslation();
   const createOrder = useCreateOrder();
   const [deliveryAddress, setDeliveryAddress] = useState((user as any)?.address || "");
   const [notes, setNotes] = useState("");
@@ -76,7 +77,7 @@ export default function CartPage() {
       return;
     }
     if (!restaurantId || items.length === 0) {
-      toast({ title: "Your cart is empty", variant: "destructive" });
+      toast({ title: t("cart.empty"), variant: "destructive" });
       return;
     }
 
@@ -105,10 +106,10 @@ export default function CartPage() {
         <div className="w-24 h-24 rounded-full bg-muted flex items-center justify-center mb-4">
           <ShoppingBag className="w-10 h-10 text-muted-foreground" />
         </div>
-        <h2 className="font-display font-bold text-xl mb-2">Your cart is empty</h2>
-        <p className="text-muted-foreground text-sm mb-6">Add some delicious food from your favorite restaurants.</p>
+        <h2 className="font-display font-bold text-xl mb-2">{t("cart.empty")}</h2>
+        <p className="text-muted-foreground text-sm mb-6">{t("cart.emptyDesc")}</p>
         <Button onClick={() => setLocation("/restaurants")} data-testid="button-browse-restaurants">
-          Browse Restaurants
+          {t("cart.browseRestaurants")}
         </Button>
       </div>
     );
@@ -118,11 +119,11 @@ export default function CartPage() {
     <div className="max-w-2xl mx-auto space-y-6 pb-6">
       <Button variant="ghost" size="sm" onClick={() => setLocation(-1 as any)} className="gap-2">
         <ArrowLeft className="w-4 h-4" />
-        Back
+        {t("cart.back")}
       </Button>
 
-      <h1 className="font-display font-bold text-2xl">Your Cart</h1>
-      <p className="text-sm text-muted-foreground -mt-4">From {restaurantName}</p>
+      <h1 className="font-display font-bold text-2xl">{t("cart.title")}</h1>
+      <p className="text-sm text-muted-foreground -mt-4">{t("cart.from", { name: restaurantName })}</p>
 
       {/* Items */}
       <div className="bg-card rounded-2xl border border-card-border overflow-hidden">
@@ -131,7 +132,7 @@ export default function CartPage() {
             <div className="flex items-center gap-4 p-4" data-testid={`cart-item-${item.menuItemId}`}>
               <div className="flex-1 min-w-0">
                 <p className="font-semibold text-sm" data-testid={`text-cart-item-name-${item.menuItemId}`}>{item.name}</p>
-                <p className="text-xs text-muted-foreground">{item.price} MAD each</p>
+                <p className="text-xs text-muted-foreground">{t("cart.each", { price: item.price })}</p>
               </div>
 
               <div className="flex items-center gap-2">
@@ -178,7 +179,7 @@ export default function CartPage() {
       {/* Delivery Address */}
       <div className="space-y-2">
         <div className="flex items-center justify-between">
-          <Label htmlFor="address" className="text-sm font-semibold">Delivery Address</Label>
+          <Label htmlFor="address" className="text-sm font-semibold">{t("cart.deliveryAddress")}</Label>
           <button
             type="button"
             onClick={handleDetectLocation}
@@ -186,15 +187,15 @@ export default function CartPage() {
             className="flex items-center gap-1.5 text-xs text-primary font-medium hover:underline disabled:opacity-60"
           >
             {locating ? (
-              <><Loader2 className="w-3 h-3 animate-spin" /> Detecting…</>
+              <><Loader2 className="w-3 h-3 animate-spin" /> {t("cart.detecting")}</>
             ) : (
-              <><MapPin className="w-3 h-3" /> Use my location</>
+              <><MapPin className="w-3 h-3" /> {t("cart.useMyLocation")}</>
             )}
           </button>
         </div>
         <Input
           id="address"
-          placeholder="Enter your delivery address in Oujda"
+          placeholder={t("cart.enterAddress")}
           value={deliveryAddress}
           onChange={(e) => setDeliveryAddress(e.target.value)}
           className="h-11"
@@ -204,10 +205,10 @@ export default function CartPage() {
 
       {/* Notes */}
       <div className="space-y-2">
-        <Label htmlFor="notes" className="text-sm font-semibold">Order Notes (optional)</Label>
+        <Label htmlFor="notes" className="text-sm font-semibold">{t("cart.orderNotes")}</Label>
         <Textarea
           id="notes"
-          placeholder="Any special instructions..."
+          placeholder={t("cart.specialInstructions")}
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
           rows={2}
@@ -217,18 +218,18 @@ export default function CartPage() {
 
       {/* Summary */}
       <div className="bg-card rounded-2xl border border-card-border p-4 space-y-3">
-        <h3 className="font-semibold">Order Summary</h3>
+        <h3 className="font-semibold">{t("cart.orderSummary")}</h3>
         <div className="flex justify-between text-sm">
-          <span className="text-muted-foreground">Subtotal</span>
+          <span className="text-muted-foreground">{t("cart.subtotal")}</span>
           <span>{subtotal.toFixed(0)} MAD</span>
         </div>
         <div className="flex justify-between text-sm">
-          <span className="text-muted-foreground">Delivery fee</span>
+          <span className="text-muted-foreground">{t("cart.deliveryFee")}</span>
           <span>{DELIVERY_FEE} MAD</span>
         </div>
         <Separator />
         <div className="flex justify-between font-bold text-base">
-          <span>Total</span>
+          <span>{t("cart.total")}</span>
           <span className="text-primary" data-testid="text-order-total">{(total + DELIVERY_FEE).toFixed(0)} MAD</span>
         </div>
       </div>
@@ -239,7 +240,7 @@ export default function CartPage() {
         disabled={createOrder.isPending}
         data-testid="button-place-order"
       >
-        {createOrder.isPending ? "Placing order..." : "Place Order"}
+        {createOrder.isPending ? t("cart.placingOrder") : t("cart.placeOrder")}
       </Button>
     </div>
   );

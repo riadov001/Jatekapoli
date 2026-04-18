@@ -8,6 +8,7 @@ import { useGetRestaurant, useListMenuItems, useListReviews } from "@workspace/a
 import { useCart } from "@/contexts/CartContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { useTranslation } from "react-i18next";
 
 export default function RestaurantPage() {
   const [match, params] = useRoute("/restaurants/:id");
@@ -15,6 +16,7 @@ export default function RestaurantPage() {
   const { toast } = useToast();
   const { user } = useAuth();
   const { addItem, itemCount } = useCart();
+  const { t } = useTranslation();
   const [activeCategory, setActiveCategory] = useState("All");
 
   const id = match ? parseInt(params!.id, 10) : 0;
@@ -28,7 +30,7 @@ export default function RestaurantPage() {
   const { data: reviews } = useListReviews({ restaurantId: id });
 
   if (!match || !id) {
-    return <div>Restaurant not found</div>;
+    return <div>{t("restaurant.notFound")}</div>;
   }
 
   if (restLoading) {
@@ -41,7 +43,7 @@ export default function RestaurantPage() {
     );
   }
 
-  if (!restaurant) return <div>Restaurant not found</div>;
+  if (!restaurant) return <div>{t("restaurant.notFound")}</div>;
 
   const categories = ["All", ...Array.from(new Set(menuItems?.map((i) => i.category) ?? []))];
   const filteredItems = activeCategory === "All"
@@ -70,7 +72,7 @@ export default function RestaurantPage() {
       {/* Back button */}
       <Button variant="ghost" size="sm" onClick={() => setLocation(-1 as any)} className="gap-2">
         <ArrowLeft className="w-4 h-4" />
-        Back
+        {t("restaurant.back")}
       </Button>
 
       {/* Cover image */}
@@ -91,7 +93,7 @@ export default function RestaurantPage() {
                 {restaurant.isLocal && (
                   <Badge className="bg-green-500 text-white text-xs gap-1">
                     <Award className="w-3 h-3" />
-                    Local
+                    {t("restaurant.local")}
                   </Badge>
                 )}
               </div>
@@ -111,7 +113,7 @@ export default function RestaurantPage() {
                 {restaurant.deliveryFee !== null && restaurant.deliveryFee !== undefined && (
                   <span className="flex items-center gap-1">
                     <Truck className="w-3.5 h-3.5" />
-                    {restaurant.deliveryFee === 0 ? "Free" : `${restaurant.deliveryFee} MAD delivery`}
+                    {restaurant.deliveryFee === 0 ? t("restaurant.free") : t("restaurant.delivery", { fee: restaurant.deliveryFee })}
                   </span>
                 )}
               </div>
@@ -155,7 +157,7 @@ export default function RestaurantPage() {
             </div>
           ))
         ) : filteredItems.length === 0 ? (
-          <p className="text-center text-muted-foreground py-8">No items in this category</p>
+          <p className="text-center text-muted-foreground py-8">{t("restaurant.noItems")}</p>
         ) : (
           filteredItems.map((item) => (
             <div key={item.id} className="flex gap-4 p-4 rounded-xl border border-card-border bg-card hover:shadow-sm transition-shadow" data-testid={`card-menu-item-${item.id}`}>
@@ -172,7 +174,7 @@ export default function RestaurantPage() {
                     <div className="flex items-center gap-2">
                       <h3 className="font-semibold text-sm">{item.name}</h3>
                       {item.isPopular && (
-                        <Badge variant="secondary" className="text-xs bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400">Popular</Badge>
+                        <Badge variant="secondary" className="text-xs bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400">{t("restaurant.popular")}</Badge>
                       )}
                     </div>
                     {item.description && (
@@ -190,10 +192,10 @@ export default function RestaurantPage() {
                       data-testid={`button-add-${item.id}`}
                     >
                       <Plus className="w-3.5 h-3.5" />
-                      Add
+                      {t("restaurant.add")}
                     </Button>
                   ) : (
-                    <Badge variant="secondary" className="text-xs">Unavailable</Badge>
+                    <Badge variant="secondary" className="text-xs">{t("restaurant.unavailable")}</Badge>
                   )}
                 </div>
               </div>
@@ -205,7 +207,7 @@ export default function RestaurantPage() {
       {/* Reviews */}
       {reviews && reviews.length > 0 && (
         <div>
-          <h2 className="font-display font-bold text-xl mb-3">Reviews</h2>
+          <h2 className="font-display font-bold text-xl mb-3">{t("restaurant.reviews")}</h2>
           <div className="space-y-3">
             {reviews.slice(0, 5).map((review) => (
               <div key={review.id} className="p-4 rounded-xl border border-card-border bg-card" data-testid={`card-review-${review.id}`}>
@@ -233,7 +235,7 @@ export default function RestaurantPage() {
             data-testid="button-view-cart"
           >
             <ShoppingBag className="w-5 h-5" />
-            View Cart ({itemCount} items)
+            {t("restaurant.viewCart", { count: itemCount })}
           </Button>
         </div>
       )}

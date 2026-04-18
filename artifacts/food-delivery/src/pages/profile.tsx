@@ -4,10 +4,12 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
 import { useListOrders } from "@workspace/api-client-react";
+import { useTranslation } from "react-i18next";
 
 export default function ProfilePage() {
   const { user, logout } = useAuth();
   const [_, setLocation] = useLocation();
+  const { t } = useTranslation();
 
   const { data: orders } = useListOrders(
     user ? { userId: user.id } : undefined,
@@ -17,8 +19,8 @@ export default function ProfilePage() {
   if (!user) {
     return (
       <div className="text-center py-20">
-        <p className="text-muted-foreground mb-4">Please login to view your profile</p>
-        <Button onClick={() => setLocation("/login")}>Login</Button>
+        <p className="text-muted-foreground mb-4">{t("profile.loginRequired")}</p>
+        <Button onClick={() => setLocation("/login")}>{t("common.login")}</Button>
       </div>
     );
   }
@@ -48,17 +50,17 @@ export default function ProfilePage() {
         <div className="bg-card rounded-xl border border-card-border p-4 text-center" data-testid="stat-orders">
           <Package className="w-5 h-5 text-primary mx-auto mb-1" />
           <p className="font-bold text-xl">{orders?.length ?? 0}</p>
-          <p className="text-xs text-muted-foreground">Orders</p>
+          <p className="text-xs text-muted-foreground">{t("profile.orders")}</p>
         </div>
         <div className="bg-card rounded-xl border border-card-border p-4 text-center" data-testid="stat-points">
           <Gift className="w-5 h-5 text-primary mx-auto mb-1" />
           <p className="font-bold text-xl">{user.loyaltyPoints}</p>
-          <p className="text-xs text-muted-foreground">Points</p>
+          <p className="text-xs text-muted-foreground">{t("profile.points")}</p>
         </div>
         <div className="bg-card rounded-xl border border-card-border p-4 text-center" data-testid="stat-tier">
           <Star className="w-5 h-5 text-yellow-500 mx-auto mb-1" />
           <p className="font-bold text-sm">{tierName}</p>
-          <p className="text-xs text-muted-foreground">Tier</p>
+          <p className="text-xs text-muted-foreground">{t("profile.tier")}</p>
         </div>
       </div>
 
@@ -67,7 +69,7 @@ export default function ProfilePage() {
         <div className="flex items-center gap-3 p-4">
           <User className="w-4 h-4 text-muted-foreground" />
           <div>
-            <p className="text-xs text-muted-foreground">Name</p>
+            <p className="text-xs text-muted-foreground">{t("profile.name")}</p>
             <p className="text-sm font-medium">{user.name}</p>
           </div>
         </div>
@@ -75,7 +77,7 @@ export default function ProfilePage() {
           <div className="flex items-center gap-3 p-4">
             <Phone className="w-4 h-4 text-muted-foreground" />
             <div>
-              <p className="text-xs text-muted-foreground">Phone</p>
+              <p className="text-xs text-muted-foreground">{t("profile.phone")}</p>
               <p className="text-sm font-medium">{user.phone}</p>
             </div>
           </div>
@@ -84,7 +86,7 @@ export default function ProfilePage() {
           <div className="flex items-center gap-3 p-4">
             <MapPin className="w-4 h-4 text-muted-foreground" />
             <div>
-              <p className="text-xs text-muted-foreground">Address</p>
+              <p className="text-xs text-muted-foreground">{t("profile.address")}</p>
               <p className="text-sm font-medium">{user.address}</p>
             </div>
           </div>
@@ -95,17 +97,17 @@ export default function ProfilePage() {
       <div className="space-y-2">
         <Button variant="outline" className="w-full justify-start gap-2 h-12" onClick={() => setLocation("/orders")}>
           <Package className="w-4 h-4" />
-          My Orders
+          {t("profile.myOrders")}
         </Button>
         <Button variant="outline" className="w-full justify-start gap-2 h-12" onClick={() => setLocation("/rewards")}>
           <Gift className="w-4 h-4" />
-          Rewards & Points
+          {t("profile.rewardsAndPoints")}
         </Button>
       </div>
 
       <Button variant="destructive" className="w-full gap-2 h-11" onClick={() => { logout(); setLocation("/"); }} data-testid="button-logout">
         <LogOut className="w-4 h-4" />
-        Logout
+        {t("profile.logout")}
       </Button>
     </div>
   );

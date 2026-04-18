@@ -5,9 +5,10 @@ import { motion } from "framer-motion";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useListRestaurants, useGetFeaturedRestaurants } from "@workspace/api-client-react";
+import { useListRestaurants } from "@workspace/api-client-react";
 import { RestaurantCard } from "@/components/RestaurantCard";
 import { useAuth } from "@/contexts/AuthContext";
+import { useTranslation } from "react-i18next";
 
 const CATEGORIES = [
   { id: "All", emoji: "🍽️" },
@@ -53,6 +54,7 @@ export default function HomePage() {
   const [activeCategory, setActiveCategory] = useState("All");
   const [_, setLocation] = useLocation();
   const { user, isAuthenticated } = useAuth();
+  const { t } = useTranslation();
 
   const { data: restaurants, isLoading } = useListRestaurants({
     ...(activeCategory !== "All" ? { category: activeCategory } : {}),
@@ -105,18 +107,18 @@ export default function HomePage() {
 
           <h1 className="font-display font-bold text-3xl sm:text-4xl text-white mb-2 leading-tight max-w-sm">
             {isAuthenticated && user?.name
-              ? `Hungry, ${user.name.split(" ")[0]}?`
-              : "Order food, fast!"}
+              ? t("home.hungry", { name: user.name.split(" ")[0] })
+              : t("home.orderFast")}
           </h1>
           <p className="text-white/80 text-sm sm:text-base mb-6 max-w-xs">
-            Your favorite restaurants delivered in minutes.
+            {t("home.tagline")}
           </p>
 
           {/* Search */}
           <div className="relative max-w-md">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
-              placeholder="Search restaurants or dishes..."
+              placeholder={t("home.search")}
               className="pl-10 h-12 bg-white/95 border-0 shadow-lg text-foreground placeholder:text-muted-foreground text-sm rounded-2xl"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -163,8 +165,8 @@ export default function HomePage() {
                 <Award className="w-4 h-4 text-green-600 dark:text-green-400" />
               </div>
               <div>
-                <h2 className="font-display font-bold text-lg text-foreground leading-none">Support Local</h2>
-                <p className="text-xs text-muted-foreground mt-0.5">Real Oujda flavors</p>
+                <h2 className="font-display font-bold text-lg text-foreground leading-none">{t("home.supportLocal")}</h2>
+                <p className="text-xs text-muted-foreground mt-0.5">{t("home.realOujdaFlavors")}</p>
               </div>
             </div>
             <Button
@@ -173,7 +175,7 @@ export default function HomePage() {
               onClick={() => setLocation("/restaurants?isLocal=true")}
               className="text-primary text-sm gap-1 h-8"
             >
-              See all <ChevronRight className="w-3.5 h-3.5" />
+              {t("home.seeAll")} <ChevronRight className="w-3.5 h-3.5" />
             </Button>
           </div>
 
@@ -204,10 +206,10 @@ export default function HomePage() {
           </div>
           <h2 className="font-display font-bold text-lg text-foreground">
             {search
-              ? `Results for "${search}"`
+              ? t("home.resultsFor", { search })
               : activeCategory !== "All"
-              ? `${activeCategory} Restaurants`
-              : "All Restaurants"}
+              ? t("home.categoryRestaurants", { category: activeCategory })
+              : t("home.allRestaurants")}
           </h2>
         </div>
 
@@ -222,14 +224,14 @@ export default function HomePage() {
             className="text-center py-16"
           >
             <div className="text-5xl mb-4">🔍</div>
-            <p className="text-lg font-semibold">No restaurants found</p>
-            <p className="text-sm text-muted-foreground mt-1">Try a different search or category</p>
+            <p className="text-lg font-semibold">{t("home.noRestaurantsFound")}</p>
+            <p className="text-sm text-muted-foreground mt-1">{t("home.tryDifferent")}</p>
             <Button
               variant="outline"
               className="mt-4 rounded-xl"
               onClick={() => { setSearch(""); setActiveCategory("All"); }}
             >
-              Clear filters
+              {t("home.clearFilters")}
             </Button>
           </motion.div>
         ) : (

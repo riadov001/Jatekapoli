@@ -11,6 +11,7 @@ import { z } from "zod";
 import { useSendOtp, useVerifyOtp, useLogin } from "@workspace/api-client-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { useTranslation } from "react-i18next";
 
 type Step = "phone" | "otp" | "name" | "email";
 
@@ -96,6 +97,7 @@ export default function LoginPage() {
   const [_, setLocation] = useLocation();
   const { login } = useAuth();
   const { toast } = useToast();
+  const { t } = useTranslation();
   const [step, setStep] = useState<Step>("phone");
   const [phoneValue, setPhoneValue] = useState("");
   const [demoOtp, setDemoOtp] = useState<string | null>(null);
@@ -145,11 +147,8 @@ export default function LoginPage() {
   const handleVerifyOtp = (code: string) => {
     verifyOtpMutation.mutate({ data: { phone: phoneValue, code } }, {
       onSuccess: (res) => {
-        // Always store the token/user immediately so it can be used for name update
         login(res.token, res.user as any);
-
         if ((res as any).isNewUser || res.user.name.startsWith("User ")) {
-          // New user — ask for their name before proceeding
           setStep("name");
         } else {
           toast({ title: `Welcome back, ${res.user.name}! 🎉` });
@@ -162,7 +161,6 @@ export default function LoginPage() {
     });
   };
 
-  // For new users: update name via PATCH /auth/update-name using the token just stored
   const handleSaveName = async (data: z.infer<typeof nameSchema>) => {
     setIsSavingName(true);
     try {
@@ -178,8 +176,6 @@ export default function LoginPage() {
       });
       const json = await response.json();
       if (!response.ok) throw new Error(json.error || "Could not save name");
-
-      // Update user in auth context with the new name
       login(token!, json.user);
       toast({ title: `Welcome to Tawsila, ${json.user.name}! 🎉` });
       setLocation("/");
@@ -225,7 +221,7 @@ export default function LoginPage() {
             </div>
           </div>
           <h1 className="font-display font-bold text-3xl text-foreground">Tawsila</h1>
-          <p className="text-muted-foreground text-sm mt-1">Fast delivery in Oujda</p>
+          <p className="text-muted-foreground text-sm mt-1">{t("login.fastDelivery")}</p>
         </motion.div>
 
         {/* Card */}
@@ -249,8 +245,8 @@ export default function LoginPage() {
                     <Phone className="w-5 h-5 text-primary" />
                   </div>
                   <div>
-                    <h2 className="font-display font-bold text-lg">Enter your number</h2>
-                    <p className="text-xs text-muted-foreground">We'll send you a verification code</p>
+                    <h2 className="font-display font-bold text-lg">{t("login.enterYourNumber")}</h2>
+                    <p className="text-xs text-muted-foreground">{t("login.sendVerificationCode")}</p>
                   </div>
                 </div>
 
@@ -261,7 +257,7 @@ export default function LoginPage() {
                       name="phone"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-sm font-medium">Phone number</FormLabel>
+                          <FormLabel className="text-sm font-medium">{t("login.phoneNumber")}</FormLabel>
                           <FormControl>
                             <div className="relative">
                               <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground font-medium text-sm">🇲🇦</span>
@@ -284,9 +280,9 @@ export default function LoginPage() {
                       disabled={sendOtpMutation.isPending}
                     >
                       {sendOtpMutation.isPending ? (
-                        <><RefreshCw className="w-4 h-4 animate-spin" /> Sending…</>
+                        <><RefreshCw className="w-4 h-4 animate-spin" /> {t("login.sending")}</>
                       ) : (
-                        <>Continue <ArrowRight className="w-4 h-4" /></>
+                        <>{t("login.continue")} <ArrowRight className="w-4 h-4" /></>
                       )}
                     </Button>
                   </form>
@@ -298,7 +294,7 @@ export default function LoginPage() {
                     className="w-full flex items-center justify-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors py-1"
                   >
                     <Mail className="w-4 h-4" />
-                    Sign in with email instead
+                    {t("login.signInWithEmail")}
                   </button>
                 </div>
               </motion.div>
@@ -320,22 +316,22 @@ export default function LoginPage() {
                   onClick={() => setStep("phone")}
                   className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground mb-5 transition-colors"
                 >
-                  <ArrowLeft className="w-4 h-4" /> Back
+                  <ArrowLeft className="w-4 h-4" /> {t("login.back")}
                 </button>
 
                 <div className="text-center mb-6">
                   <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-3">
                     <KeyRound className="w-6 h-6 text-primary" />
                   </div>
-                  <h2 className="font-display font-bold text-lg">Enter the code</h2>
+                  <h2 className="font-display font-bold text-lg">{t("login.enterTheCode")}</h2>
                   <p className="text-sm text-muted-foreground mt-1">
-                    Sent to <span className="font-semibold text-foreground">{phoneValue}</span>
+                    {t("login.sentTo")} <span className="font-semibold text-foreground">{phoneValue}</span>
                   </p>
                 </div>
 
                 {demoOtp && (
                   <div className="mb-5 p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-xl text-center">
-                    <p className="text-xs text-amber-700 dark:text-amber-400 font-medium">Demo mode — your OTP:</p>
+                    <p className="text-xs text-amber-700 dark:text-amber-400 font-medium">{t("login.demoMode")}</p>
                     <p className="text-2xl font-bold tracking-widest text-amber-600 dark:text-amber-300 mt-0.5">{demoOtp}</p>
                   </div>
                 )}
@@ -347,20 +343,20 @@ export default function LoginPage() {
 
                 {verifyOtpMutation.isPending && (
                   <p className="text-center text-sm text-muted-foreground mt-4 flex items-center justify-center gap-1.5">
-                    <RefreshCw className="w-3.5 h-3.5 animate-spin" /> Verifying…
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" /> {t("login.verifying")}
                   </p>
                 )}
 
                 <div className="text-center mt-5">
                   {countdown > 0 ? (
-                    <p className="text-sm text-muted-foreground">Resend in <span className="font-semibold text-foreground">{countdown}s</span></p>
+                    <p className="text-sm text-muted-foreground">{t("login.resendIn", { countdown })}</p>
                   ) : (
                     <button
                       onClick={() => handleSendOtp(phoneValue)}
                       disabled={sendOtpMutation.isPending}
                       className="text-sm text-primary font-medium hover:underline disabled:opacity-50"
                     >
-                      {sendOtpMutation.isPending ? "Sending…" : "Resend code"}
+                      {sendOtpMutation.isPending ? t("login.sending") : t("login.resendCode")}
                     </button>
                   )}
                 </div>
@@ -383,8 +379,8 @@ export default function LoginPage() {
                   <div className="w-12 h-12 rounded-2xl bg-green-100 dark:bg-green-900/30 flex items-center justify-center mx-auto mb-3">
                     <span className="text-2xl">🎉</span>
                   </div>
-                  <h2 className="font-display font-bold text-lg">Almost there!</h2>
-                  <p className="text-sm text-muted-foreground mt-1">What should we call you?</p>
+                  <h2 className="font-display font-bold text-lg">{t("login.almostThere")}</h2>
+                  <p className="text-sm text-muted-foreground mt-1">{t("login.whatShouldWeCallYou")}</p>
                 </div>
 
                 <Form {...nameForm}>
@@ -394,7 +390,7 @@ export default function LoginPage() {
                       name="name"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Your name</FormLabel>
+                          <FormLabel>{t("login.yourName")}</FormLabel>
                           <FormControl>
                             <Input {...field} placeholder="Mohammed Alami" className="h-12 rounded-xl" autoFocus />
                           </FormControl>
@@ -407,7 +403,7 @@ export default function LoginPage() {
                       className="w-full h-12 rounded-xl font-semibold gap-2 shadow-md shadow-primary/20"
                       disabled={isSavingName}
                     >
-                      {isSavingName ? <><RefreshCw className="w-4 h-4 animate-spin" /> Saving…</> : <>Start ordering <ArrowRight className="w-4 h-4" /></>}
+                      {isSavingName ? <><RefreshCw className="w-4 h-4 animate-spin" /> {t("login.saving")}</> : <>{t("login.startOrdering")} <ArrowRight className="w-4 h-4" /></>}
                     </Button>
                   </form>
                 </Form>
@@ -430,7 +426,7 @@ export default function LoginPage() {
                   onClick={() => setStep("phone")}
                   className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground mb-5 transition-colors"
                 >
-                  <ArrowLeft className="w-4 h-4" /> Back
+                  <ArrowLeft className="w-4 h-4" /> {t("login.back")}
                 </button>
 
                 <div className="flex items-center gap-3 mb-6">
@@ -438,8 +434,8 @@ export default function LoginPage() {
                     <Mail className="w-5 h-5 text-primary" />
                   </div>
                   <div>
-                    <h2 className="font-display font-bold text-lg">Sign in with email</h2>
-                    <p className="text-xs text-muted-foreground">Use your account credentials</p>
+                    <h2 className="font-display font-bold text-lg">{t("login.signInWithEmailTitle")}</h2>
+                    <p className="text-xs text-muted-foreground">{t("login.useAccountCredentials")}</p>
                   </div>
                 </div>
 
@@ -450,7 +446,7 @@ export default function LoginPage() {
                       name="email"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Email</FormLabel>
+                          <FormLabel>{t("login.email")}</FormLabel>
                           <FormControl>
                             <Input {...field} type="email" placeholder="your@email.com" className="h-12 rounded-xl" data-testid="input-email" />
                           </FormControl>
@@ -463,7 +459,7 @@ export default function LoginPage() {
                       name="password"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Password</FormLabel>
+                          <FormLabel>{t("login.password")}</FormLabel>
                           <FormControl>
                             <Input {...field} type="password" placeholder="••••••••" className="h-12 rounded-xl" data-testid="input-password" />
                           </FormControl>
@@ -477,13 +473,13 @@ export default function LoginPage() {
                       disabled={loginMutation.isPending}
                       data-testid="button-submit-login"
                     >
-                      {loginMutation.isPending ? "Signing in…" : "Sign in"}
+                      {loginMutation.isPending ? t("login.signingIn") : t("login.signIn")}
                     </Button>
                   </form>
                 </Form>
 
                 <div className="mt-4 p-3.5 bg-muted/60 rounded-xl text-xs text-muted-foreground space-y-0.5">
-                  <p className="font-semibold mb-1 text-foreground/70">Demo accounts:</p>
+                  <p className="font-semibold mb-1 text-foreground/70">{t("login.demoAccounts")}</p>
                   <p>Customer: customer@tawsila.ma / password123</p>
                   <p>Driver: driver@tawsila.ma / password123</p>
                   <p>Admin: admin@tawsila.ma / password123</p>
@@ -501,9 +497,9 @@ export default function LoginPage() {
             transition={{ delay: 0.3 }}
             className="text-center text-sm text-muted-foreground mt-5"
           >
-            New here?{" "}
+            {t("login.newHere")}{" "}
             <button onClick={() => setLocation("/register")} className="text-primary font-semibold hover:underline" data-testid="link-register">
-              Create account
+              {t("login.createAccount")}
             </button>
           </motion.p>
         )}

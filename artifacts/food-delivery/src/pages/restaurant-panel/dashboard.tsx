@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
+import { useTranslation } from "react-i18next";
 
 const ORDER_STATUSES = ["pending", "accepted", "preparing", "ready", "picked_up", "delivered", "cancelled"];
 
@@ -26,6 +27,7 @@ export default function RestaurantDashboardPage() {
   const { user } = useAuth();
   const [_, setLocation] = useLocation();
   const { toast } = useToast();
+  const { t } = useTranslation();
 
   const { data: restaurants } = useListRestaurants({ ownerId: user?.id });
   const myRestaurant = restaurants?.[0];
@@ -42,15 +44,15 @@ export default function RestaurantDashboardPage() {
 
   const handleStatusChange = (orderId: number, status: string) => {
     updateStatus.mutate({ id: orderId, data: { status: status as any } }, {
-      onSuccess: () => { toast({ title: "Order status updated" }); refetch(); },
+      onSuccess: () => { toast({ title: t("restaurantPanel.orderStatusUpdated") }); refetch(); },
     });
   };
 
   if (!myRestaurant) {
     return (
       <div className="text-center py-20">
-        <p className="text-lg font-semibold mb-2">No restaurant found</p>
-        <p className="text-muted-foreground text-sm">Your account is not linked to any restaurant.</p>
+        <p className="text-lg font-semibold mb-2">{t("restaurantPanel.noRestaurantFound")}</p>
+        <p className="text-muted-foreground text-sm">{t("restaurantPanel.notLinked")}</p>
       </div>
     );
   }
@@ -60,11 +62,11 @@ export default function RestaurantDashboardPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="font-display font-bold text-2xl">{myRestaurant.name}</h1>
-          <p className="text-muted-foreground text-sm">Restaurant Panel</p>
+          <p className="text-muted-foreground text-sm">{t("restaurantPanel.panel")}</p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" onClick={() => setLocation("/restaurant/menu")}>
-            Manage Menu
+            {t("restaurantPanel.manageMenu")}
           </Button>
         </div>
       </div>
@@ -74,35 +76,35 @@ export default function RestaurantDashboardPage() {
         <div className="bg-card rounded-2xl border border-card-border p-4">
           <Package className="w-5 h-5 text-primary mb-2" />
           <p className="font-bold text-2xl">{activeOrders.length}</p>
-          <p className="text-xs text-muted-foreground">Active Orders</p>
+          <p className="text-xs text-muted-foreground">{t("restaurantPanel.activeOrders")}</p>
         </div>
         <div className="bg-card rounded-2xl border border-card-border p-4">
           <DollarSign className="w-5 h-5 text-green-600 mb-2" />
           <p className="font-bold text-2xl">{revenue.toFixed(0)}</p>
-          <p className="text-xs text-muted-foreground">Revenue (MAD)</p>
+          <p className="text-xs text-muted-foreground">{t("restaurantPanel.revenue")}</p>
         </div>
         <div className="bg-card rounded-2xl border border-card-border p-4">
           <TrendingUp className="w-5 h-5 text-blue-600 mb-2" />
           <p className="font-bold text-2xl">{orders?.length ?? 0}</p>
-          <p className="text-xs text-muted-foreground">Total Orders</p>
+          <p className="text-xs text-muted-foreground">{t("restaurantPanel.totalOrders")}</p>
         </div>
         <div className="bg-card rounded-2xl border border-card-border p-4">
           <Clock className="w-5 h-5 text-orange-600 mb-2" />
           <p className="font-bold text-2xl">{myRestaurant.deliveryTime ?? "—"}</p>
-          <p className="text-xs text-muted-foreground">Avg. Delivery (min)</p>
+          <p className="text-xs text-muted-foreground">{t("restaurantPanel.avgDelivery")}</p>
         </div>
       </div>
 
       {/* Active Orders */}
       <div>
-        <h2 className="font-semibold mb-3">Active Orders</h2>
+        <h2 className="font-semibold mb-3">{t("restaurantPanel.activeOrdersList")}</h2>
         {isLoading ? (
           <div className="space-y-3">
             {[...Array(3)].map((_, i) => <Skeleton key={i} className="h-20 rounded-2xl" />)}
           </div>
         ) : activeOrders.length === 0 ? (
           <div className="text-center py-12 text-muted-foreground bg-muted/30 rounded-2xl">
-            <p>No active orders right now</p>
+            <p>{t("restaurantPanel.noActiveOrders")}</p>
           </div>
         ) : (
           <div className="space-y-3">
@@ -111,7 +113,7 @@ export default function RestaurantDashboardPage() {
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-1">
                     <span className="font-semibold text-sm">Order #{order.id}</span>
-                    <Badge className={`text-xs border-0 ${statusColors[order.status]}`}>{order.status}</Badge>
+                    <Badge className={`text-xs border-0 ${statusColors[order.status]}`}>{t(`status.${order.status}`, { defaultValue: order.status })}</Badge>
                   </div>
                   <p className="text-xs text-muted-foreground">
                     {order.items.length} item{order.items.length !== 1 ? "s" : ""} • {order.total.toFixed(0)} MAD
@@ -127,7 +129,7 @@ export default function RestaurantDashboardPage() {
                   </SelectTrigger>
                   <SelectContent>
                     {ORDER_STATUSES.map((s) => (
-                      <SelectItem key={s} value={s}>{s}</SelectItem>
+                      <SelectItem key={s} value={s}>{t(`status.${s}`, { defaultValue: s })}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>

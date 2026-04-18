@@ -2,7 +2,7 @@ import { Link, useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ShoppingBag, Home, UtensilsCrossed, Package, Gift, User, LogOut,
-  ChevronDown, MapPin, Truck, LayoutDashboard, Store
+  ChevronDown, MapPin, Truck, LayoutDashboard, Store, Globe
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCart } from "@/contexts/CartContext";
@@ -12,23 +12,36 @@ import {
   DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
-import { ReactNode } from "react";
+import { ReactNode, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 
 interface LayoutProps { children: ReactNode; }
-
-const BOTTOM_NAV = [
-  { href: "/", icon: Home, label: "Home" },
-  { href: "/restaurants", icon: UtensilsCrossed, label: "Browse" },
-  { href: "/orders", icon: Package, label: "Orders" },
-  { href: "/rewards", icon: Gift, label: "Rewards" },
-];
 
 export function Layout({ children }: LayoutProps) {
   const { user, logout, isAuthenticated } = useAuth();
   const { itemCount } = useCart();
   const [location, setLocation] = useLocation();
+  const { t, i18n } = useTranslation();
 
   const isCustomer = !user?.role || user.role === "customer";
+  const isRTL = i18n.language === "ar";
+
+  useEffect(() => {
+    document.documentElement.dir = isRTL ? "rtl" : "ltr";
+    document.documentElement.lang = i18n.language;
+  }, [i18n.language, isRTL]);
+
+  const changeLanguage = (lng: string) => {
+    i18n.changeLanguage(lng);
+    localStorage.setItem("tawsila_lang", lng);
+  };
+
+  const BOTTOM_NAV = [
+    { href: "/", icon: Home, label: t("nav.home") },
+    { href: "/restaurants", icon: UtensilsCrossed, label: t("nav.browse") },
+    { href: "/orders", icon: Package, label: t("nav.orders") },
+    { href: "/rewards", icon: Gift, label: t("nav.rewards") },
+  ];
 
   return (
     <div className="min-h-screen bg-background">
@@ -52,6 +65,35 @@ export function Layout({ children }: LayoutProps) {
 
           {/* Right side */}
           <div className="flex items-center gap-2">
+            {/* Language Switcher */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="rounded-xl w-10 h-10" title="Language">
+                  <Globe className="w-4 h-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-40 rounded-2xl p-1">
+                <DropdownMenuItem
+                  onClick={() => changeLanguage("en")}
+                  className={`rounded-xl gap-2 py-2.5 ${i18n.language === "en" ? "font-bold text-primary" : ""}`}
+                >
+                  🇬🇧 {t("lang.en")}
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => changeLanguage("fr")}
+                  className={`rounded-xl gap-2 py-2.5 ${i18n.language === "fr" ? "font-bold text-primary" : ""}`}
+                >
+                  🇫🇷 {t("lang.fr")}
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => changeLanguage("ar")}
+                  className={`rounded-xl gap-2 py-2.5 ${i18n.language === "ar" ? "font-bold text-primary" : ""}`}
+                >
+                  🇲🇦 {t("lang.ar")}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
             {/* Cart button */}
             {isAuthenticated && isCustomer && (
               <Button
@@ -91,16 +133,16 @@ export function Layout({ children }: LayoutProps) {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-52 rounded-2xl p-1">
                   <DropdownMenuItem onClick={() => setLocation("/")} className="rounded-xl gap-2.5 py-2.5" data-testid="menu-item-customer">
-                    <Home className="w-4 h-4 text-primary" /> Customer View
+                    <Home className="w-4 h-4 text-primary" /> {t("nav.customerView")}
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => setLocation("/restaurant/dashboard")} className="rounded-xl gap-2.5 py-2.5" data-testid="menu-item-restaurant">
-                    <Store className="w-4 h-4 text-orange-500" /> Restaurant Panel
+                    <Store className="w-4 h-4 text-orange-500" /> {t("nav.restaurantPanel")}
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => setLocation("/driver/dashboard")} className="rounded-xl gap-2.5 py-2.5" data-testid="menu-item-driver">
-                    <Truck className="w-4 h-4 text-blue-500" /> Driver App
+                    <Truck className="w-4 h-4 text-blue-500" /> {t("nav.driverApp")}
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => setLocation("/admin/dashboard")} className="rounded-xl gap-2.5 py-2.5" data-testid="menu-item-admin">
-                    <LayoutDashboard className="w-4 h-4 text-purple-500" /> Admin Panel
+                    <LayoutDashboard className="w-4 h-4 text-purple-500" /> {t("nav.adminPanel")}
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -123,24 +165,24 @@ export function Layout({ children }: LayoutProps) {
                   </div>
                   <DropdownMenuSeparator className="mx-1" />
                   <DropdownMenuItem onClick={() => setLocation("/profile")} className="rounded-xl gap-2.5 py-2.5">
-                    <User className="w-4 h-4 text-muted-foreground" /> Profile
+                    <User className="w-4 h-4 text-muted-foreground" /> {t("nav.profile")}
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => setLocation("/rewards")} className="rounded-xl gap-2.5 py-2.5">
-                    <Gift className="w-4 h-4 text-yellow-500" /> Rewards
+                    <Gift className="w-4 h-4 text-yellow-500" /> {t("nav.rewards")}
                   </DropdownMenuItem>
                   <DropdownMenuSeparator className="mx-1" />
                   <DropdownMenuItem onClick={logout} className="rounded-xl gap-2.5 py-2.5 text-destructive focus:text-destructive" data-testid="button-logout">
-                    <LogOut className="w-4 h-4" /> Logout
+                    <LogOut className="w-4 h-4" /> {t("nav.logout")}
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : (
               <div className="flex items-center gap-2">
                 <Button variant="ghost" size="sm" className="h-9 rounded-xl" onClick={() => setLocation("/login")} data-testid="button-login">
-                  Login
+                  {t("nav.login")}
                 </Button>
                 <Button size="sm" className="h-9 rounded-xl font-semibold shadow-sm shadow-primary/20" onClick={() => setLocation("/register")} data-testid="button-register">
-                  Sign up
+                  {t("nav.signup")}
                 </Button>
               </div>
             )}
@@ -169,7 +211,7 @@ export function Layout({ children }: LayoutProps) {
                 >
                   <div className={`relative p-1.5 rounded-xl transition-all duration-200 ${isActive ? "bg-primary/12" : ""}`}>
                     <Icon className={`w-5 h-5 transition-transform duration-200 ${isActive ? "scale-110" : ""}`} />
-                    {label === "Orders" && itemCount > 0 && (
+                    {label === t("nav.orders") && itemCount > 0 && (
                       <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-primary rounded-full" />
                     )}
                   </div>
@@ -193,7 +235,7 @@ export function Layout({ children }: LayoutProps) {
                   </span>
                 )}
               </div>
-              <span className={`text-[10px] font-medium leading-none ${location === "/cart" ? "text-primary" : ""}`}>Cart</span>
+              <span className={`text-[10px] font-medium leading-none ${location === "/cart" ? "text-primary" : ""}`}>{t("nav.cart")}</span>
             </button>
           </div>
         </nav>

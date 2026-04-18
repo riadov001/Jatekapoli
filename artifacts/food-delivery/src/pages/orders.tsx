@@ -6,6 +6,7 @@ import { useListOrders } from "@workspace/api-client-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { formatDistanceToNow } from "date-fns";
+import { useTranslation } from "react-i18next";
 
 const statusColors: Record<string, string> = {
   pending: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400",
@@ -17,19 +18,10 @@ const statusColors: Record<string, string> = {
   cancelled: "bg-gray-100 text-gray-600 dark:bg-gray-900/30 dark:text-gray-400",
 };
 
-const statusLabels: Record<string, string> = {
-  pending: "Pending",
-  accepted: "Accepted",
-  preparing: "Preparing",
-  ready: "Ready",
-  picked_up: "On the way",
-  delivered: "Delivered",
-  cancelled: "Cancelled",
-};
-
 export default function OrdersPage() {
   const [_, setLocation] = useLocation();
   const { user } = useAuth();
+  const { t } = useTranslation();
 
   const { data: orders, isLoading } = useListOrders(
     user ? { userId: user.id } : undefined,
@@ -39,8 +31,8 @@ export default function OrdersPage() {
   if (!user) {
     return (
       <div className="text-center py-20">
-        <p className="text-muted-foreground mb-4">Please login to view your orders</p>
-        <Button onClick={() => setLocation("/login")}>Login</Button>
+        <p className="text-muted-foreground mb-4">{t("orders.loginRequired")}</p>
+        <Button onClick={() => setLocation("/login")}>{t("orders.login")}</Button>
       </div>
     );
   }
@@ -48,7 +40,7 @@ export default function OrdersPage() {
   if (isLoading) {
     return (
       <div className="space-y-4">
-        <h1 className="font-display font-bold text-2xl">My Orders</h1>
+        <h1 className="font-display font-bold text-2xl">{t("orders.title")}</h1>
         {[...Array(4)].map((_, i) => (
           <div key={i} className="p-4 rounded-xl border border-card-border space-y-2">
             <Skeleton className="h-5 w-1/2" />
@@ -66,16 +58,16 @@ export default function OrdersPage() {
 
   return (
     <div className="space-y-4">
-      <h1 className="font-display font-bold text-2xl">My Orders</h1>
+      <h1 className="font-display font-bold text-2xl">{t("orders.title")}</h1>
 
       {sortedOrders.length === 0 ? (
         <div className="text-center py-20">
           <div className="w-20 h-20 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
             <Package className="w-8 h-8 text-muted-foreground" />
           </div>
-          <h2 className="font-semibold text-lg mb-2">No orders yet</h2>
-          <p className="text-muted-foreground text-sm mb-6">Place your first order from a local restaurant!</p>
-          <Button onClick={() => setLocation("/")} data-testid="button-explore">Explore Restaurants</Button>
+          <h2 className="font-semibold text-lg mb-2">{t("orders.noOrders")}</h2>
+          <p className="text-muted-foreground text-sm mb-6">{t("orders.noOrdersDesc")}</p>
+          <Button onClick={() => setLocation("/")} data-testid="button-explore">{t("orders.explore")}</Button>
         </div>
       ) : (
         <div className="space-y-3">
@@ -90,13 +82,13 @@ export default function OrdersPage() {
                 <div className="flex items-center gap-2">
                   <span className="font-semibold text-sm">{order.restaurantName}</span>
                   <Badge className={`text-xs px-2 py-0.5 rounded-full border-0 ${statusColors[order.status] || ""}`}>
-                    {statusLabels[order.status] || order.status}
+                    {t(`status.${order.status}`, { defaultValue: order.status })}
                   </Badge>
                 </div>
                 <ChevronRight className="w-4 h-4 text-muted-foreground" />
               </div>
               <p className="text-xs text-muted-foreground mb-2">
-                {order.items.length} item{order.items.length !== 1 ? "s" : ""} • {order.total.toFixed(0)} MAD
+                {t("orders.item", { count: order.items.length })} • {order.total.toFixed(0)} MAD
               </p>
               <div className="flex items-center gap-1 text-xs text-muted-foreground">
                 <Clock className="w-3 h-3" />

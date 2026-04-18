@@ -11,6 +11,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { useRegister } from "@workspace/api-client-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { useTranslation } from "react-i18next";
 
 const schema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
@@ -30,6 +31,7 @@ export default function RegisterPage() {
   const [_, setLocation] = useLocation();
   const { login } = useAuth();
   const { toast } = useToast();
+  const { t } = useTranslation();
   const registerMutation = useRegister();
 
   const form = useForm<z.infer<typeof schema>>({
@@ -63,8 +65,8 @@ export default function RegisterPage() {
               <Truck className="w-8 h-8 text-white" />
             </div>
           </div>
-          <h1 className="font-display font-bold text-3xl text-foreground">Join Tawsila</h1>
-          <p className="text-muted-foreground text-sm mt-1">Create your free account</p>
+          <h1 className="font-display font-bold text-3xl text-foreground">{t("register.joinTawsila")}</h1>
+          <p className="text-muted-foreground text-sm mt-1">{t("register.createFreeAccount")}</p>
         </motion.div>
 
         <motion.div
@@ -78,8 +80,8 @@ export default function RegisterPage() {
               <UserPlus className="w-5 h-5 text-primary" />
             </div>
             <div>
-              <h2 className="font-display font-bold text-lg">Create account</h2>
-              <p className="text-xs text-muted-foreground">Fill in your details below</p>
+              <h2 className="font-display font-bold text-lg">{t("register.createAccountTitle")}</h2>
+              <p className="text-xs text-muted-foreground">{t("register.fillInDetails")}</p>
             </div>
           </div>
 
@@ -90,7 +92,7 @@ export default function RegisterPage() {
                 name="name"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Full Name</FormLabel>
+                    <FormLabel>{t("register.fullName")}</FormLabel>
                     <FormControl>
                       <Input {...field} placeholder="Mohammed Alami" className="h-12 rounded-xl" data-testid="input-name" />
                     </FormControl>
@@ -103,7 +105,7 @@ export default function RegisterPage() {
                 name="email"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Email</FormLabel>
+                    <FormLabel>{t("register.email")}</FormLabel>
                     <FormControl>
                       <Input {...field} type="email" placeholder="your@email.com" className="h-12 rounded-xl" data-testid="input-email" />
                     </FormControl>
@@ -116,7 +118,7 @@ export default function RegisterPage() {
                 name="phone"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Phone <span className="text-muted-foreground font-normal">(optional)</span></FormLabel>
+                    <FormLabel>{t("register.phone")} <span className="text-muted-foreground font-normal">({t("register.optional")})</span></FormLabel>
                     <FormControl>
                       <div className="relative">
                         <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">🇲🇦</span>
@@ -132,9 +134,9 @@ export default function RegisterPage() {
                 name="password"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Password</FormLabel>
+                    <FormLabel>{t("register.password")}</FormLabel>
                     <FormControl>
-                      <Input {...field} type="password" placeholder="Min. 6 characters" className="h-12 rounded-xl" data-testid="input-password" />
+                      <Input {...field} type="password" placeholder={t("register.minChars")} className="h-12 rounded-xl" data-testid="input-password" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -145,11 +147,11 @@ export default function RegisterPage() {
                 name="role"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>I want to join as</FormLabel>
+                    <FormLabel>{t("register.iWantToJoinAs")}</FormLabel>
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl>
                         <SelectTrigger className="h-12 rounded-xl" data-testid="select-role">
-                          <SelectValue placeholder="Select role" />
+                          <SelectValue placeholder={t("register.selectRole")} />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
@@ -173,16 +175,16 @@ export default function RegisterPage() {
                 disabled={registerMutation.isPending}
                 data-testid="button-submit-register"
               >
-                {registerMutation.isPending ? "Creating account..." : "Create Account"}
+                {registerMutation.isPending ? t("register.creatingAccount") : t("register.createAccountBtn")}
               </Button>
             </form>
           </Form>
 
           <div className="mt-5 pt-5 border-t border-border/60 text-center">
             <p className="text-sm text-muted-foreground">
-              Already have an account?{" "}
+              {t("register.alreadyHaveAccount")}{" "}
               <button onClick={() => setLocation("/login")} className="text-primary font-semibold hover:underline">
-                Sign in
+                {t("register.signIn")}
               </button>
             </p>
           </div>
