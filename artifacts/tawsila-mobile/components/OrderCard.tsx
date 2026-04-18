@@ -4,13 +4,13 @@ import { Ionicons } from "@expo/vector-icons";
 import { useColors } from "@/hooks/useColors";
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; icon: string }> = {
-  pending: { label: "Pending", color: "#F59E0B", icon: "time-outline" },
-  accepted: { label: "Accepted", color: "#3B82F6", icon: "checkmark-circle-outline" },
-  preparing: { label: "Preparing", color: "#8B5CF6", icon: "restaurant-outline" },
-  ready: { label: "Ready", color: "#10B981", icon: "bag-check-outline" },
+  pending: { label: "Pending", color: "#E2006A", icon: "time-outline" },
+  accepted: { label: "Accepted", color: "#E2006A", icon: "checkmark-circle-outline" },
+  preparing: { label: "Preparing", color: "#E2006A", icon: "restaurant-outline" },
+  ready: { label: "Ready", color: "#E2006A", icon: "bag-check-outline" },
   picked_up: { label: "On the way", color: "#E2006A", icon: "bicycle-outline" },
-  delivered: { label: "Delivered", color: "#22C55E", icon: "checkmark-done-circle-outline" },
-  cancelled: { label: "Cancelled", color: "#EF4444", icon: "close-circle-outline" },
+  delivered: { label: "Delivered", color: "#0F172A", icon: "checkmark-done-circle-outline" },
+  cancelled: { label: "Cancelled", color: "#64748B", icon: "close-circle-outline" },
 };
 
 interface OrderCardProps {

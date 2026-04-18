@@ -9,13 +9,13 @@ import { formatDistanceToNow } from "date-fns";
 import { useTranslation } from "react-i18next";
 
 const statusColors: Record<string, string> = {
-  pending: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400",
-  accepted: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
-  preparing: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
-  ready: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400",
-  picked_up: "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400",
-  delivered: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
-  cancelled: "bg-gray-100 text-gray-600 dark:bg-gray-900/30 dark:text-gray-400",
+  pending: "bg-accent text-accent-foreground border border-primary/20",
+  accepted: "bg-primary/15 text-primary border border-primary/25",
+  preparing: "bg-primary/20 text-primary border border-primary/30",
+  ready: "bg-primary/25 text-primary border border-primary/35",
+  picked_up: "bg-primary text-primary-foreground",
+  delivered: "bg-foreground text-background",
+  cancelled: "bg-muted text-muted-foreground border border-border",
 };
 
 export default function OrdersPage() {

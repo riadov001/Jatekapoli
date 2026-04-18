@@ -58,7 +58,7 @@ export function RestaurantCard({ restaurant }: { restaurant: Restaurant }) {
           {/* Top badges */}
           <div className="absolute top-3 left-3 flex gap-1.5">
             {restaurant.isLocal && (
-              <Badge className="bg-green-500 hover:bg-green-500 text-white text-xs gap-1 font-semibold shadow-sm" data-testid={`badge-local-${restaurant.id}`}>
+              <Badge className="bg-primary hover:bg-primary text-primary-foreground text-xs gap-1 font-semibold shadow-sm" data-testid={`badge-local-${restaurant.id}`}>
                 <Award className="w-3 h-3" />
                 {t("card.local")}
               </Badge>
@@ -109,7 +109,7 @@ export function RestaurantCard({ restaurant }: { restaurant: Restaurant }) {
             {restaurant.deliveryFee !== null && restaurant.deliveryFee !== undefined && (
               <span className="flex items-center gap-1">
                 <Truck className="w-3.5 h-3.5 text-primary/70" />
-                <span className={`font-medium ${restaurant.deliveryFee === 0 ? "text-green-600 dark:text-green-400" : "text-foreground"}`}>
+                <span className={`font-medium ${restaurant.deliveryFee === 0 ? "text-primary" : "text-foreground"}`}>
                   {restaurant.deliveryFee === 0 ? t("card.freeDelivery") : `${restaurant.deliveryFee} MAD`}
                 </span>
               </span>

@@ -6,13 +6,13 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useListOrders } from "@workspace/api-client-react";
 
 const statusColors: Record<string, string> = {
-  pending: "bg-yellow-100 text-yellow-700",
-  accepted: "bg-blue-100 text-blue-700",
-  preparing: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
-  ready: "bg-purple-100 text-purple-700",
-  picked_up: "bg-indigo-100 text-indigo-700",
-  delivered: "bg-green-100 text-green-700",
-  cancelled: "bg-gray-100 text-gray-600",
+  pending: "bg-primary/10 text-primary border border-primary/20",
+  accepted: "bg-primary/15 text-primary border border-primary/25",
+  preparing: "bg-primary/20 text-primary border border-primary/30",
+  ready: "bg-primary/25 text-primary border border-primary/35",
+  picked_up: "bg-primary/35 text-primary-foreground bg-primary",
+  delivered: "bg-foreground/90 text-background",
+  cancelled: "bg-muted text-muted-foreground border border-border",
 };
 
 export default function AdminOrdersPage() {

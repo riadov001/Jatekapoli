@@ -10,13 +10,13 @@ import { useToast } from "@/hooks/use-toast";
 import { useTranslation } from "react-i18next";
 
 const statusColors: Record<string, string> = {
-  pending: "bg-yellow-100 text-yellow-700 border-yellow-200",
-  accepted: "bg-blue-100 text-blue-700 border-blue-200",
-  preparing: "bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800/40",
-  ready: "bg-purple-100 text-purple-700 border-purple-200",
-  picked_up: "bg-indigo-100 text-indigo-700 border-indigo-200",
-  delivered: "bg-green-100 text-green-700 border-green-200",
-  cancelled: "bg-gray-100 text-gray-500 border-gray-200",
+  pending: "bg-accent text-accent-foreground border-primary/20",
+  accepted: "bg-primary/15 text-primary border-primary/25",
+  preparing: "bg-primary/20 text-primary border-primary/30",
+  ready: "bg-primary/25 text-primary border-primary/35",
+  picked_up: "bg-primary text-primary-foreground border-primary",
+  delivered: "bg-foreground text-background border-foreground",
+  cancelled: "bg-muted text-muted-foreground border-border",
 };
 
 function ActionButtons({ order, onAction }: {
@@ -29,7 +29,7 @@ function ActionButtons({ order, onAction }: {
         <div className="flex gap-2 shrink-0">
           <Button
             size="sm"
-            className="bg-green-600 hover:bg-green-700 text-white gap-1.5 font-semibold"
+            className="bg-primary hover:bg-primary/90 text-primary-foreground gap-1.5 font-semibold"
             onClick={() => onAction(order.id, "accepted")}
           >
             <CheckCircle className="w-4 h-4" /> Accept
@@ -37,7 +37,7 @@ function ActionButtons({ order, onAction }: {
           <Button
             size="sm"
             variant="outline"
-            className="border-red-300 text-red-600 hover:bg-red-50 gap-1.5"
+            className="border-border text-muted-foreground hover:bg-muted gap-1.5"
             onClick={() => onAction(order.id, "cancelled")}
           >
             <XCircle className="w-4 h-4" /> Reject
@@ -58,7 +58,7 @@ function ActionButtons({ order, onAction }: {
       return (
         <Button
           size="sm"
-          className="bg-purple-600 hover:bg-purple-700 text-white gap-1.5 font-semibold shrink-0"
+          className="bg-primary hover:bg-primary/90 text-primary-foreground gap-1.5 font-semibold shrink-0"
           onClick={() => onAction(order.id, "ready")}
         >
           <Package className="w-4 h-4" /> Ready for Pickup
@@ -67,8 +67,8 @@ function ActionButtons({ order, onAction }: {
     case "ready":
       return (
         <div className="flex items-center gap-2 shrink-0">
-          <Truck className="w-4 h-4 text-indigo-500 animate-pulse" />
-          <span className="text-xs text-indigo-600 font-medium">Waiting for driver…</span>
+          <Truck className="w-4 h-4 text-primary animate-pulse" />
+          <span className="text-xs text-primary font-medium">Waiting for driver…</span>
         </div>
       );
     default:
@@ -166,25 +166,25 @@ export default function RestaurantDashboardPage() {
     <div className="space-y-6">
       {/* New order alert banner */}
       {alertVisible && newOrderAlert && (
-        <div className="bg-green-50 border border-green-200 rounded-2xl p-4 flex items-start gap-4 animate-in slide-in-from-top duration-300">
-          <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center shrink-0">
-            <Bell className="w-5 h-5 text-green-600" />
+        <div className="bg-accent border border-primary/20 rounded-2xl p-4 flex items-start gap-4 animate-in slide-in-from-top duration-300">
+          <div className="w-10 h-10 rounded-full bg-primary/15 flex items-center justify-center shrink-0">
+            <Bell className="w-5 h-5 text-primary" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="font-semibold text-green-800">New order #{newOrderAlert.id} just came in!</p>
-            <p className="text-sm text-green-700 mt-0.5">
+            <p className="font-semibold text-primary">New order #{newOrderAlert.id} just came in!</p>
+            <p className="text-sm text-primary mt-0.5">
               {newOrderAlert.items?.length ?? "?"} items · {newOrderAlert.total?.toFixed(0)} MAD · {newOrderAlert.deliveryAddress}
             </p>
           </div>
           <div className="flex gap-2 shrink-0">
             <Button
               size="sm"
-              className="bg-green-600 hover:bg-green-700 text-white"
+              className="bg-primary hover:bg-primary/90 text-white"
               onClick={() => { handleAction(newOrderAlert.id, "accepted"); dismissAlert(); }}
             >
               Accept
             </Button>
-            <Button size="sm" variant="ghost" className="text-green-700" onClick={dismissAlert}>
+            <Button size="sm" variant="ghost" className="text-primary" onClick={dismissAlert}>
               Dismiss
             </Button>
           </div>
@@ -196,7 +196,7 @@ export default function RestaurantDashboardPage() {
           <h1 className="font-display font-bold text-2xl flex items-center gap-3">
             {myRestaurant.name}
             {unreadCount > 0 && (
-              <span className="text-xs bg-red-500 text-white font-bold px-2 py-0.5 rounded-full animate-pulse">
+              <span className="text-xs bg-destructive text-white font-bold px-2 py-0.5 rounded-full animate-pulse">
                 {unreadCount} new
               </span>
             )}
@@ -218,16 +218,16 @@ export default function RestaurantDashboardPage() {
           <p className="text-xs text-muted-foreground">{t("restaurantPanel.activeOrders")}</p>
         </div>
         <div className="bg-card rounded-2xl border border-card-border p-4">
-          <DollarSign className="w-5 h-5 text-green-600 mb-2" />
+          <DollarSign className="w-5 h-5 text-primary mb-2" />
           <p className="font-bold text-2xl">{revenue.toFixed(0)}</p>
           <p className="text-xs text-muted-foreground">{t("restaurantPanel.revenue")}</p>
         </div>
         <div className="bg-card rounded-2xl border border-card-border p-4 relative">
-          <TrendingUp className="w-5 h-5 text-blue-600 mb-2" />
+          <TrendingUp className="w-5 h-5 text-primary mb-2" />
           <p className="font-bold text-2xl">{orders?.length ?? 0}</p>
           <p className="text-xs text-muted-foreground">{t("restaurantPanel.totalOrders")}</p>
           {pendingOrders.length > 0 && (
-            <span className="absolute top-3 right-3 w-5 h-5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center">
+            <span className="absolute top-3 right-3 w-5 h-5 bg-destructive text-white text-xs font-bold rounded-full flex items-center justify-center">
               {pendingOrders.length}
             </span>
           )}
@@ -245,7 +245,7 @@ export default function RestaurantDashboardPage() {
           <h2 className="font-semibold">
             {t("restaurantPanel.activeOrdersList")}
             {pendingOrders.length > 0 && (
-              <span className="ml-2 text-xs bg-yellow-100 text-yellow-700 font-semibold px-2 py-0.5 rounded-full border border-yellow-200">
+              <span className="ml-2 text-xs bg-accent text-primary font-semibold px-2 py-0.5 rounded-full border ">
                 {pendingOrders.length} awaiting action
               </span>
             )}
@@ -280,7 +280,7 @@ export default function RestaurantDashboardPage() {
                       {t(`status.${order.status}`, { defaultValue: order.status })}
                     </Badge>
                     {order.status === "pending" && (
-                      <span className="text-xs text-yellow-600 font-medium animate-pulse">● Action needed</span>
+                      <span className="text-xs text-primary font-medium animate-pulse">● Action needed</span>
                     )}
                   </div>
                   <p className="text-xs text-muted-foreground">

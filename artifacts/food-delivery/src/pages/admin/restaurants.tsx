@@ -45,7 +45,7 @@ export default function AdminRestaurantsPage() {
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-0.5">
                 <p className="font-semibold text-sm">{r.name}</p>
-                {r.isLocal && <Award className="w-3.5 h-3.5 text-green-600" />}
+                {r.isLocal && <Award className="w-3.5 h-3.5 text-primary" />}
               </div>
               <p className="text-xs text-muted-foreground">{r.category} • Rating: {r.rating?.toFixed(1) ?? "N/A"}</p>
             </div>

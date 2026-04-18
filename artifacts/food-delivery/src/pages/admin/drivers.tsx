@@ -63,7 +63,7 @@ export default function AdminDriversPage() {
                       onCheckedChange={() => toggleAvailable(driver.id, driver.isAvailable)}
                       data-testid={`switch-available-${driver.id}`}
                     />
-                    <Badge className={`text-xs border-0 ${driver.isAvailable ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-600"}`}>
+                    <Badge className={`text-xs border ${driver.isAvailable ? "bg-primary/15 text-primary border-primary/25" : "bg-muted text-muted-foreground border-border"}`}>
                       {driver.isAvailable ? "Available" : "Offline"}
                     </Badge>
                   </div>

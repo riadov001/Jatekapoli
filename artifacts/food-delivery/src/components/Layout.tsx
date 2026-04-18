@@ -139,10 +139,10 @@ export function Layout({ children }: LayoutProps) {
                     <Store className="w-4 h-4 text-primary" /> {t("nav.restaurantPanel")}
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => setLocation("/driver/dashboard")} className="rounded-xl gap-2.5 py-2.5" data-testid="menu-item-driver">
-                    <Truck className="w-4 h-4 text-blue-500" /> {t("nav.driverApp")}
+                    <Truck className="w-4 h-4 text-primary" /> {t("nav.driverApp")}
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => setLocation("/admin/dashboard")} className="rounded-xl gap-2.5 py-2.5" data-testid="menu-item-admin">
-                    <LayoutDashboard className="w-4 h-4 text-purple-500" /> {t("nav.adminPanel")}
+                    <LayoutDashboard className="w-4 h-4 text-primary" /> {t("nav.adminPanel")}
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -168,7 +168,7 @@ export function Layout({ children }: LayoutProps) {
                     <User className="w-4 h-4 text-muted-foreground" /> {t("nav.profile")}
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => setLocation("/rewards")} className="rounded-xl gap-2.5 py-2.5">
-                    <Gift className="w-4 h-4 text-yellow-500" /> {t("nav.rewards")}
+                    <Gift className="w-4 h-4 text-primary" /> {t("nav.rewards")}
                   </DropdownMenuItem>
                   <DropdownMenuSeparator className="mx-1" />
                   <DropdownMenuItem onClick={logout} className="rounded-xl gap-2.5 py-2.5 text-destructive focus:text-destructive" data-testid="button-logout">

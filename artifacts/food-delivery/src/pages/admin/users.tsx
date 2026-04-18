@@ -7,10 +7,10 @@ import { useListUsers, useUpdateUser } from "@workspace/api-client-react";
 import { useToast } from "@/hooks/use-toast";
 
 const roleColors: Record<string, string> = {
-  customer: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
-  driver: "bg-accent text-accent-foreground",
-  restaurant_owner: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400",
-  admin: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
+  customer: "bg-muted text-muted-foreground border border-border",
+  driver: "bg-accent text-accent-foreground border border-primary/20",
+  restaurant_owner: "bg-primary/20 text-primary border border-primary/30",
+  admin: "bg-foreground text-background",
 };
 
 export default function AdminUsersPage() {
@@ -69,7 +69,7 @@ export default function AdminUsersPage() {
                 </td>
                 <td className="px-4 py-3 hidden md:table-cell text-muted-foreground">{user.loyaltyPoints}</td>
                 <td className="px-4 py-3">
-                  <Badge className={`text-xs border-0 ${user.isActive ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"}`}>
+                  <Badge className={`text-xs border ${user.isActive ? "bg-primary/15 text-primary border-primary/25" : "bg-muted text-muted-foreground border-border"}`}>
                     {user.isActive ? "Active" : "Inactive"}
                   </Badge>
                 </td>

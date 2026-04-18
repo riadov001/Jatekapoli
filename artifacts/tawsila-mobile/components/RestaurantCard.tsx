@@ -73,10 +73,10 @@ export function RestaurantCard({ restaurant, onPress, horizontal }: RestaurantCa
             </View>
           )}
           {restaurant.deliveryTime != null && (
-            <View style={styles.metaItem}>
-              <Ionicons name="time-outline" size={12} color={colors.mutedForeground} />
-              <Text style={[styles.metaText, { color: colors.mutedForeground }]}>
-                {" "}{restaurant.deliveryTime} min
+            <View style={[styles.deliveryPill, { backgroundColor: colors.primary }]}>
+              <Ionicons name="flash" size={11} color={colors.primaryForeground} />
+              <Text style={[styles.deliveryPillText, { color: colors.primaryForeground }]}>
+                {restaurant.deliveryTime} min
               </Text>
             </View>
           )}
@@ -159,6 +159,19 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_400Regular",
   },
   warning: {
-    color: "#F59E0B",
+    color: "#E2006A",
+  },
+  deliveryPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 3,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 999,
+  },
+  deliveryPillText: {
+    fontSize: 11,
+    fontFamily: "Inter_700Bold",
+    letterSpacing: 0.2,
   },
 });

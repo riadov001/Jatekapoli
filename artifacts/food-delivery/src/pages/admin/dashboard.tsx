@@ -49,10 +49,10 @@ export default function AdminDashboardPage() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {usersLoading ? [...Array(4)].map((_, i) => <Skeleton key={i} className="h-24 rounded-2xl" />) : (
           <>
-            <StatCard label={t("admin.users")} value={users?.length ?? 0} icon={Users} color="bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400" />
-            <StatCard label={t("admin.restaurants")} value={restaurants?.length ?? 0} icon={Store} color="bg-accent text-accent-foreground" />
-            <StatCard label={t("admin.orders")} value={orders?.length ?? 0} icon={Package} color="bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400" />
-            <StatCard label={t("admin.revenue")} value={totalRevenue.toFixed(0)} icon={TrendingUp} color="bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400" />
+            <StatCard label={t("admin.users")} value={users?.length ?? 0} icon={Users} color="bg-accent text-accent-foreground" />
+            <StatCard label={t("admin.restaurants")} value={restaurants?.length ?? 0} icon={Store} color="bg-primary/15 text-primary" />
+            <StatCard label={t("admin.orders")} value={orders?.length ?? 0} icon={Package} color="bg-primary/25 text-primary" />
+            <StatCard label={t("admin.revenue")} value={totalRevenue.toFixed(0)} icon={TrendingUp} color="bg-primary text-primary-foreground" />
           </>
         )}
       </div>
@@ -100,9 +100,9 @@ export default function AdminDashboardPage() {
                   <td className="px-4 py-3 hidden sm:table-cell">{order.total.toFixed(0)} MAD</td>
                   <td className="px-4 py-3">
                     <span className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full ${
-                      order.status === "delivered" ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" :
-                      order.status === "cancelled" ? "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400" :
-                      "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400"
+                      order.status === "delivered" ? "bg-foreground text-background" :
+                      order.status === "cancelled" ? "bg-muted text-muted-foreground border border-border" :
+                      "bg-accent text-accent-foreground border border-primary/20"
                     }`}>
                       {order.status === "delivered" ? <CheckCircle className="w-3 h-3" /> : order.status === "cancelled" ? <XCircle className="w-3 h-3" /> : null}
                       {t(`status.${order.status}`, { defaultValue: order.status })}

@@ -141,7 +141,7 @@ export default function DriverDashboardPage() {
       </div>
 
       {/* Status badge */}
-      <div className={`p-4 rounded-xl text-center font-semibold ${myDriver.isAvailable ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" : "bg-muted text-muted-foreground"}`}>
+      <div className={`p-4 rounded-xl text-center font-semibold ${myDriver.isAvailable ? "bg-primary/15 text-primary border border-primary/25" : "bg-muted text-muted-foreground"}`}>
         {myDriver.isAvailable ? t("driver.availableForDeliveries") : t("driver.youAreOffline")}
       </div>
 
@@ -150,7 +150,7 @@ export default function DriverDashboardPage() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             {locationSharing
-              ? <Navigation className="w-5 h-5 text-green-500 animate-pulse" />
+              ? <Navigation className="w-5 h-5 text-primary animate-pulse" />
               : <NavigationOff className="w-5 h-5 text-muted-foreground" />
             }
             <div>
@@ -188,19 +188,19 @@ export default function DriverDashboardPage() {
           <p className="text-xs text-muted-foreground">{t("driver.totalDeliveries")}</p>
         </div>
         <div className="bg-card rounded-2xl border border-card-border p-4">
-          <Star className="w-5 h-5 text-yellow-500 mb-2" />
+          <Star className="w-5 h-5 text-primary mb-2 fill-primary" />
           <p className="font-bold text-2xl">{myDriver.rating?.toFixed(1) ?? "N/A"}</p>
           <p className="text-xs text-muted-foreground">{t("driver.rating")}</p>
         </div>
         <div className="bg-card rounded-2xl border border-card-border p-4">
-          <DollarSign className="w-5 h-5 text-green-600 mb-2" />
+          <DollarSign className="w-5 h-5 text-primary mb-2" />
           {earningsLoading ? <Skeleton className="h-8 w-16" /> : (
             <p className="font-bold text-2xl">{((earnings as any)?.thisMonth ?? 0).toFixed(0)}</p>
           )}
           <p className="text-xs text-muted-foreground">{t("driver.thisMonth")}</p>
         </div>
         <div className="bg-card rounded-2xl border border-card-border p-4">
-          <Truck className="w-5 h-5 text-blue-600 mb-2" />
+          <Truck className="w-5 h-5 text-primary mb-2" />
           {earningsLoading ? <Skeleton className="h-8 w-16" /> : (
             <p className="font-bold text-2xl">{(earnings?.completedToday ?? 0)}</p>
           )}
