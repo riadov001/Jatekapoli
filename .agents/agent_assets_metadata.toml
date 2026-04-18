@@ -18,3 +18,9 @@ id = "Md63YuiUs5YvDrB5xHYGE"
 uri = "file://artifacts/food-delivery/public/images/restaurant-3.png"
 type = "image"
 title = "Modern cafe in Morocco"
+
+[[generated]]
+id = "Io9bwrexWUREDMKC8htki"
+uri = "file://artifacts/tawsila-mobile/assets/images/icon.png"
+type = "image"
+title = "generated_image"
