@@ -8,8 +8,9 @@ import React from "react";
 import { Platform, StyleSheet, View, useColorScheme } from "react-native";
 
 import { useColors } from "@/hooks/useColors";
+import { useAuth } from "@/contexts/AuthContext";
 
-function NativeTabLayout() {
+function NativeTabLayout({ isDriver }: { isDriver: boolean }) {
   return (
     <NativeTabs>
       <NativeTabs.Trigger name="index">
@@ -20,6 +21,17 @@ function NativeTabLayout() {
         <Icon sf={{ default: "bag", selected: "bag.fill" }} />
         <Label>Orders</Label>
       </NativeTabs.Trigger>
+      {isDriver ? (
+        <NativeTabs.Trigger name="deliver">
+          <Icon sf={{ default: "scooter", selected: "scooter" }} />
+          <Label>Deliver</Label>
+        </NativeTabs.Trigger>
+      ) : (
+        <NativeTabs.Trigger name="deliver" hidden>
+          <Icon sf={{ default: "scooter", selected: "scooter" }} />
+          <Label>Deliver</Label>
+        </NativeTabs.Trigger>
+      )}
       <NativeTabs.Trigger name="profile">
         <Icon sf={{ default: "person", selected: "person.fill" }} />
         <Label>Profile</Label>
@@ -28,7 +40,7 @@ function NativeTabLayout() {
   );
 }
 
-function ClassicTabLayout() {
+function ClassicTabLayout({ isDriver }: { isDriver: boolean }) {
   const colors = useColors();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
@@ -51,18 +63,9 @@ function ClassicTabLayout() {
         },
         tabBarBackground: () =>
           isIOS ? (
-            <BlurView
-              intensity={100}
-              tint={isDark ? "dark" : "light"}
-              style={StyleSheet.absoluteFill}
-            />
+            <BlurView intensity={100} tint={isDark ? "dark" : "light"} style={StyleSheet.absoluteFill} />
           ) : isWeb ? (
-            <View
-              style={[
-                StyleSheet.absoluteFill,
-                { backgroundColor: colors.background },
-              ]}
-            />
+            <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.background }]} />
           ) : null,
       }}
     >
@@ -71,11 +74,7 @@ function ClassicTabLayout() {
         options={{
           title: "Home",
           tabBarIcon: ({ color }) =>
-            isIOS ? (
-              <SymbolView name="house" tintColor={color} size={24} />
-            ) : (
-              <Ionicons name="home-outline" size={22} color={color} />
-            ),
+            isIOS ? <SymbolView name="house" tintColor={color} size={24} /> : <Ionicons name="home-outline" size={22} color={color} />,
         }}
       />
       <Tabs.Screen
@@ -83,11 +82,16 @@ function ClassicTabLayout() {
         options={{
           title: "Orders",
           tabBarIcon: ({ color }) =>
-            isIOS ? (
-              <SymbolView name="bag" tintColor={color} size={24} />
-            ) : (
-              <Ionicons name="bag-outline" size={22} color={color} />
-            ),
+            isIOS ? <SymbolView name="bag" tintColor={color} size={24} /> : <Ionicons name="bag-outline" size={22} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="deliver"
+        options={{
+          title: "Deliver",
+          href: isDriver ? "/deliver" : null,
+          tabBarIcon: ({ color }) =>
+            isIOS ? <SymbolView name="bicycle" tintColor={color} size={24} /> : <Ionicons name="bicycle-outline" size={22} color={color} />,
         }}
       />
       <Tabs.Screen
@@ -95,11 +99,7 @@ function ClassicTabLayout() {
         options={{
           title: "Profile",
           tabBarIcon: ({ color }) =>
-            isIOS ? (
-              <SymbolView name="person" tintColor={color} size={24} />
-            ) : (
-              <Ionicons name="person-outline" size={22} color={color} />
-            ),
+            isIOS ? <SymbolView name="person" tintColor={color} size={24} /> : <Ionicons name="person-outline" size={22} color={color} />,
         }}
       />
     </Tabs>
@@ -107,8 +107,11 @@ function ClassicTabLayout() {
 }
 
 export default function TabLayout() {
+  const { user } = useAuth();
+  const isDriver = user?.role === "driver";
+
   if (isLiquidGlassAvailable()) {
-    return <NativeTabLayout />;
+    return <NativeTabLayout isDriver={isDriver} />;
   }
-  return <ClassicTabLayout />;
+  return <ClassicTabLayout isDriver={isDriver} />;
 }

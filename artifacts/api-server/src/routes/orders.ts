@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { db, ordersTable, orderItemsTable, menuItemsTable, restaurantsTable, usersTable } from "@workspace/db";
+import { db, ordersTable, orderItemsTable, menuItemsTable, restaurantsTable, usersTable, driversTable } from "@workspace/db";
 import { eq, and, inArray } from "drizzle-orm";
 import {
   CreateOrderBody,
@@ -8,6 +8,7 @@ import {
   UpdateOrderStatusBody,
   ListOrdersQueryParams,
 } from "@workspace/api-zod";
+import { publish } from "../lib/sse";
 
 const router: IRouter = Router();
 
@@ -22,22 +23,39 @@ async function getOrderWithItems(orderId: number) {
 router.get("/orders/active", async (req, res): Promise<void> => {
   const activeStatuses = ["pending", "accepted", "preparing", "ready", "picked_up"];
   const orders = await db.select().from(ordersTable).where(inArray(ordersTable.status, activeStatuses));
-  
+
   const ordersWithItems = await Promise.all(
     orders.map(async (o) => {
       const items = await db.select().from(orderItemsTable).where(eq(orderItemsTable.orderId, o.id));
       return { ...o, items };
     })
   );
-  
+
+  res.json(ordersWithItems);
+});
+
+/** Orders that are "ready" — available for any driver to pick up */
+router.get("/orders/available", async (req, res): Promise<void> => {
+  const orders = await db
+    .select()
+    .from(ordersTable)
+    .where(and(eq(ordersTable.status, "ready"), eq(ordersTable.driverId, null as any)));
+
+  const ordersWithItems = await Promise.all(
+    orders.map(async (o) => {
+      const items = await db.select().from(orderItemsTable).where(eq(orderItemsTable.orderId, o.id));
+      return { ...o, items };
+    })
+  );
+
   res.json(ordersWithItems);
 });
 
 router.get("/orders", async (req, res): Promise<void> => {
   const queryParams = ListOrdersQueryParams.safeParse(req.query);
-  
+
   let conditions: any[] = [];
-  
+
   if (queryParams.success) {
     const { status, userId, restaurantId, driverId } = queryParams.data;
     if (status) conditions.push(eq(ordersTable.status, status));
@@ -128,6 +146,10 @@ router.post("/orders", async (req, res): Promise<void> => {
   }
 
   const orderWithItems = await getOrderWithItems(order.id);
+
+  // Push real-time event to restaurant
+  publish(`restaurant:${restaurantId}`, "order_new", orderWithItems);
+
   res.status(201).json(orderWithItems);
 });
 
@@ -188,6 +210,62 @@ router.patch("/orders/:id/status", async (req, res): Promise<void> => {
   }
 
   const orderWithItems = await getOrderWithItems(order.id);
+
+  // Push real-time events
+  publish(`order:${order.id}`, "order_status", { orderId: order.id, status: order.status, order: orderWithItems });
+  publish(`restaurant:${order.restaurantId}`, "order_status", { orderId: order.id, status: order.status });
+
+  // When order is ready, notify available drivers
+  if (parsed.data.status === "ready") {
+    publish("available_orders", "order_ready", { orderId: order.id, restaurantName: order.restaurantName, deliveryAddress: order.deliveryAddress, total: order.total });
+  }
+
+  // When order is assigned to a driver, push to that driver's channel
+  if (parsed.data.driverId) {
+    publish(`driver_orders:${parsed.data.driverId}`, "order_assigned", { orderId: order.id, order: orderWithItems });
+  }
+
+  res.json(orderWithItems);
+});
+
+/** Driver accepts a "ready" order — assigns themselves to it */
+router.post("/orders/:id/accept-delivery", async (req, res): Promise<void> => {
+  const orderId = parseInt(req.params.id, 10);
+  if (isNaN(orderId)) { res.status(400).json({ error: "Invalid order id" }); return; }
+
+  const { driverId } = req.body;
+  if (!driverId || typeof driverId !== "number") {
+    res.status(400).json({ error: "driverId (number) required" });
+    return;
+  }
+
+  // Only accept if still "ready" and unassigned
+  const [existing] = await db.select().from(ordersTable).where(eq(ordersTable.id, orderId)).limit(1);
+  if (!existing) { res.status(404).json({ error: "Order not found" }); return; }
+  if (existing.status !== "ready") {
+    res.status(409).json({ error: "Order is no longer available for pickup" });
+    return;
+  }
+  if (existing.driverId) {
+    res.status(409).json({ error: "Order already assigned to another driver" });
+    return;
+  }
+
+  const [driver] = await db.select().from(driversTable).where(eq(driversTable.id, driverId)).limit(1);
+  if (!driver) { res.status(404).json({ error: "Driver not found" }); return; }
+
+  const [order] = await db
+    .update(ordersTable)
+    .set({ driverId, status: "picked_up" })
+    .where(eq(ordersTable.id, orderId))
+    .returning();
+
+  const orderWithItems = await getOrderWithItems(order.id);
+
+  // Notify customer + restaurant
+  publish(`order:${orderId}`, "order_status", { orderId, status: "picked_up", driverName: driver.name, order: orderWithItems });
+  publish(`restaurant:${order.restaurantId}`, "order_status", { orderId, status: "picked_up", driverName: driver.name });
+
   res.json(orderWithItems);
 });
 

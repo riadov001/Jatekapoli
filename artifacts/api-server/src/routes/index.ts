@@ -9,6 +9,7 @@ import driversRouter from "./drivers";
 import reviewsRouter from "./reviews";
 import rewardsRouter from "./rewards";
 import adminRouter from "./admin";
+import { subscribe } from "../lib/sse";
 
 const router: IRouter = Router();
 
@@ -22,5 +23,24 @@ router.use(driversRouter);
 router.use(reviewsRouter);
 router.use(rewardsRouter);
 router.use(adminRouter);
+
+/**
+ * SSE endpoint — clients subscribe to one or more channels:
+ *   GET /api/events?channels=order:5,restaurant:2
+ * Channels:
+ *   order:{id}          → order status changes (for customer tracking)
+ *   restaurant:{id}     → new incoming orders (for restaurant dashboard)
+ *   available_orders    → orders ready for pickup (for driver app)
+ *   driver:{id}         → location updates (for customer tracking live map)
+ */
+router.get("/events", (req, res) => {
+  const raw = (req.query.channels as string) ?? "";
+  const channels = raw.split(",").map((c) => c.trim()).filter(Boolean);
+  if (channels.length === 0) {
+    res.status(400).json({ error: "channels query param required" });
+    return;
+  }
+  subscribe(req, res, channels);
+});
 
 export default router;

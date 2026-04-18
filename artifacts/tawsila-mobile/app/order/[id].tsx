@@ -1,20 +1,72 @@
-import React from "react";
-import { StyleSheet, Text, View, ScrollView, TouchableOpacity, ActivityIndicator, Platform } from "react-native";
+/**
+ * Order detail / live tracking screen.
+ *
+ * - Animated progress tracker with status-aware copy
+ * - Live driver map (WebView + Leaflet) once status is picked_up
+ * - Real-time updates via SSE (status + driver_location), polling fallback
+ * - Driver card with vehicle, plate, rating once assigned
+ * - Pulsing live indicator + haptic feedback on status changes
+ */
+import React, { useEffect, useRef, useState } from "react";
+import {
+  StyleSheet,
+  Text,
+  View,
+  ScrollView,
+  TouchableOpacity,
+  ActivityIndicator,
+  Platform,
+  Linking,
+} from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { useGetOrder } from "@workspace/api-client-react";
-import { useColors } from "@/hooks/useColors";
+import * as Haptics from "expo-haptics";
+import Animated, { FadeIn, FadeInDown, useAnimatedStyle, useSharedValue, withRepeat, withTiming, Easing } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { useGetOrder, useListDrivers } from "@workspace/api-client-react";
+import { useColors } from "@/hooks/useColors";
+import { useSSE } from "@/hooks/useSSE";
+import { DriverMap } from "@/components/DriverMap";
+import { apiBase, geocodeAddress, getDriverLocation } from "@/lib/api";
+
 const STEPS = [
-  { key: "pending", label: "Order placed", icon: "bag-add-outline" },
-  { key: "accepted", label: "Accepted", icon: "checkmark-circle-outline" },
-  { key: "preparing", label: "Preparing", icon: "restaurant-outline" },
-  { key: "ready", label: "Ready for pickup", icon: "bag-check-outline" },
-  { key: "picked_up", label: "On the way", icon: "bicycle-outline" },
-  { key: "delivered", label: "Delivered!", icon: "home-outline" },
+  { key: "pending",    label: "Order placed",     icon: "bag-add-outline",          desc: "Sent to the restaurant" },
+  { key: "accepted",   label: "Accepted",         icon: "checkmark-circle-outline", desc: "Restaurant confirmed" },
+  { key: "preparing",  label: "Preparing",        icon: "restaurant-outline",       desc: "Chef is cooking" },
+  { key: "ready",      label: "Ready for pickup", icon: "bag-check-outline",        desc: "Waiting for a driver" },
+  { key: "picked_up",  label: "On the way",       icon: "bicycle-outline",          desc: "Driver is heading to you" },
+  { key: "delivered",  label: "Delivered",        icon: "home-outline",             desc: "Bon appétit!" },
 ];
 const STATUS_ORDER = STEPS.map((s) => s.key);
+
+function PulsingDot({ color }: { color: string }) {
+  const scale = useSharedValue(1);
+  const opacity = useSharedValue(0.6);
+  useEffect(() => {
+    scale.value = withRepeat(withTiming(1.8, { duration: 1200, easing: Easing.out(Easing.ease) }), -1, false);
+    opacity.value = withRepeat(withTiming(0, { duration: 1200, easing: Easing.out(Easing.ease) }), -1, false);
+  }, [scale, opacity]);
+  const ring = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }], opacity: opacity.value }));
+  return (
+    <View style={pulseStyles.wrap}>
+      <Animated.View style={[pulseStyles.ring, { backgroundColor: color }, ring]} />
+      <View style={[pulseStyles.dot, { backgroundColor: color }]} />
+    </View>
+  );
+}
+
+const pulseStyles = StyleSheet.create({
+  wrap: { width: 14, height: 14, alignItems: "center", justifyContent: "center" },
+  ring: { position: "absolute", width: 14, height: 14, borderRadius: 7 },
+  dot: { width: 8, height: 8, borderRadius: 4 },
+});
+
+function haptic(type: "success" | "light" = "light") {
+  if (Platform.OS === "web") return;
+  if (type === "success") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+  else Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+}
 
 export default function OrderDetailScreen() {
   const colors = useColors();
@@ -22,7 +74,56 @@ export default function OrderDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const orderId = parseInt(id, 10);
 
-  const { data: order, isLoading } = useGetOrder(orderId, { query: { enabled: !!orderId, refetchInterval: 15000 } });
+  const { data: order, isLoading, refetch } = useGetOrder(orderId, {
+    query: { enabled: !!orderId, refetchInterval: 20000 },
+  });
+
+  const { data: drivers } = useListDrivers();
+  const driver = order?.driverId ? drivers?.find((d) => d.id === order.driverId) : null;
+
+  const [driverPos, setDriverPos] = useState<{ lat: number; lng: number } | null>(null);
+  const [destPos, setDestPos] = useState<{ lat: number; lng: number } | null>(null);
+  const lastStatus = useRef<string | null>(null);
+
+  // Geocode delivery address once
+  useEffect(() => {
+    if (!order?.deliveryAddress) return;
+    geocodeAddress(order.deliveryAddress).then((pos) => pos && setDestPos(pos));
+  }, [order?.deliveryAddress]);
+
+  // Initial driver position fetch when one is assigned
+  useEffect(() => {
+    if (!order?.driverId) return;
+    getDriverLocation(order.driverId).then((loc) => {
+      if (loc?.latitude != null && loc?.longitude != null) {
+        setDriverPos({ lat: loc.latitude, lng: loc.longitude });
+      }
+    });
+  }, [order?.driverId]);
+
+  // SSE: order status + driver location
+  useSSE({
+    url: `${apiBase}/api/events?channels=order:${orderId}${order?.driverId ? `,driver:${order.driverId}` : ""}`,
+    enabled: !!orderId,
+    events: {
+      order_status: () => {
+        haptic("success");
+        refetch();
+      },
+      driver_location: (data: any) => {
+        if (data?.latitude != null && data?.longitude != null) {
+          setDriverPos({ lat: data.latitude, lng: data.longitude });
+        }
+      },
+    },
+  });
+
+  // Haptic when status changes from polling
+  useEffect(() => {
+    if (!order) return;
+    if (lastStatus.current && lastStatus.current !== order.status) haptic("success");
+    lastStatus.current = order.status;
+  }, [order?.status]);
 
   const currentIdx = order ? STATUS_ORDER.indexOf(order.status) : -1;
 
@@ -34,11 +135,20 @@ export default function OrderDetailScreen() {
     );
   }
 
+  const currentStep = STEPS[currentIdx] ?? STEPS[0];
+  const showMap = order.status === "picked_up" && driverPos;
+  const isCompleted = order.status === "delivered";
+  const isCancelled = order.status === "cancelled";
+
   return (
     <View style={[styles.flex, { backgroundColor: colors.background }]}>
       {/* Header */}
-      <View style={[styles.header, { paddingTop: insets.top + (Platform.OS === "web" ? 67 : 16) + 8, borderBottomColor: colors.border }]}>
-        <TouchableOpacity onPress={() => router.replace("/(tabs)/orders")}>
+      <View style={[styles.header, {
+        paddingTop: insets.top + (Platform.OS === "web" ? 67 : 16) + 8,
+        borderBottomColor: colors.border,
+        backgroundColor: colors.background,
+      }]}>
+        <TouchableOpacity onPress={() => router.replace("/(tabs)/orders")} hitSlop={8}>
           <Ionicons name="arrow-back" size={24} color={colors.foreground} />
         </TouchableOpacity>
         <Text style={[styles.headerTitle, { color: colors.foreground }]}>Order #{order.id}</Text>
@@ -46,47 +156,120 @@ export default function OrderDetailScreen() {
       </View>
 
       <ScrollView
-        contentContainerStyle={{ paddingBottom: insets.bottom + (Platform.OS === "web" ? 34 : 24), paddingTop: 16 }}
+        contentContainerStyle={{ paddingBottom: insets.bottom + (Platform.OS === "web" ? 40 : 30), paddingTop: 12 }}
         showsVerticalScrollIndicator={false}
       >
-        {/* Restaurant + status */}
+        {/* Hero status */}
+        <Animated.View entering={FadeInDown.duration(350)} style={styles.hero}>
+          <View style={styles.heroRow}>
+            <View style={[styles.heroIcon, {
+              backgroundColor: isCancelled ? colors.destructive + "20" : isCompleted ? "#22C55E20" : colors.primary + "20",
+            }]}>
+              <Ionicons
+                name={isCancelled ? "close-circle" : isCompleted ? "checkmark-done-circle" : (currentStep.icon as any)}
+                size={26}
+                color={isCancelled ? colors.destructive : isCompleted ? "#22C55E" : colors.primary}
+              />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.heroLabel, { color: colors.mutedForeground }]}>
+                {isCancelled ? "Order cancelled" : isCompleted ? "Completed" : "Status"}
+              </Text>
+              <Text style={[styles.heroValue, { color: colors.foreground }]}>{currentStep.label}</Text>
+              <Text style={[styles.heroDesc, { color: colors.mutedForeground }]}>{currentStep.desc}</Text>
+            </View>
+            {!isCancelled && !isCompleted && <PulsingDot color={colors.primary} />}
+          </View>
+        </Animated.View>
+
+        {/* Live map */}
+        {showMap && (
+          <Animated.View entering={FadeIn.duration(400)} style={styles.mapWrap}>
+            <DriverMap
+              driverLat={driverPos!.lat}
+              driverLng={driverPos!.lng}
+              destLat={destPos?.lat}
+              destLng={destPos?.lng}
+              height={240}
+            />
+            <View style={styles.mapOverlay}>
+              <PulsingDot color="#22C55E" />
+              <Text style={styles.mapOverlayText}>Live tracking</Text>
+            </View>
+          </Animated.View>
+        )}
+
+        {/* Driver card */}
+        {driver && order.status !== "delivered" && order.status !== "cancelled" && (
+          <Animated.View entering={FadeInDown.duration(400)}>
+            <View style={[styles.driverCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              <View style={[styles.driverAvatar, { backgroundColor: colors.accent }]}>
+                <Ionicons name="person" size={26} color={colors.primary} />
+              </View>
+              <View style={styles.driverInfo}>
+                <Text style={[styles.driverName, { color: colors.foreground }]}>{driver.name ?? "Your driver"}</Text>
+                <View style={styles.driverMetaRow}>
+                  {driver.rating != null && (
+                    <View style={styles.driverMeta}>
+                      <Ionicons name="star" size={12} color="#F59E0B" />
+                      <Text style={[styles.driverMetaText, { color: colors.mutedForeground }]}>
+                        {driver.rating.toFixed(1)}
+                      </Text>
+                    </View>
+                  )}
+                  {driver.vehicleType && (
+                    <Text style={[styles.driverMetaText, { color: colors.mutedForeground }]}>
+                      · {driver.vehicleType}
+                    </Text>
+                  )}
+                  {driver.licensePlate && (
+                    <View style={[styles.platePill, { backgroundColor: colors.muted }]}>
+                      <Text style={[styles.plateText, { color: colors.foreground }]}>{driver.licensePlate}</Text>
+                    </View>
+                  )}
+                </View>
+              </View>
+              {driver.phone && (
+                <TouchableOpacity
+                  style={[styles.callBtn, { backgroundColor: colors.primary }]}
+                  onPress={() => { haptic(); Linking.openURL(`tel:${driver.phone}`); }}
+                >
+                  <Ionicons name="call" size={18} color="#fff" />
+                </TouchableOpacity>
+              )}
+            </View>
+          </Animated.View>
+        )}
+
+        {/* Restaurant + status pill */}
         <View style={styles.topInfo}>
           <Text style={[styles.restName, { color: colors.foreground }]}>{order.restaurantName}</Text>
-          {order.status === "cancelled" ? (
-            <View style={[styles.statusBadge, { backgroundColor: colors.destructive + "20" }]}>
-              <Text style={[styles.statusText, { color: colors.destructive }]}>Cancelled</Text>
-            </View>
-          ) : order.status === "delivered" ? (
-            <View style={[styles.statusBadge, { backgroundColor: colors.success + "20" }]}>
-              <Ionicons name="checkmark-circle" size={16} color={colors.success} />
-              <Text style={[styles.statusText, { color: colors.success }]}>Delivered</Text>
-            </View>
-          ) : (
-            <View style={[styles.statusBadge, { backgroundColor: colors.primary + "20" }]}>
-              <View style={[styles.dot, { backgroundColor: colors.primary }]} />
-              <Text style={[styles.statusText, { color: colors.primary }]}>In progress</Text>
-            </View>
-          )}
         </View>
 
         {/* Progress tracker */}
-        {order.status !== "cancelled" && (
+        {!isCancelled && (
           <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            <Text style={[styles.cardTitle, { color: colors.foreground }]}>Order status</Text>
+            <Text style={[styles.cardTitle, { color: colors.foreground }]}>Order progress</Text>
             {STEPS.map((step, idx) => {
               const done = idx <= currentIdx;
               const active = idx === currentIdx;
               return (
                 <View key={step.key} style={styles.step}>
-                  <View style={[styles.stepIcon, { backgroundColor: done ? colors.primary : colors.muted }]}>
+                  <View style={[styles.stepIcon, {
+                    backgroundColor: done ? colors.primary : colors.muted,
+                    transform: [{ scale: active ? 1.1 : 1 }],
+                  }]}>
                     <Ionicons name={step.icon as any} size={16} color={done ? "#fff" : colors.mutedForeground} />
                   </View>
                   {idx < STEPS.length - 1 && (
                     <View style={[styles.stepLine, { backgroundColor: idx < currentIdx ? colors.primary : colors.border }]} />
                   )}
-                  <Text style={[styles.stepLabel, { color: done ? colors.foreground : colors.mutedForeground, fontFamily: active ? "Inter_600SemiBold" : "Inter_400Regular" }]}>
+                  <Text style={[styles.stepLabel, {
+                    color: done ? colors.foreground : colors.mutedForeground,
+                    fontFamily: active ? "Inter_700Bold" : done ? "Inter_500Medium" : "Inter_400Regular",
+                  }]}>
                     {step.label}
-                    {active && order.estimatedDeliveryTime ? ` · ${order.estimatedDeliveryTime} min` : ""}
+                    {active && order.estimatedDeliveryTime ? `  · ETA ${order.estimatedDeliveryTime} min` : ""}
                   </Text>
                 </View>
               );
@@ -107,7 +290,7 @@ export default function OrderDetailScreen() {
           </View>
         </View>
 
-        {/* Items */}
+        {/* Items + summary */}
         <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <Text style={[styles.cardTitle, { color: colors.foreground }]}>Items</Text>
           {order.items.map((item, idx) => (
@@ -120,7 +303,7 @@ export default function OrderDetailScreen() {
               {idx < order.items.length - 1 && <View style={[styles.divider, { backgroundColor: colors.border }]} />}
             </View>
           ))}
-          <View style={[styles.divider, { backgroundColor: colors.border }]} />
+          <View style={[styles.divider, { backgroundColor: colors.border, marginTop: 6 }]} />
           <View style={styles.itemRow}>
             <Text style={[styles.summaryLabel, { color: colors.mutedForeground }]}>Subtotal</Text>
             <Text style={[styles.summaryValue, { color: colors.foreground }]}>{order.subtotal.toFixed(0)} MAD</Text>
@@ -152,11 +335,32 @@ const styles = StyleSheet.create({
   center: { alignItems: "center", justifyContent: "center" },
   header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 16, paddingBottom: 12, borderBottomWidth: 1 },
   headerTitle: { fontSize: 17, fontFamily: "Inter_600SemiBold" },
-  topInfo: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 16, marginBottom: 16 },
-  restName: { fontSize: 18, fontFamily: "Inter_700Bold", flex: 1, marginRight: 8 },
-  statusBadge: { flexDirection: "row", alignItems: "center", gap: 5, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 20 },
-  statusText: { fontSize: 12, fontFamily: "Inter_600SemiBold" },
-  dot: { width: 6, height: 6, borderRadius: 3 },
+
+  hero: { marginHorizontal: 16, marginBottom: 12, padding: 16, borderRadius: 18, backgroundColor: "rgba(0,0,0,0.02)" },
+  heroRow: { flexDirection: "row", alignItems: "center", gap: 14 },
+  heroIcon: { width: 52, height: 52, borderRadius: 26, alignItems: "center", justifyContent: "center" },
+  heroLabel: { fontSize: 11, fontFamily: "Inter_500Medium", textTransform: "uppercase", letterSpacing: 0.5 },
+  heroValue: { fontSize: 18, fontFamily: "Inter_700Bold", marginTop: 1 },
+  heroDesc: { fontSize: 12, fontFamily: "Inter_400Regular", marginTop: 1 },
+
+  mapWrap: { marginHorizontal: 16, marginBottom: 12, borderRadius: 16, overflow: "hidden", position: "relative" },
+  mapOverlay: { position: "absolute", top: 12, left: 12, flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: "rgba(255,255,255,0.95)", paddingHorizontal: 10, paddingVertical: 6, borderRadius: 20 },
+  mapOverlayText: { fontSize: 11, fontFamily: "Inter_700Bold", color: "#16A34A" },
+
+  driverCard: { marginHorizontal: 16, marginBottom: 12, padding: 14, borderRadius: 16, borderWidth: 1, flexDirection: "row", alignItems: "center", gap: 12 },
+  driverAvatar: { width: 50, height: 50, borderRadius: 25, alignItems: "center", justifyContent: "center" },
+  driverInfo: { flex: 1, gap: 4 },
+  driverName: { fontSize: 15, fontFamily: "Inter_700Bold" },
+  driverMetaRow: { flexDirection: "row", alignItems: "center", gap: 6, flexWrap: "wrap" },
+  driverMeta: { flexDirection: "row", alignItems: "center", gap: 3 },
+  driverMetaText: { fontSize: 12, fontFamily: "Inter_500Medium" },
+  platePill: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6 },
+  plateText: { fontSize: 11, fontFamily: "Inter_700Bold", letterSpacing: 0.5 },
+  callBtn: { width: 44, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center" },
+
+  topInfo: { paddingHorizontal: 16, marginBottom: 8 },
+  restName: { fontSize: 18, fontFamily: "Inter_700Bold" },
+
   card: { marginHorizontal: 16, borderRadius: 14, borderWidth: 1, padding: 16, marginBottom: 12, gap: 10 },
   cardTitle: { fontSize: 14, fontFamily: "Inter_600SemiBold", marginBottom: 4 },
   step: { flexDirection: "row", alignItems: "center", gap: 12, position: "relative" },
@@ -178,5 +382,4 @@ const styles = StyleSheet.create({
   totalLabel: { flex: 1, fontSize: 15, fontFamily: "Inter_700Bold" },
   totalValue: { fontSize: 17, fontFamily: "Inter_700Bold" },
   notesText: { fontSize: 14, fontFamily: "Inter_400Regular", lineHeight: 20 },
-  success: { color: "#22C55E" },
 });

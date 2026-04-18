@@ -1,6 +1,7 @@
 import { Router, type IRouter } from "express";
 import { db, driversTable, ordersTable } from "@workspace/db";
 import { eq, and, sum, count } from "drizzle-orm";
+import { publish } from "../lib/sse";
 import {
   UpdateDriverBody,
   UpdateDriverParams,
@@ -87,6 +88,20 @@ router.patch("/drivers/:id/location", async (req, res): Promise<void> => {
     .returning();
 
   if (!driver) { res.status(404).json({ error: "Driver not found" }); return; }
+
+  // Find the active order for this driver and publish location to the order channel
+  const [activeOrder] = await db
+    .select({ id: ordersTable.id })
+    .from(ordersTable)
+    .where(and(eq(ordersTable.driverId, id), eq(ordersTable.status, "picked_up")))
+    .limit(1);
+
+  if (activeOrder) {
+    publish(`order:${activeOrder.id}`, "driver_location", { latitude, longitude, driverId: id, orderId: activeOrder.id });
+  }
+  // Also publish to driver-specific channel so dashboard can consume
+  publish(`driver:${id}`, "driver_location", { latitude, longitude, driverId: id });
+
   res.json({ latitude: driver.latitude, longitude: driver.longitude, locationUpdatedAt: driver.locationUpdatedAt });
 });
 
