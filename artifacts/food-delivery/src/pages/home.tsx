@@ -1,262 +1,245 @@
-import { useState, useMemo } from "react";
-import { useLocation, useSearch } from "wouter";
-import { Search, Award, ChevronRight, Flame, Sparkles, MapPin } from "lucide-react";
+import { useState, useMemo, useEffect, useRef } from "react";
+import { useLocation } from "wouter";
+import { Search, ChevronRight, Zap } from "lucide-react";
 import { motion } from "framer-motion";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useListRestaurants } from "@workspace/api-client-react";
 import { RestaurantCard } from "@/components/RestaurantCard";
-import { useAuth } from "@/contexts/AuthContext";
 import { useTranslation } from "react-i18next";
 
-const CATEGORIES = [
-  { id: "All", emoji: "🍽️" },
-  { id: "Moroccan", emoji: "🥘" },
-  { id: "Pizza", emoji: "🍕" },
-  { id: "Burgers", emoji: "🍔" },
-  { id: "Sushi", emoji: "🍣" },
-  { id: "Sandwiches", emoji: "🥙" },
-  { id: "Chicken", emoji: "🍗" },
-];
+const TOP_CATEGORIES = [
+  { id: "restaurant", label: "Restaurants", emoji: "🍽️" },
+  { id: "grocery", label: "Courses", emoji: "🛒" },
+  { id: "health", label: "Santé", emoji: "💊" },
+  { id: "other", label: "Autres", emoji: "📦" },
+] as const;
 
-const FOOD_EMOJIS = ["🥘", "🍕", "🍔", "🥙", "🍗"];
+type TopCatId = typeof TOP_CATEGORIES[number]["id"];
 
-const containerVariants = {
-  hidden: {},
-  show: { transition: { staggerChildren: 0.07 } },
+const SUBCATEGORIES: Record<TopCatId, string[]> = {
+  restaurant: ["Tous", "Halal", "Pizza", "Burger", "Sushi", "Marocain", "Sandwichs", "Poulet", "Végé"],
+  grocery: ["Tous", "Épicerie", "Grande surface", "Bio", "Primeur", "Caviste"],
+  health: ["Tous", "Pharmacie", "Parapharmacie", "Optique", "Dentiste", "Médecin"],
+  other: ["Tous", "Fleuriste", "Librairie", "Cadeaux", "Vêtements"],
 };
 
-const itemVariants = {
-  hidden: { opacity: 0, y: 16 },
-  show: { opacity: 1, y: 0, transition: { duration: 0.3 } },
-};
-
-function RestaurantSkeleton() {
+function CardSkeleton() {
   return (
     <div className="rounded-2xl overflow-hidden border border-card-border bg-card">
-      <Skeleton className="h-44 w-full" />
-      <div className="p-4 space-y-2.5">
+      <Skeleton className="h-32 w-full" />
+      <div className="p-3 space-y-2">
         <Skeleton className="h-4 w-3/4" />
-        <Skeleton className="h-3 w-full" />
         <Skeleton className="h-3 w-1/2" />
-        <div className="flex gap-3 pt-1">
+        <div className="flex gap-2 pt-0.5">
+          <Skeleton className="h-3 w-14" />
           <Skeleton className="h-3 w-16" />
-          <Skeleton className="h-3 w-20" />
         </div>
       </div>
     </div>
   );
 }
 
-export default function HomePage() {
-  const [search, setSearch] = useState("");
-  const [activeCategory, setActiveCategory] = useState("All");
-  const [_, setLocation] = useLocation();
-  const queryString = useSearch();
-  const { user, isAuthenticated } = useAuth();
-  const { t } = useTranslation();
+function FeaturedBanner({ businesses }: { businesses: any[] }) {
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [, setLocation] = useLocation();
 
-  const isLocalOnly = useMemo(
-    () => new URLSearchParams(queryString).get("isLocal") === "true",
-    [queryString]
-  );
+  useEffect(() => {
+    if (!businesses.length) return;
+    const el = scrollRef.current;
+    if (!el) return;
+    let frame: number;
+    let pos = 0;
+    const speed = 0.4;
+    const animate = () => {
+      pos += speed;
+      if (pos >= el.scrollWidth / 2) pos = 0;
+      el.scrollLeft = pos;
+      frame = requestAnimationFrame(animate);
+    };
+    const timerId = setTimeout(() => { frame = requestAnimationFrame(animate); }, 800);
+    const stop = () => cancelAnimationFrame(frame);
+    el.addEventListener("mouseenter", stop);
+    el.addEventListener("touchstart", stop, { passive: true });
+    return () => {
+      cancelAnimationFrame(frame);
+      clearTimeout(timerId);
+      el.removeEventListener("mouseenter", stop);
+      el.removeEventListener("touchstart", stop);
+    };
+  }, [businesses.length]);
 
-  const { data: allRestaurants, isLoading } = useListRestaurants({
-    ...(activeCategory !== "All" ? { category: activeCategory } : {}),
-    ...(search ? { search } : {}),
-  });
+  if (!businesses.length) return null;
 
-  const restaurants = useMemo(
-    () => (isLocalOnly ? allRestaurants?.filter((r) => r.isLocal) : allRestaurants),
-    [allRestaurants, isLocalOnly]
-  );
-
-  const localRestaurants = allRestaurants?.filter((r) => r.isLocal) ?? [];
+  const doubled = [...businesses, ...businesses];
 
   return (
-    <div className="space-y-8 pb-24 sm:pb-8">
-
-      {/* Hero Section */}
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4 }}
-        className="relative rounded-3xl overflow-hidden"
-        style={{ background: "linear-gradient(135deg, #B0004F 0%, #E2006A 45%, #FF1A85 75%, #FF66AC 100%)" }}
-      >
-        {/* Decorative food emojis */}
-        <div className="absolute inset-0 pointer-events-none overflow-hidden">
-          {FOOD_EMOJIS.map((emoji, i) => (
-            <motion.span
-              key={i}
-              className="absolute text-5xl opacity-15 select-none"
-              style={{
-                top: `${[8, 60, 15, 50, 30][i]}%`,
-                right: `${[4, 20, 38, 55, 70][i]}%`,
-              }}
-              animate={{ y: [0, -8, 0], rotate: [0, i % 2 === 0 ? 5 : -5, 0] }}
-              transition={{ duration: 3 + i * 0.5, repeat: Infinity, delay: i * 0.4 }}
-            >
-              {emoji}
-            </motion.span>
-          ))}
+    <section>
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <Zap className="w-4 h-4 text-primary fill-primary" />
+          <h2 className="font-display font-bold text-base text-foreground">À la une</h2>
         </div>
-
-        <div className="relative px-6 py-8 sm:px-10 sm:py-12">
-          {isAuthenticated && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.2 }}
-              className="inline-flex items-center gap-1.5 bg-white/20 backdrop-blur-sm rounded-full px-3 py-1 text-white/90 text-xs font-medium mb-3"
-            >
-              <MapPin className="w-3 h-3" />
-              Oujda, Maroc
-            </motion.div>
-          )}
-
-          <h1 className="font-display font-bold text-3xl sm:text-4xl text-white mb-2 leading-tight max-w-sm">
-            {isAuthenticated && user?.name
-              ? t("home.hungry", { name: user.name.split(" ")[0] })
-              : t("home.orderFast")}
-          </h1>
-          <p className="text-white/80 text-sm sm:text-base mb-6 max-w-xs">
-            {t("home.tagline")}
-          </p>
-
-          {/* Search */}
-          <div className="relative max-w-md">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input
-              placeholder={t("home.search")}
-              className="pl-10 h-12 bg-white/95 border-0 shadow-lg text-foreground placeholder:text-muted-foreground text-sm rounded-2xl"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              data-testid="input-search"
-            />
-          </div>
-        </div>
-      </motion.div>
-
-      {/* Category Pills */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.15 }}
-        className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide -mx-1 px-1"
+        <Button variant="ghost" size="sm" className="text-primary text-xs gap-1 h-7 px-2" onClick={() => setLocation("/restaurants")}>
+          Voir tout <ChevronRight className="w-3 h-3" />
+        </Button>
+      </div>
+      <div
+        ref={scrollRef}
+        className="flex gap-3 overflow-x-auto scrollbar-hide pb-1"
+        style={{ scrollbarWidth: "none" }}
       >
-        {CATEGORIES.map((cat) => (
+        {doubled.map((r, i) => (
           <button
-            key={cat.id}
-            onClick={() => setActiveCategory(cat.id)}
-            className={`flex items-center gap-1.5 shrink-0 px-4 h-10 rounded-full text-sm font-medium transition-all duration-200 border ${
-              activeCategory === cat.id
-                ? "bg-primary text-white border-primary shadow-md shadow-primary/25"
-                : "bg-card text-foreground border-card-border hover:border-primary/40 hover:bg-accent"
-            }`}
-            data-testid={`button-category-${cat.id.toLowerCase()}`}
+            key={`${r.id}-${i}`}
+            onClick={() => setLocation(`/restaurants/${r.id}`)}
+            className="shrink-0 w-56 rounded-2xl overflow-hidden border border-card-border bg-card text-left hover:shadow-md hover:shadow-primary/10 transition-shadow"
           >
-            <span>{cat.emoji}</span>
-            <span>{cat.id}</span>
-          </button>
-        ))}
-      </motion.div>
-
-      {/* Support Local Section */}
-      {!search && !isLoading && localRestaurants.length > 0 && (
-        <motion.section
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-        >
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-2xl bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
-                <Award className="w-4 h-4 text-green-600 dark:text-green-400" />
-              </div>
-              <div>
-                <h2 className="font-display font-bold text-lg text-foreground leading-none">{t("home.supportLocal")}</h2>
-                <p className="text-xs text-muted-foreground mt-0.5">{t("home.realOujdaFlavors")}</p>
+            <div className="h-28 bg-muted relative overflow-hidden">
+              {r.imageUrl ? (
+                <img src={r.imageUrl} alt={r.name} className="w-full h-full object-cover" />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-4xl">
+                  {r.category === "Pizza" ? "🍕" : r.category === "Burgers" ? "🍔" : r.category === "Sushi" ? "🍣" : "🍽️"}
+                </div>
+              )}
+              <div className="absolute bottom-2 left-2">
+                <span className="inline-flex items-center gap-1 bg-primary text-primary-foreground text-xs font-bold px-2 py-0.5 rounded-full">
+                  <Zap className="w-3 h-3" />
+                  {r.deliveryTime ?? 25} min
+                </span>
               </div>
             </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setLocation("/restaurants?isLocal=true")}
-              className="text-primary text-sm gap-1 h-8"
-            >
-              {t("home.seeAll")} <ChevronRight className="w-3.5 h-3.5" />
-            </Button>
-          </div>
+            <div className="p-3">
+              <p className="font-semibold text-sm leading-tight truncate">{r.name}</p>
+              <p className="text-xs text-muted-foreground mt-0.5 truncate">{r.category}</p>
+            </div>
+          </button>
+        ))}
+      </div>
+    </section>
+  );
+}
 
-          <motion.div
-            variants={containerVariants}
-            initial="hidden"
-            animate="show"
-            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
+export default function HomePage() {
+  const [search, setSearch] = useState("");
+  const [activeTop, setActiveTop] = useState<TopCatId>("restaurant");
+  const [activeSub, setActiveSub] = useState("Tous");
+  const [, setLocation] = useLocation();
+  const { t } = useTranslation();
+
+  const subs = SUBCATEGORIES[activeTop];
+
+  useEffect(() => { setActiveSub("Tous"); }, [activeTop]);
+
+  const listParams = useMemo(() => {
+    const p: Record<string, string | boolean> = { businessType: activeTop };
+    if (activeSub !== "Tous") p.category = activeSub;
+    if (search) p.search = search;
+    return p;
+  }, [activeTop, activeSub, search]);
+
+  const { data: businesses, isLoading } = useListRestaurants(listParams as any);
+  const { data: allFeatured } = useListRestaurants({});
+  const featured = useMemo(() => (allFeatured ?? []).filter((r) => r.isVerified || r.rating != null), [allFeatured]);
+
+  return (
+    <div className="space-y-6 pb-24 sm:pb-8">
+
+      {/* Search bar */}
+      <div className="relative">
+        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+        <Input
+          placeholder={t("home.search")}
+          className="pl-10 h-12 bg-card border-card-border text-foreground placeholder:text-muted-foreground text-sm rounded-2xl shadow-sm"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          data-testid="input-search"
+        />
+      </div>
+
+      {/* Top category tabs – Flink circle icon style */}
+      <div className="grid grid-cols-4 gap-2">
+        {TOP_CATEGORIES.map((cat) => (
+          <button
+            key={cat.id}
+            onClick={() => setActiveTop(cat.id)}
+            className={`flex flex-col items-center gap-1.5 py-3 rounded-2xl border transition-all duration-200 ${
+              activeTop === cat.id
+                ? "border-primary bg-accent shadow-sm shadow-primary/15"
+                : "border-card-border bg-card hover:border-primary/30"
+            }`}
+            data-testid={`btn-top-cat-${cat.id}`}
           >
-            {localRestaurants.slice(0, 3).map((r) => (
-              <motion.div key={r.id} variants={itemVariants}>
-                <RestaurantCard restaurant={r} />
-              </motion.div>
-            ))}
-          </motion.div>
-        </motion.section>
+            <span className="text-2xl">{cat.emoji}</span>
+            <span className={`text-xs font-semibold leading-none ${activeTop === cat.id ? "text-primary" : "text-foreground"}`}>
+              {cat.label}
+            </span>
+          </button>
+        ))}
+      </div>
+
+      {/* Subcategory horizontal scroll */}
+      {!search && (
+        <div className="flex gap-2 overflow-x-auto pb-0.5 scrollbar-hide -mx-1 px-1" style={{ scrollbarWidth: "none" }}>
+          {subs.map((sub) => (
+            <button
+              key={sub}
+              onClick={() => setActiveSub(sub)}
+              className={`shrink-0 px-3 h-8 rounded-full text-xs font-semibold transition-all border ${
+                activeSub === sub
+                  ? "bg-primary text-primary-foreground border-primary"
+                  : "bg-card text-foreground border-card-border hover:border-primary/40"
+              }`}
+            >
+              {sub}
+            </button>
+          ))}
+        </div>
       )}
 
-      {/* All / Featured Restaurants */}
+      {/* Featured scrolling banner */}
+      {!search && activeSub === "Tous" && <FeaturedBanner businesses={featured.slice(0, 8)} />}
+
+      {/* Business grid */}
       <section>
-        <div className="flex items-center gap-2 mb-4">
-          <div className="w-8 h-8 rounded-2xl bg-accent flex items-center justify-center">
-            {search || activeCategory !== "All" ? (
-              <Sparkles className="w-4 h-4 text-primary" />
-            ) : (
-              <Flame className="w-4 h-4 text-primary" />
-            )}
-          </div>
-          <h2 className="font-display font-bold text-lg text-foreground">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="font-display font-bold text-base text-foreground">
             {search
               ? t("home.resultsFor", { search })
-              : isLocalOnly
-              ? t("home.supportLocal")
-              : activeCategory !== "All"
-              ? t("home.categoryRestaurants", { category: activeCategory })
-              : t("home.allRestaurants")}
+              : activeSub !== "Tous"
+              ? activeSub
+              : TOP_CATEGORIES.find((c) => c.id === activeTop)?.label ?? ""}
           </h2>
+          {businesses && businesses.length > 0 && (
+            <span className="text-xs text-muted-foreground">{businesses.length} résultat{businesses.length > 1 ? "s" : ""}</span>
+          )}
         </div>
 
         {isLoading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {[...Array(6)].map((_, i) => <RestaurantSkeleton key={i} />)}
+          <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
+            {[...Array(6)].map((_, i) => <CardSkeleton key={i} />)}
           </div>
-        ) : restaurants?.length === 0 ? (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="text-center py-16"
-          >
+        ) : businesses?.length === 0 ? (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-16">
             <div className="text-5xl mb-4">🔍</div>
-            <p className="text-lg font-semibold">{t("home.noRestaurantsFound")}</p>
+            <p className="text-base font-semibold">{t("home.noRestaurantsFound")}</p>
             <p className="text-sm text-muted-foreground mt-1">{t("home.tryDifferent")}</p>
-            <Button
-              variant="outline"
-              className="mt-4 rounded-xl"
-              onClick={() => { setSearch(""); setActiveCategory("All"); }}
-            >
+            <Button variant="outline" className="mt-4 rounded-xl" onClick={() => { setSearch(""); setActiveSub("Tous"); }}>
               {t("home.clearFilters")}
             </Button>
           </motion.div>
         ) : (
           <motion.div
-            variants={containerVariants}
+            variants={{ hidden: {}, show: { transition: { staggerChildren: 0.05 } } }}
             initial="hidden"
             animate="show"
-            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
+            className="grid grid-cols-2 lg:grid-cols-3 gap-3"
           >
-            {restaurants?.map((r) => (
-              <motion.div key={r.id} variants={itemVariants}>
-                <RestaurantCard restaurant={r} />
+            {businesses?.map((r) => (
+              <motion.div key={r.id} variants={{ hidden: { opacity: 0, y: 12 }, show: { opacity: 1, y: 0, transition: { duration: 0.25 } } }}>
+                <RestaurantCard restaurant={r} compact />
               </motion.div>
             ))}
           </motion.div>

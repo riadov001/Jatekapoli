@@ -37,6 +37,9 @@ router.get("/restaurants", async (req, res): Promise<void> => {
   if (query.category) {
     conditions.push(eq(restaurantsTable.category, query.category));
   }
+  if (query.businessType) {
+    conditions.push(eq(restaurantsTable.businessType, query.businessType));
+  }
   if (query.search) {
     conditions.push(ilike(restaurantsTable.name, `%${query.search}%`));
   }

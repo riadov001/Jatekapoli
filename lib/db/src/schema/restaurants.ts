@@ -12,6 +12,7 @@ export const restaurantsTable = pgTable("restaurants", {
   imageUrl: text("image_url"),
   coverImageUrl: text("cover_image_url"),
   category: text("category").notNull().default("Other"),
+  businessType: text("business_type").notNull().default("restaurant"),
   isLocal: boolean("is_local").notNull().default(false),
   isOpen: boolean("is_open").notNull().default(true),
   deliveryTime: integer("delivery_time"),

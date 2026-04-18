@@ -1,4 +1,4 @@
-import { Switch, Route, Router as WouterRouter } from "wouter";
+import { Switch, Route, Router as WouterRouter, useLocation } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -25,26 +25,27 @@ import AdminOrdersPage from "@/pages/admin/orders";
 import RestaurantDashboardPage from "@/pages/restaurant-panel/dashboard";
 import RestaurantMenuPage from "@/pages/restaurant-panel/menu";
 import DriverDashboardPage from "@/pages/driver/dashboard";
+import WelcomePage from "@/pages/welcome";
+import LegalPage from "@/pages/legal";
 import NotFound from "@/pages/not-found";
 
-// Attach stored JWT to every API request automatically
 setAuthTokenGetter(() => localStorage.getItem("tawsila_token"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
-    queries: {
-      retry: 1,
-      staleTime: 60_000,
-      gcTime: 5 * 60_000,
-      refetchOnWindowFocus: false,
-    },
-    mutations: {
-      retry: 0,
-    },
+    queries: { retry: 1, staleTime: 60_000, gcTime: 5 * 60_000, refetchOnWindowFocus: false },
+    mutations: { retry: 0 },
   },
 });
 
 function Router() {
+  const [location] = useLocation();
+  const isWelcome = location === "/welcome";
+
+  if (isWelcome) {
+    return <WelcomePage />;
+  }
+
   return (
     <Layout>
       <Switch>
@@ -58,6 +59,7 @@ function Router() {
         <Route path="/profile" component={ProfilePage} />
         <Route path="/login" component={LoginPage} />
         <Route path="/register" component={RegisterPage} />
+        <Route path="/legal" component={LegalPage} />
         <Route path="/admin/dashboard" component={AdminDashboardPage} />
         <Route path="/admin/users" component={AdminUsersPage} />
         <Route path="/admin/restaurants" component={AdminRestaurantsPage} />

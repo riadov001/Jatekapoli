@@ -2,7 +2,7 @@ import { Link, useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ShoppingBag, Home, UtensilsCrossed, Package, Gift, User, LogOut,
-  ChevronDown, MapPin, Truck, LayoutDashboard, Store, Globe
+  ChevronDown, MapPin, Truck, LayoutDashboard, Store, Globe, FileText
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCart } from "@/contexts/CartContext";
@@ -169,6 +169,9 @@ export function Layout({ children }: LayoutProps) {
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => setLocation("/rewards")} className="rounded-xl gap-2.5 py-2.5">
                     <Gift className="w-4 h-4 text-primary" /> {t("nav.rewards")}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setLocation("/legal")} className="rounded-xl gap-2.5 py-2.5">
+                    <FileText className="w-4 h-4 text-muted-foreground" /> Mentions légales
                   </DropdownMenuItem>
                   <DropdownMenuSeparator className="mx-1" />
                   <DropdownMenuItem onClick={logout} className="rounded-xl gap-2.5 py-2.5 text-destructive focus:text-destructive" data-testid="button-logout">

@@ -323,4 +323,20 @@ router.post("/auth/logout", async (_req, res): Promise<void> => {
   res.json({ success: true });
 });
 
+router.delete("/auth/me", async (req, res): Promise<void> => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+  const token = authHeader.split(" ")[1];
+  try {
+    const payload = jwt.verify(token, JWT_SECRET) as { userId: number };
+    await db.delete(usersTable).where(eq(usersTable.id, payload.userId));
+    res.json({ success: true });
+  } catch {
+    res.status(401).json({ error: "Invalid token" });
+  }
+});
+
 export default router;

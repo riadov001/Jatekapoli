@@ -118,6 +118,7 @@ export const VerifyOtpResponse = zod.object({
 export const ListRestaurantsQueryParams = zod.object({
   search: zod.coerce.string().optional(),
   category: zod.coerce.string().optional(),
+  businessType: zod.coerce.string().optional(),
   isLocal: zod.coerce.boolean().optional(),
   isOpen: zod.coerce.boolean().optional(),
 });
@@ -132,6 +133,7 @@ export const ListRestaurantsResponseItem = zod.object({
   imageUrl: zod.string().nullish(),
   coverImageUrl: zod.string().nullish(),
   category: zod.string(),
+  businessType: zod.string().optional(),
   isLocal: zod.boolean(),
   isOpen: zod.boolean(),
   deliveryTime: zod.number().nullish(),

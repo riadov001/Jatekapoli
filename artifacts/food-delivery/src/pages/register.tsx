@@ -1,9 +1,10 @@
+import { useState } from "react";
 import { useLocation } from "wouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { motion } from "framer-motion";
-import { Truck, UserPlus } from "lucide-react";
+import { Truck, UserPlus, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -33,6 +34,9 @@ export default function RegisterPage() {
   const { toast } = useToast();
   const { t } = useTranslation();
   const registerMutation = useRegister();
+  const [rgpd, setRgpd] = useState(false);
+  const [smsConsent, setSmsConsent] = useState(false);
+  const [emailConsent, setEmailConsent] = useState(false);
 
   const form = useForm<z.infer<typeof schema>>({
     resolver: zodResolver(schema),
@@ -40,6 +44,10 @@ export default function RegisterPage() {
   });
 
   const onSubmit = (data: z.infer<typeof schema>) => {
+    if (!rgpd) {
+      toast({ title: "Vous devez accepter la politique de confidentialité pour continuer.", variant: "destructive" });
+      return;
+    }
     registerMutation.mutate({ data: { ...data, phone: data.phone || undefined } }, {
       onSuccess: (res) => {
         login(res.token, res.user);
@@ -169,6 +177,51 @@ export default function RegisterPage() {
                   </FormItem>
                 )}
               />
+              {/* Consent checkboxes */}
+              <div className="space-y-3 pt-1">
+                <label className="flex items-start gap-3 cursor-pointer group">
+                  <div
+                    className={`mt-0.5 w-5 h-5 rounded border-2 flex-shrink-0 flex items-center justify-center transition-colors ${rgpd ? "bg-primary border-primary" : "border-border group-hover:border-primary/50"}`}
+                    onClick={() => setRgpd(!rgpd)}
+                  >
+                    {rgpd && <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
+                  </div>
+                  <span className="text-xs text-foreground leading-relaxed">
+                    J'accepte la{" "}
+                    <button type="button" onClick={() => setLocation("/legal")} className="text-primary underline inline-flex items-center gap-0.5">
+                      politique de confidentialité <ExternalLink className="w-3 h-3" />
+                    </button>
+                    {" "}et les{" "}
+                    <button type="button" onClick={() => setLocation("/legal")} className="text-primary underline">
+                      CGU
+                    </button>
+                    {" "}(obligatoire)
+                  </span>
+                </label>
+                <label className="flex items-start gap-3 cursor-pointer group">
+                  <div
+                    className={`mt-0.5 w-5 h-5 rounded border-2 flex-shrink-0 flex items-center justify-center transition-colors ${smsConsent ? "bg-primary border-primary" : "border-border group-hover:border-primary/50"}`}
+                    onClick={() => setSmsConsent(!smsConsent)}
+                  >
+                    {smsConsent && <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
+                  </div>
+                  <span className="text-xs text-muted-foreground leading-relaxed">
+                    J'accepte de recevoir des SMS promotionnels de Tawsila (optionnel)
+                  </span>
+                </label>
+                <label className="flex items-start gap-3 cursor-pointer group">
+                  <div
+                    className={`mt-0.5 w-5 h-5 rounded border-2 flex-shrink-0 flex items-center justify-center transition-colors ${emailConsent ? "bg-primary border-primary" : "border-border group-hover:border-primary/50"}`}
+                    onClick={() => setEmailConsent(!emailConsent)}
+                  >
+                    {emailConsent && <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
+                  </div>
+                  <span className="text-xs text-muted-foreground leading-relaxed">
+                    J'accepte de recevoir la newsletter et des offres par email (optionnel)
+                  </span>
+                </label>
+              </div>
+
               <Button
                 type="submit"
                 className="w-full h-12 rounded-xl font-semibold text-base shadow-md shadow-primary/20"

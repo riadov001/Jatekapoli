@@ -1,5 +1,5 @@
 import { Link } from "wouter";
-import { Star, Clock, Truck, Award, ChevronRight } from "lucide-react";
+import { Star, Clock, Truck, Award, Zap } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useTranslation } from "react-i18next";
 
@@ -19,26 +19,33 @@ interface Restaurant {
 }
 
 const CATEGORY_EMOJIS: Record<string, string> = {
-  Moroccan: "🥘",
+  Moroccan: "🥘", Marocain: "🥘",
   Pizza: "🍕",
-  Burgers: "🍔",
+  Burgers: "🍔", Burger: "🍔",
   Sushi: "🍣",
-  Sandwiches: "🥙",
-  Chicken: "🍗",
+  Sandwiches: "🥙", Sandwichs: "🥙",
+  Chicken: "🍗", Poulet: "🍗",
   Seafood: "🦞",
-  Sweets: "🍰",
-  Drinks: "🧋",
+  Sweets: "🍰", Végé: "🥗",
+  Halal: "☪️",
+  Épicerie: "🛒", "Grande surface": "🏪",
+  Bio: "🌿", Primeur: "🥦",
+  Pharmacie: "💊", Parapharmacie: "🧴",
+  Optique: "👓", Dentiste: "🦷", Médecin: "🩺",
+  Fleuriste: "💐", Librairie: "📚",
+  Cadeaux: "🎁", Vêtements: "👗",
 };
 
-export function RestaurantCard({ restaurant }: { restaurant: Restaurant }) {
+export function RestaurantCard({ restaurant, compact = false }: { restaurant: Restaurant; compact?: boolean }) {
   const { t } = useTranslation();
   const categoryEmoji = CATEGORY_EMOJIS[restaurant.category] || "🍽️";
+  const imageHeight = compact ? "h-28" : "h-44";
 
   return (
     <Link href={`/restaurants/${restaurant.id}`} data-testid={`card-restaurant-${restaurant.id}`}>
-      <div className="group bg-card rounded-2xl border border-card-border overflow-hidden cursor-pointer transition-all duration-200 hover:shadow-lg hover:shadow-black/8 hover:-translate-y-1 active:scale-[0.99]">
+      <div className="group bg-card rounded-2xl border border-card-border overflow-hidden cursor-pointer transition-all duration-200 hover:shadow-md hover:shadow-black/8 active:scale-[0.99]">
         {/* Image */}
-        <div className="relative h-44 bg-muted overflow-hidden">
+        <div className={`relative ${imageHeight} bg-muted overflow-hidden`}>
           {restaurant.imageUrl ? (
             <img
               src={restaurant.imageUrl}
@@ -48,78 +55,69 @@ export function RestaurantCard({ restaurant }: { restaurant: Restaurant }) {
             />
           ) : (
             <div className="w-full h-full bg-gradient-to-br from-primary/15 via-primary/8 to-accent flex items-center justify-center">
-              <span className="text-5xl">{categoryEmoji}</span>
+              <span className={compact ? "text-3xl" : "text-5xl"}>{categoryEmoji}</span>
             </div>
           )}
 
-          {/* Overlay gradient */}
           <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
 
-          {/* Top badges */}
-          <div className="absolute top-3 left-3 flex gap-1.5">
+          {/* Badges top left */}
+          <div className="absolute top-2 left-2 flex gap-1">
             {restaurant.isLocal && (
-              <Badge className="bg-primary hover:bg-primary text-primary-foreground text-xs gap-1 font-semibold shadow-sm" data-testid={`badge-local-${restaurant.id}`}>
-                <Award className="w-3 h-3" />
+              <Badge className="bg-primary hover:bg-primary text-primary-foreground text-[10px] gap-1 font-bold shadow-sm px-1.5 py-0.5" data-testid={`badge-local-${restaurant.id}`}>
+                <Award className="w-2.5 h-2.5" />
                 {t("card.local")}
               </Badge>
             )}
             {!restaurant.isOpen && (
-              <Badge variant="secondary" className="text-xs bg-black/60 hover:bg-black/60 text-white border-0">{t("card.closed")}</Badge>
+              <Badge variant="secondary" className="text-[10px] bg-black/60 hover:bg-black/60 text-white border-0 px-1.5 py-0.5">{t("card.closed")}</Badge>
             )}
           </div>
 
-          {/* Category top right */}
-          <div className="absolute top-3 right-3">
-            <span className="text-xl" title={restaurant.category}>{categoryEmoji}</span>
-          </div>
+          {/* Delivery time pill bottom left */}
+          {restaurant.deliveryTime && (
+            <div className="absolute bottom-2 left-2">
+              <span className="inline-flex items-center gap-1 bg-primary text-primary-foreground text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+                <Zap className="w-2.5 h-2.5" />
+                {restaurant.deliveryTime} min
+              </span>
+            </div>
+          )}
 
-          {/* Rating overlay (bottom right) */}
+          {/* Rating bottom right */}
           {restaurant.rating && (
             <div
-              className="absolute bottom-3 right-3 flex items-center gap-1 bg-white/95 dark:bg-black/70 backdrop-blur-sm rounded-full px-2 py-0.5 shadow-sm"
+              className="absolute bottom-2 right-2 flex items-center gap-0.5 bg-white/95 dark:bg-black/70 backdrop-blur-sm rounded-full px-1.5 py-0.5 shadow-sm"
               data-testid={`text-rating-${restaurant.id}`}
             >
-              <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
-              <span className="text-xs font-bold text-foreground">{restaurant.rating.toFixed(1)}</span>
+              <Star className="w-2.5 h-2.5 fill-primary text-primary" />
+              <span className="text-[10px] font-bold text-foreground">{restaurant.rating.toFixed(1)}</span>
             </div>
           )}
         </div>
 
         {/* Content */}
-        <div className="p-4">
-          <div className="flex items-start justify-between gap-2 mb-1">
-            <h3 className="font-semibold text-base text-foreground leading-snug" data-testid={`text-restaurant-name-${restaurant.id}`}>
-              {restaurant.name}
-            </h3>
-            <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5 group-hover:text-primary transition-colors" />
-          </div>
+        <div className={compact ? "p-2.5" : "p-3.5"}>
+          <h3 className={`font-semibold text-foreground leading-snug truncate ${compact ? "text-sm" : "text-base"}`} data-testid={`text-restaurant-name-${restaurant.id}`}>
+            {restaurant.name}
+          </h3>
+          <p className="text-[11px] text-muted-foreground mt-0.5 truncate">{restaurant.category}</p>
 
-          {restaurant.description && (
-            <p className="text-xs text-muted-foreground line-clamp-2 mb-3 leading-relaxed">{restaurant.description}</p>
-          )}
-
-          {/* Stats row */}
-          <div className="flex items-center gap-3 text-xs text-muted-foreground">
-            {restaurant.deliveryTime && (
-              <span className="flex items-center gap-1">
-                <Clock className="w-3.5 h-3.5 text-primary/70" />
-                <span className="font-medium text-foreground">{restaurant.deliveryTime} {t("card.min")}</span>
-              </span>
-            )}
-            {restaurant.deliveryFee !== null && restaurant.deliveryFee !== undefined && (
-              <span className="flex items-center gap-1">
-                <Truck className="w-3.5 h-3.5 text-primary/70" />
-                <span className={`font-medium ${restaurant.deliveryFee === 0 ? "text-primary" : "text-foreground"}`}>
-                  {restaurant.deliveryFee === 0 ? t("card.freeDelivery") : `${restaurant.deliveryFee} MAD`}
+          {!compact && (
+            <div className="flex items-center gap-3 text-[11px] text-muted-foreground mt-2">
+              {restaurant.deliveryFee !== null && restaurant.deliveryFee !== undefined && (
+                <span className="flex items-center gap-1">
+                  <Truck className="w-3 h-3 text-primary/70" />
+                  <span className={`font-medium ${restaurant.deliveryFee === 0 ? "text-primary" : "text-foreground"}`}>
+                    {restaurant.deliveryFee === 0 ? t("card.freeDelivery") : `${restaurant.deliveryFee} MAD`}
+                  </span>
                 </span>
-              </span>
-            )}
-            {restaurant.reviewCount > 0 && (
-              <span className="text-muted-foreground ml-auto">
-                {t("card.review", { count: restaurant.reviewCount })}
-              </span>
-            )}
-          </div>
+              )}
+              {restaurant.reviewCount > 0 && (
+                <span className="ml-auto">{t("card.review", { count: restaurant.reviewCount })}</span>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </Link>
