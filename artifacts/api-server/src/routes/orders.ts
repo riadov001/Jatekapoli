@@ -255,6 +255,12 @@ router.post("/orders/:id/accept-delivery", requireAuth, async (req: AuthedReques
   const [driver] = await db.select().from(driversTable).where(eq(driversTable.id, driverId)).limit(1);
   if (!driver) { res.status(404).json({ error: "Driver not found" }); return; }
 
+  // Caller must be the driver themselves, or an admin
+  if (driver.userId !== req.userId && req.userRole !== "admin") {
+    res.status(403).json({ error: "Not authorized to accept on behalf of another driver" });
+    return;
+  }
+
   const [order] = await db
     .update(ordersTable)
     .set({ driverId, status: "picked_up" })
