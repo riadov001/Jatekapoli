@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { useRoute, useLocation } from "wouter";
 import { ArrowLeft, CheckCircle, Clock, Package, Truck, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -5,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 import { useGetOrder } from "@workspace/api-client-react";
+import { DeliveryMap } from "@/components/DeliveryMap";
 
 const steps = [
   { key: "pending", label: "Order Placed", icon: Package },
@@ -17,12 +19,47 @@ const steps = [
 
 const statusOrder = ["pending", "accepted", "preparing", "ready", "picked_up", "delivered"];
 
+interface DriverLocation {
+  latitude: number | null;
+  longitude: number | null;
+  locationUpdatedAt: string | null;
+  name?: string;
+}
+
 export default function OrderDetailPage() {
   const [match, params] = useRoute("/orders/:id");
   const [_, setLocation] = useLocation();
   const id = match ? parseInt(params!.id, 10) : 0;
 
-  const { data: order, isLoading } = useGetOrder(id, { query: { enabled: !!id } });
+  const { data: order, isLoading } = useGetOrder(id, { query: { enabled: !!id, refetchInterval: 15000 } });
+
+  const [driverLocation, setDriverLocation] = useState<DriverLocation | null>(null);
+
+  // Poll driver location when order is picked_up (driver is heading to customer)
+  useEffect(() => {
+    if (!order?.driverId || order.status !== "picked_up") {
+      setDriverLocation(null);
+      return;
+    }
+
+    const fetchLocation = async () => {
+      try {
+        const base = import.meta.env.BASE_URL?.replace(/\/$/, "") || "";
+        const token = localStorage.getItem("tawsila_token");
+        const res = await fetch(`${base}/api/drivers/${order.driverId}/location`, {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setDriverLocation(data);
+        }
+      } catch {}
+    };
+
+    fetchLocation();
+    const interval = setInterval(fetchLocation, 10000);
+    return () => clearInterval(interval);
+  }, [order?.driverId, order?.status]);
 
   if (!match) return <div>Not found</div>;
 
@@ -42,6 +79,8 @@ export default function OrderDetailPage() {
     ? -1
     : statusOrder.indexOf(order.status);
 
+  const showMap = ["picked_up"].includes(order.status) && !!order.driverId;
+
   return (
     <div className="max-w-2xl mx-auto space-y-6 pb-6">
       <Button variant="ghost" size="sm" onClick={() => setLocation("/orders")} className="gap-2">
@@ -58,6 +97,27 @@ export default function OrderDetailPage() {
           <Badge className="bg-gray-100 text-gray-600 border-0">Cancelled</Badge>
         ) : null}
       </div>
+
+      {/* Live driver map */}
+      {showMap && (
+        <div className="bg-card rounded-2xl border border-card-border overflow-hidden">
+          <div className="p-3 border-b border-border flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+            <p className="text-sm font-semibold">Driver is on the way</p>
+            {driverLocation?.locationUpdatedAt && (
+              <span className="text-xs text-muted-foreground ml-auto">
+                Updated {new Date(driverLocation.locationUpdatedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+              </span>
+            )}
+          </div>
+          <DeliveryMap
+            driverLat={driverLocation?.latitude}
+            driverLng={driverLocation?.longitude}
+            driverName={driverLocation?.name || "Your driver"}
+            className="h-56"
+          />
+        </div>
+      )}
 
       {/* Progress tracker */}
       {order.status !== "cancelled" && (

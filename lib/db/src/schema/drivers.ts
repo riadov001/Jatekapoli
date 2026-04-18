@@ -11,6 +11,9 @@ export const driversTable = pgTable("drivers", {
   isAvailable: boolean("is_available").notNull().default(true),
   totalDeliveries: integer("total_deliveries").notNull().default(0),
   rating: real("rating"),
+  latitude: real("latitude"),
+  longitude: real("longitude"),
+  locationUpdatedAt: timestamp("location_updated_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 });

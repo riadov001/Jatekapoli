@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, ReactNode } from "react";
+import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 
 export interface CartItem {
   menuItemId: number;
@@ -21,16 +21,39 @@ interface CartContextType {
   itemCount: number;
 }
 
+const CART_KEY = "tawsila_cart";
+
+function loadCart() {
+  try {
+    const raw = localStorage.getItem(CART_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw) as { items: CartItem[]; restaurantId: number | null; restaurantName: string };
+  } catch {
+    return null;
+  }
+}
+
+function saveCart(items: CartItem[], restaurantId: number | null, restaurantName: string) {
+  try {
+    localStorage.setItem(CART_KEY, JSON.stringify({ items, restaurantId, restaurantName }));
+  } catch {}
+}
+
 const CartContext = createContext<CartContextType | null>(null);
 
 export function CartProvider({ children }: { children: ReactNode }) {
-  const [items, setItems] = useState<CartItem[]>([]);
-  const [restaurantId, setRestaurantId] = useState<number | null>(null);
-  const [restaurantName, setRestaurantName] = useState<string>("");
+  const saved = loadCart();
+  const [items, setItems] = useState<CartItem[]>(saved?.items ?? []);
+  const [restaurantId, setRestaurantId] = useState<number | null>(saved?.restaurantId ?? null);
+  const [restaurantName, setRestaurantName] = useState<string>(saved?.restaurantName ?? "");
+
+  // Persist to localStorage whenever cart changes
+  useEffect(() => {
+    saveCart(items, restaurantId, restaurantName);
+  }, [items, restaurantId, restaurantName]);
 
   const addItem = (rId: number, rName: string, item: CartItem) => {
     if (restaurantId && restaurantId !== rId) {
-      // Different restaurant: clear cart and start fresh
       setItems([{ ...item, quantity: 1 }]);
       setRestaurantId(rId);
       setRestaurantName(rName);

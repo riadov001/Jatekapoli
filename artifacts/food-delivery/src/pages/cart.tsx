@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
-import { ArrowLeft, Trash2, Plus, Minus, ShoppingBag } from "lucide-react";
+import { ArrowLeft, Trash2, Plus, Minus, ShoppingBag, MapPin, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,15 +11,59 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useCreateOrder } from "@workspace/api-client-react";
 import { useToast } from "@/hooks/use-toast";
 
+async function reverseGeocode(lat: number, lng: number): Promise<string> {
+  const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}&accept-language=en`;
+  const res = await fetch(url, { headers: { "User-Agent": "TawsilaApp/1.0" } });
+  if (!res.ok) throw new Error("Geocoding failed");
+  const data = await res.json();
+  // Build a short human-readable address
+  const addr = data.address || {};
+  const parts = [
+    addr.road || addr.pedestrian,
+    addr.house_number,
+    addr.suburb || addr.neighbourhood,
+    addr.city || addr.town || addr.village,
+  ].filter(Boolean);
+  return parts.join(", ") || data.display_name || `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+}
+
 export default function CartPage() {
   const [_, setLocation] = useLocation();
   const { items, restaurantId, restaurantName, removeItem, updateQuantity, clearCart, subtotal, total } = useCart();
   const { user } = useAuth();
   const { toast } = useToast();
   const createOrder = useCreateOrder();
-  const [deliveryAddress, setDeliveryAddress] = useState(user?.address || "");
+  const [deliveryAddress, setDeliveryAddress] = useState((user as any)?.address || "");
   const [notes, setNotes] = useState("");
+  const [locating, setLocating] = useState(false);
   const DELIVERY_FEE = 15;
+
+  const handleDetectLocation = () => {
+    if (!("geolocation" in navigator)) {
+      toast({ title: "Geolocation not supported by your browser", variant: "destructive" });
+      return;
+    }
+    setLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        try {
+          const address = await reverseGeocode(pos.coords.latitude, pos.coords.longitude);
+          setDeliveryAddress(address);
+          toast({ title: "Location detected!", description: address });
+        } catch {
+          toast({ title: "Could not convert location to address", variant: "destructive" });
+        } finally {
+          setLocating(false);
+        }
+      },
+      (err) => {
+        setLocating(false);
+        const msg = err.code === 1 ? "Location permission denied" : "Could not get your location";
+        toast({ title: msg, variant: "destructive" });
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  };
 
   const handlePlaceOrder = async () => {
     if (!user) {
@@ -132,8 +176,22 @@ export default function CartPage() {
       </div>
 
       {/* Delivery Address */}
-      <div className="space-y-3">
-        <Label htmlFor="address" className="text-sm font-semibold">Delivery Address</Label>
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <Label htmlFor="address" className="text-sm font-semibold">Delivery Address</Label>
+          <button
+            type="button"
+            onClick={handleDetectLocation}
+            disabled={locating}
+            className="flex items-center gap-1.5 text-xs text-primary font-medium hover:underline disabled:opacity-60"
+          >
+            {locating ? (
+              <><Loader2 className="w-3 h-3 animate-spin" /> Detecting…</>
+            ) : (
+              <><MapPin className="w-3 h-3" /> Use my location</>
+            )}
+          </button>
+        </div>
         <Input
           id="address"
           placeholder="Enter your delivery address in Oujda"
@@ -145,7 +203,7 @@ export default function CartPage() {
       </div>
 
       {/* Notes */}
-      <div className="space-y-3">
+      <div className="space-y-2">
         <Label htmlFor="notes" className="text-sm font-semibold">Order Notes (optional)</Label>
         <Textarea
           id="notes"

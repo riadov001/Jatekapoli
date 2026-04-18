@@ -98,10 +98,9 @@ export default function LoginPage() {
   const { toast } = useToast();
   const [step, setStep] = useState<Step>("phone");
   const [phoneValue, setPhoneValue] = useState("");
-  const [otpCode, setOtpCode] = useState("");
   const [demoOtp, setDemoOtp] = useState<string | null>(null);
   const [countdown, setCountdown] = useState(0);
-  const [isNewUser, setIsNewUser] = useState(false);
+  const [isSavingName, setIsSavingName] = useState(false);
 
   const sendOtpMutation = useSendOtp();
   const verifyOtpMutation = useVerifyOtp();
@@ -143,16 +142,17 @@ export default function LoginPage() {
     });
   };
 
-  const handleVerifyOtp = (code: string, name?: string) => {
-    setOtpCode(code);
-    verifyOtpMutation.mutate({ data: { phone: phoneValue, code, name } }, {
+  const handleVerifyOtp = (code: string) => {
+    verifyOtpMutation.mutate({ data: { phone: phoneValue, code } }, {
       onSuccess: (res) => {
-        if (res.user.name.startsWith("User ") || res.user.name === "") {
-          setIsNewUser(true);
+        // Always store the token/user immediately so it can be used for name update
+        login(res.token, res.user as any);
+
+        if ((res as any).isNewUser || res.user.name.startsWith("User ")) {
+          // New user — ask for their name before proceeding
           setStep("name");
         } else {
-          login(res.token, res.user);
-          toast({ title: `Welcome${res.user.name ? `, ${res.user.name}` : ""}! 🎉` });
+          toast({ title: `Welcome back, ${res.user.name}! 🎉` });
           setLocation("/");
         }
       },
@@ -162,23 +162,38 @@ export default function LoginPage() {
     });
   };
 
-  const handleSaveName = (data: z.infer<typeof nameSchema>) => {
-    verifyOtpMutation.mutate({ data: { phone: phoneValue, code: otpCode, name: data.name } }, {
-      onSuccess: (res) => {
-        login(res.token, res.user);
-        toast({ title: `Welcome to Tawsila, ${res.user.name}! 🎉` });
-        setLocation("/");
-      },
-      onError: (err: any) => {
-        toast({ title: err?.data?.error || "Something went wrong.", variant: "destructive" });
-      },
-    });
+  // For new users: update name via PATCH /auth/update-name using the token just stored
+  const handleSaveName = async (data: z.infer<typeof nameSchema>) => {
+    setIsSavingName(true);
+    try {
+      const token = localStorage.getItem("tawsila_token");
+      const apiBase = import.meta.env.BASE_URL?.replace(/\/$/, "") || "";
+      const response = await fetch(`${apiBase}/api/auth/update-name`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ name: data.name }),
+      });
+      const json = await response.json();
+      if (!response.ok) throw new Error(json.error || "Could not save name");
+
+      // Update user in auth context with the new name
+      login(token!, json.user);
+      toast({ title: `Welcome to Tawsila, ${json.user.name}! 🎉` });
+      setLocation("/");
+    } catch (err: any) {
+      toast({ title: err.message || "Something went wrong.", variant: "destructive" });
+    } finally {
+      setIsSavingName(false);
+    }
   };
 
   const handleEmailLogin = (data: z.infer<typeof emailSchema>) => {
     loginMutation.mutate({ data }, {
       onSuccess: (res) => {
-        login(res.token, res.user);
+        login(res.token, res.user as any);
         toast({ title: `Welcome back, ${res.user.name}!` });
         setLocation("/");
       },
@@ -216,8 +231,8 @@ export default function LoginPage() {
         {/* Card */}
         <div className="bg-card rounded-3xl border border-card-border shadow-xl shadow-black/5 overflow-hidden">
 
-          {/* Step: Phone */}
           <AnimatePresence mode="wait" custom={1}>
+            {/* Step: Phone */}
             {step === "phone" && (
               <motion.div
                 key="phone"
@@ -269,7 +284,7 @@ export default function LoginPage() {
                       disabled={sendOtpMutation.isPending}
                     >
                       {sendOtpMutation.isPending ? (
-                        <><RefreshCw className="w-4 h-4 animate-spin" /> Sending...</>
+                        <><RefreshCw className="w-4 h-4 animate-spin" /> Sending…</>
                       ) : (
                         <>Continue <ArrowRight className="w-4 h-4" /></>
                       )}
@@ -332,20 +347,20 @@ export default function LoginPage() {
 
                 {verifyOtpMutation.isPending && (
                   <p className="text-center text-sm text-muted-foreground mt-4 flex items-center justify-center gap-1.5">
-                    <RefreshCw className="w-3.5 h-3.5 animate-spin" /> Verifying...
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" /> Verifying…
                   </p>
                 )}
 
                 <div className="text-center mt-5">
                   {countdown > 0 ? (
-                    <p className="text-sm text-muted-foreground">Resend code in <span className="font-semibold text-foreground">{countdown}s</span></p>
+                    <p className="text-sm text-muted-foreground">Resend in <span className="font-semibold text-foreground">{countdown}s</span></p>
                   ) : (
                     <button
                       onClick={() => handleSendOtp(phoneValue)}
                       disabled={sendOtpMutation.isPending}
                       className="text-sm text-primary font-medium hover:underline disabled:opacity-50"
                     >
-                      {sendOtpMutation.isPending ? "Sending..." : "Resend code"}
+                      {sendOtpMutation.isPending ? "Sending…" : "Resend code"}
                     </button>
                   )}
                 </div>
@@ -390,9 +405,9 @@ export default function LoginPage() {
                     <Button
                       type="submit"
                       className="w-full h-12 rounded-xl font-semibold gap-2 shadow-md shadow-primary/20"
-                      disabled={verifyOtpMutation.isPending}
+                      disabled={isSavingName}
                     >
-                      {verifyOtpMutation.isPending ? "Creating account..." : <>Start ordering <ArrowRight className="w-4 h-4" /></>}
+                      {isSavingName ? <><RefreshCw className="w-4 h-4 animate-spin" /> Saving…</> : <>Start ordering <ArrowRight className="w-4 h-4" /></>}
                     </Button>
                   </form>
                 </Form>
@@ -462,7 +477,7 @@ export default function LoginPage() {
                       disabled={loginMutation.isPending}
                       data-testid="button-submit-login"
                     >
-                      {loginMutation.isPending ? "Signing in..." : "Sign in"}
+                      {loginMutation.isPending ? "Signing in…" : "Sign in"}
                     </Button>
                   </form>
                 </Form>
@@ -479,7 +494,6 @@ export default function LoginPage() {
           </AnimatePresence>
         </div>
 
-        {/* Footer link */}
         {step === "phone" && (
           <motion.p
             initial={{ opacity: 0 }}

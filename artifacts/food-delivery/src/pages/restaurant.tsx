@@ -126,7 +126,7 @@ export default function RestaurantPage() {
       )}
 
       {/* Menu categories */}
-      <div className="flex gap-2 overflow-x-auto pb-1">
+      <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
         {categories.map((cat) => (
           <Button
             key={cat}

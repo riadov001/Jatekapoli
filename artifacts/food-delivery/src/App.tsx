@@ -6,6 +6,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { CartProvider } from "@/contexts/CartContext";
 import { Layout } from "@/components/Layout";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { setAuthTokenGetter } from "@workspace/api-client-react";
 
 import HomePage from "@/pages/home";
 import RestaurantPage from "@/pages/restaurant";
@@ -25,6 +26,9 @@ import RestaurantDashboardPage from "@/pages/restaurant-panel/dashboard";
 import RestaurantMenuPage from "@/pages/restaurant-panel/menu";
 import DriverDashboardPage from "@/pages/driver/dashboard";
 import NotFound from "@/pages/not-found";
+
+// Attach stored JWT to every API request automatically
+setAuthTokenGetter(() => localStorage.getItem("tawsila_token"));
 
 const queryClient = new QueryClient({
   defaultOptions: {

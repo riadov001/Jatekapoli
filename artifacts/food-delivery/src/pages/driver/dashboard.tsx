@@ -1,4 +1,5 @@
-import { Truck, DollarSign, Package, Star } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Truck, DollarSign, Package, Star, Navigation, NavigationOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -13,9 +14,25 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 
+async function updateDriverLocation(driverId: number, lat: number, lng: number) {
+  const token = localStorage.getItem("tawsila_token");
+  const base = import.meta.env.BASE_URL?.replace(/\/$/, "") || "";
+  await fetch(`${base}/api/drivers/${driverId}/location`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify({ latitude: lat, longitude: lng }),
+  });
+}
+
 export default function DriverDashboardPage() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const [locationSharing, setLocationSharing] = useState(false);
+  const [locationError, setLocationError] = useState<string | null>(null);
+  const watchIdRef = useRef<number | null>(null);
 
   const { data: drivers, refetch: refetchDrivers } = useListDrivers();
   const myDriver = drivers?.find((d) => d.userId === user?.id);
@@ -32,6 +49,58 @@ export default function DriverDashboardPage() {
 
   const updateDriver = useUpdateDriver();
   const updateStatus = useUpdateOrderStatus();
+
+  // Auto-start location sharing when driver becomes available
+  useEffect(() => {
+    if (myDriver?.isAvailable && !locationSharing) {
+      startLocationSharing();
+    }
+    if (!myDriver?.isAvailable && locationSharing) {
+      stopLocationSharing();
+    }
+  }, [myDriver?.isAvailable]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (watchIdRef.current !== null) {
+        navigator.geolocation.clearWatch(watchIdRef.current);
+      }
+    };
+  }, []);
+
+  function startLocationSharing() {
+    if (!("geolocation" in navigator)) {
+      setLocationError("Geolocation not supported by your browser");
+      return;
+    }
+    if (!myDriver) return;
+
+    setLocationError(null);
+    setLocationSharing(true);
+
+    const id = navigator.geolocation.watchPosition(
+      (pos) => {
+        updateDriverLocation(myDriver.id, pos.coords.latitude, pos.coords.longitude).catch(() => {});
+      },
+      (err) => {
+        setLocationError(err.code === 1 ? "Location permission denied" : "Could not get your location");
+        setLocationSharing(false);
+        watchIdRef.current = null;
+      },
+      { enableHighAccuracy: true, maximumAge: 10000, timeout: 15000 }
+    );
+
+    watchIdRef.current = id;
+  }
+
+  function stopLocationSharing() {
+    if (watchIdRef.current !== null) {
+      navigator.geolocation.clearWatch(watchIdRef.current);
+      watchIdRef.current = null;
+    }
+    setLocationSharing(false);
+  }
 
   const toggleAvailable = () => {
     if (!myDriver) return;
@@ -71,16 +140,53 @@ export default function DriverDashboardPage() {
         </div>
       </div>
 
-      {/* Status badge */}
+      {/* Status + location badge */}
       <div className={`p-4 rounded-xl text-center font-semibold ${myDriver.isAvailable ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" : "bg-muted text-muted-foreground"}`}>
         {myDriver.isAvailable ? "You are available for deliveries" : "You are offline"}
+      </div>
+
+      {/* Location sharing panel */}
+      <div className="bg-card rounded-2xl border border-card-border p-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            {locationSharing
+              ? <Navigation className="w-5 h-5 text-green-500 animate-pulse" />
+              : <NavigationOff className="w-5 h-5 text-muted-foreground" />
+            }
+            <div>
+              <p className="font-semibold text-sm">
+                {locationSharing ? "Sharing live location" : "Location sharing off"}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {locationSharing
+                  ? "Customers can see where you are"
+                  : "Turn on so customers can track you"}
+              </p>
+            </div>
+          </div>
+          <Button
+            size="sm"
+            variant={locationSharing ? "outline" : "default"}
+            className="gap-1.5 rounded-xl"
+            onClick={locationSharing ? stopLocationSharing : startLocationSharing}
+          >
+            {locationSharing ? (
+              <><NavigationOff className="w-3.5 h-3.5" /> Stop</>
+            ) : (
+              <><Navigation className="w-3.5 h-3.5" /> Start</>
+            )}
+          </Button>
+        </div>
+        {locationError && (
+          <p className="text-xs text-destructive mt-2">{locationError}</p>
+        )}
       </div>
 
       {/* Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <div className="bg-card rounded-2xl border border-card-border p-4">
           <Package className="w-5 h-5 text-primary mb-2" />
-          <p className="font-bold text-2xl">{myDriver.deliveriesCount}</p>
+          <p className="font-bold text-2xl">{myDriver.totalDeliveries}</p>
           <p className="text-xs text-muted-foreground">Total Deliveries</p>
         </div>
         <div className="bg-card rounded-2xl border border-card-border p-4">
@@ -91,16 +197,16 @@ export default function DriverDashboardPage() {
         <div className="bg-card rounded-2xl border border-card-border p-4">
           <DollarSign className="w-5 h-5 text-green-600 mb-2" />
           {earningsLoading ? <Skeleton className="h-8 w-16" /> : (
-            <p className="font-bold text-2xl">{((earnings as any)?.totalEarnings ?? (earnings as any)?.thisMonth ?? 0).toFixed(0)}</p>
+            <p className="font-bold text-2xl">{((earnings as any)?.thisMonth ?? 0).toFixed(0)}</p>
           )}
-          <p className="text-xs text-muted-foreground">Total (MAD)</p>
+          <p className="text-xs text-muted-foreground">This Month (MAD)</p>
         </div>
         <div className="bg-card rounded-2xl border border-card-border p-4">
           <Truck className="w-5 h-5 text-blue-600 mb-2" />
           {earningsLoading ? <Skeleton className="h-8 w-16" /> : (
-            <p className="font-bold text-2xl">{(earnings?.thisMonth ?? 0).toFixed(0)}</p>
+            <p className="font-bold text-2xl">{(earnings?.completedToday ?? 0)}</p>
           )}
-          <p className="text-xs text-muted-foreground">This Month</p>
+          <p className="text-xs text-muted-foreground">Today</p>
         </div>
       </div>
 

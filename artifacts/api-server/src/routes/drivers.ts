@@ -70,6 +70,42 @@ router.patch("/drivers/:id", async (req, res): Promise<void> => {
   res.json(driver);
 });
 
+router.patch("/drivers/:id/location", async (req, res): Promise<void> => {
+  const id = parseInt(req.params.id, 10);
+  if (isNaN(id)) { res.status(400).json({ error: "Invalid driver id" }); return; }
+
+  const { latitude, longitude } = req.body;
+  if (typeof latitude !== "number" || typeof longitude !== "number") {
+    res.status(400).json({ error: "latitude and longitude (numbers) required" });
+    return;
+  }
+
+  const [driver] = await db
+    .update(driversTable)
+    .set({ latitude, longitude, locationUpdatedAt: new Date() })
+    .where(eq(driversTable.id, id))
+    .returning();
+
+  if (!driver) { res.status(404).json({ error: "Driver not found" }); return; }
+  res.json({ latitude: driver.latitude, longitude: driver.longitude, locationUpdatedAt: driver.locationUpdatedAt });
+});
+
+router.get("/drivers/:id/location", async (req, res): Promise<void> => {
+  const id = parseInt(req.params.id, 10);
+  if (isNaN(id)) { res.status(400).json({ error: "Invalid driver id" }); return; }
+
+  const [driver] = await db.select().from(driversTable).where(eq(driversTable.id, id)).limit(1);
+  if (!driver) { res.status(404).json({ error: "Driver not found" }); return; }
+
+  res.json({
+    latitude: driver.latitude,
+    longitude: driver.longitude,
+    locationUpdatedAt: driver.locationUpdatedAt,
+    isAvailable: driver.isAvailable,
+    name: driver.name,
+  });
+});
+
 router.get("/drivers/:id/earnings", async (req, res): Promise<void> => {
   const params = GetDriverEarningsParams.safeParse(req.params);
   if (!params.success) {
