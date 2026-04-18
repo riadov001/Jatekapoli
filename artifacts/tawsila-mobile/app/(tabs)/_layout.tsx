@@ -53,9 +53,15 @@ function ClassicTabLayout({ isDriver }: { isDriver: boolean }) {
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.mutedForeground,
         headerShown: false,
+        tabBarLabelStyle: {
+          fontFamily: "Inter_700Bold",
+          fontSize: 11,
+          letterSpacing: 0.2,
+        },
+        tabBarItemStyle: { paddingTop: 6 },
         tabBarStyle: {
           position: "absolute",
-          backgroundColor: isIOS ? "transparent" : colors.background,
+          backgroundColor: isIOS ? "transparent" : colors.card,
           borderTopWidth: 1,
           borderTopColor: colors.border,
           elevation: 0,

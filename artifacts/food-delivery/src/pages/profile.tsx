@@ -30,7 +30,7 @@ export default function ProfilePage() {
   return (
     <div className="max-w-2xl mx-auto space-y-6 pb-6">
       {/* Profile header */}
-      <div className="bg-gradient-to-br from-primary to-amber-500 rounded-2xl p-6 text-white">
+      <div className="bg-gradient-to-br from-primary via-primary to-pink-400 rounded-2xl p-6 text-white">
         <div className="flex items-center gap-4">
           <div className="w-16 h-16 rounded-full bg-white/20 flex items-center justify-center text-2xl font-bold font-display">
             {user.name.charAt(0).toUpperCase()}

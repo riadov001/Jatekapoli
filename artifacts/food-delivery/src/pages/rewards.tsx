@@ -66,7 +66,7 @@ export default function RewardsPage() {
       <h1 className="font-display font-bold text-2xl">{t("rewards.title")}</h1>
 
       {/* Points card */}
-      <div className="relative bg-gradient-to-br from-primary to-amber-500 rounded-2xl p-6 overflow-hidden text-white">
+      <div className="relative bg-gradient-to-br from-primary via-primary to-pink-400 rounded-2xl p-6 overflow-hidden text-white">
         <div className="absolute top-0 right-0 text-8xl opacity-20 -mt-4 -mr-4">🎁</div>
         <div className="relative">
           <div className="flex items-center gap-2 mb-1">
