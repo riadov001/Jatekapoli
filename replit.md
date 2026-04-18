@@ -64,3 +64,11 @@ users, restaurants, menuItems, orders, orderItems, drivers, reviews
 
 ### Auth Flow
 JWT stored in localStorage (`tawsila_token`). `setAuthTokenGetter` registered in `main.tsx` to inject `Authorization: Bearer` header on all API calls.
+
+### Mobile App (Expo)
+- `artifacts/tawsila-mobile` — Expo (React Native) app at preview path `/mobile/`
+- Phone OTP auth (Twilio), shares same backend API
+- Screens: Login, OTP verify, Home (restaurants), Restaurant detail + menu, Cart, Orders list, Order tracking, Profile
+- State: AuthContext (expo-secure-store token persistence), CartContext (AsyncStorage)
+- Design tokens synced from web app: primary #F97316, background #F9F6F2, card #FFFFFF
+- Workflow: `artifacts/tawsila-mobile: expo`
