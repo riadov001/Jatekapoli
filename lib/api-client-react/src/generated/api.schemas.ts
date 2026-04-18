@@ -102,6 +102,7 @@ export interface Restaurant {
   /** @nullable */
   coverImageUrl?: string | null;
   category: string;
+  businessType: string;
   isLocal: boolean;
   isOpen: boolean;
   /** @nullable */
@@ -125,6 +126,7 @@ export interface CreateRestaurantBody {
   imageUrl?: string;
   coverImageUrl?: string;
   category: string;
+  businessType?: string;
   isLocal?: boolean;
   deliveryTime?: number;
   deliveryFee?: number;
@@ -139,6 +141,7 @@ export interface UpdateRestaurantBody {
   imageUrl?: string;
   coverImageUrl?: string;
   category?: string;
+  businessType?: string;
   isLocal?: boolean;
   isOpen?: boolean;
   deliveryTime?: number;
@@ -178,6 +181,7 @@ export interface CreateMenuItemBody {
   price: number;
   imageUrl?: string;
   category: string;
+  isAvailable?: boolean;
   isPopular?: boolean;
 }
 
@@ -338,6 +342,8 @@ export type ListRestaurantsParams = {
   category?: string;
   isLocal?: boolean;
   isOpen?: boolean;
+  businessType?: string;
+  ownerId?: number;
 };
 
 export type ListMenuItemsParams = {

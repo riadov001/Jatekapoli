@@ -55,3 +55,22 @@ export async function requireAuth(req: AuthedRequest, res: Response, next: NextF
   req.userRole = user.role;
   next();
 }
+
+/** Rejects with 401/403 unless the authenticated user has one of the allowed roles. */
+export function requireRole(...roles: string[]) {
+  return async function (req: AuthedRequest, res: Response, next: NextFunction): Promise<void> {
+    const user = await decodeUser(req);
+    if (!user) {
+      res.status(401).json({ error: "Authentication required" });
+      return;
+    }
+    if (!roles.includes(user.role)) {
+      res.status(403).json({ error: "Forbidden: insufficient permissions" });
+      return;
+    }
+    req.userId = user.id;
+    req.userName = user.name;
+    req.userRole = user.role;
+    next();
+  };
+}

@@ -118,9 +118,10 @@ export const VerifyOtpResponse = zod.object({
 export const ListRestaurantsQueryParams = zod.object({
   search: zod.coerce.string().optional(),
   category: zod.coerce.string().optional(),
-  businessType: zod.coerce.string().optional(),
   isLocal: zod.coerce.boolean().optional(),
   isOpen: zod.coerce.boolean().optional(),
+  businessType: zod.coerce.string().optional(),
+  ownerId: zod.coerce.number().optional(),
 });
 
 export const ListRestaurantsResponseItem = zod.object({
@@ -133,7 +134,7 @@ export const ListRestaurantsResponseItem = zod.object({
   imageUrl: zod.string().nullish(),
   coverImageUrl: zod.string().nullish(),
   category: zod.string(),
-  businessType: zod.string().optional(),
+  businessType: zod.string(),
   isLocal: zod.boolean(),
   isOpen: zod.boolean(),
   deliveryTime: zod.number().nullish(),
@@ -157,6 +158,7 @@ export const CreateRestaurantBody = zod.object({
   imageUrl: zod.string().optional(),
   coverImageUrl: zod.string().optional(),
   category: zod.string(),
+  businessType: zod.string().optional(),
   isLocal: zod.boolean().optional(),
   deliveryTime: zod.number().optional(),
   deliveryFee: zod.number().optional(),
@@ -180,6 +182,7 @@ export const GetRestaurantResponse = zod.object({
   imageUrl: zod.string().nullish(),
   coverImageUrl: zod.string().nullish(),
   category: zod.string(),
+  businessType: zod.string(),
   isLocal: zod.boolean(),
   isOpen: zod.boolean(),
   deliveryTime: zod.number().nullish(),
@@ -206,6 +209,7 @@ export const UpdateRestaurantBody = zod.object({
   imageUrl: zod.string().optional(),
   coverImageUrl: zod.string().optional(),
   category: zod.string().optional(),
+  businessType: zod.string().optional(),
   isLocal: zod.boolean().optional(),
   isOpen: zod.boolean().optional(),
   deliveryTime: zod.number().optional(),
@@ -224,6 +228,7 @@ export const UpdateRestaurantResponse = zod.object({
   imageUrl: zod.string().nullish(),
   coverImageUrl: zod.string().nullish(),
   category: zod.string(),
+  businessType: zod.string(),
   isLocal: zod.boolean(),
   isOpen: zod.boolean(),
   deliveryTime: zod.number().nullish(),
@@ -271,6 +276,7 @@ export const GetFeaturedRestaurantsResponseItem = zod.object({
   imageUrl: zod.string().nullish(),
   coverImageUrl: zod.string().nullish(),
   category: zod.string(),
+  businessType: zod.string(),
   isLocal: zod.boolean(),
   isOpen: zod.boolean(),
   deliveryTime: zod.number().nullish(),
@@ -323,6 +329,7 @@ export const CreateMenuItemBody = zod.object({
   price: zod.number(),
   imageUrl: zod.string().optional(),
   category: zod.string(),
+  isAvailable: zod.boolean().optional(),
   isPopular: zod.boolean().optional(),
 });
 

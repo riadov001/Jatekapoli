@@ -1,4 +1,4 @@
-import { Switch, Route, Router as WouterRouter, useLocation } from "wouter";
+import { Switch, Route, Router as WouterRouter, useLocation, Redirect } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -20,8 +20,10 @@ import ProfilePage from "@/pages/profile";
 import AdminDashboardPage from "@/pages/admin/dashboard";
 import AdminUsersPage from "@/pages/admin/users";
 import AdminRestaurantsPage from "@/pages/admin/restaurants";
+import AdminRestaurantMenuPage from "@/pages/admin/restaurant-menu";
 import AdminDriversPage from "@/pages/admin/drivers";
 import AdminOrdersPage from "@/pages/admin/orders";
+import { AdminRoute } from "@/components/AdminRoute";
 import RestaurantDashboardPage from "@/pages/restaurant-panel/dashboard";
 import RestaurantMenuPage from "@/pages/restaurant-panel/menu";
 import DriverDashboardPage from "@/pages/driver/dashboard";
@@ -60,11 +62,13 @@ function Router() {
         <Route path="/login" component={LoginPage} />
         <Route path="/register" component={RegisterPage} />
         <Route path="/legal" component={LegalPage} />
-        <Route path="/admin/dashboard" component={AdminDashboardPage} />
-        <Route path="/admin/users" component={AdminUsersPage} />
-        <Route path="/admin/restaurants" component={AdminRestaurantsPage} />
-        <Route path="/admin/drivers" component={AdminDriversPage} />
-        <Route path="/admin/orders" component={AdminOrdersPage} />
+        <Route path="/admin"><Redirect to="/admin/dashboard" /></Route>
+        <Route path="/admin/dashboard"><AdminRoute><AdminDashboardPage /></AdminRoute></Route>
+        <Route path="/admin/users"><AdminRoute><AdminUsersPage /></AdminRoute></Route>
+        <Route path="/admin/restaurants"><AdminRoute><AdminRestaurantsPage /></AdminRoute></Route>
+        <Route path="/admin/restaurants/:id/menu"><AdminRoute><AdminRestaurantMenuPage /></AdminRoute></Route>
+        <Route path="/admin/drivers"><AdminRoute><AdminDriversPage /></AdminRoute></Route>
+        <Route path="/admin/orders"><AdminRoute><AdminOrdersPage /></AdminRoute></Route>
         <Route path="/restaurant/dashboard" component={RestaurantDashboardPage} />
         <Route path="/restaurant/menu" component={RestaurantMenuPage} />
         <Route path="/driver/dashboard" component={DriverDashboardPage} />

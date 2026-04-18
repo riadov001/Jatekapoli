@@ -199,6 +199,14 @@ paths:
           in: query
           schema:
             type: boolean
+        - name: businessType
+          in: query
+          schema:
+            type: string
+        - name: ownerId
+          in: query
+          schema:
+            type: integer
       responses:
         "200":
           description: List of restaurants
@@ -990,6 +998,8 @@ components:
           type: ["string", "null"]
         category:
           type: string
+        businessType:
+          type: string
         isLocal:
           type: boolean
         isOpen:
@@ -1015,6 +1025,7 @@ components:
         - name
         - address
         - category
+        - businessType
         - isLocal
         - isOpen
         - reviewCount
@@ -1037,6 +1048,8 @@ components:
         coverImageUrl:
           type: string
         category:
+          type: string
+        businessType:
           type: string
         isLocal:
           type: boolean
@@ -1067,6 +1080,8 @@ components:
         coverImageUrl:
           type: string
         category:
+          type: string
+        businessType:
           type: string
         isLocal:
           type: boolean
@@ -1151,6 +1166,8 @@ components:
           type: string
         category:
           type: string
+        isAvailable:
+          type: boolean
         isPopular:
           type: boolean
       required:

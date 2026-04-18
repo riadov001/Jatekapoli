@@ -10,6 +10,7 @@ import {
   GetRestaurantStatsParams,
   ListRestaurantsQueryParams,
 } from "@workspace/api-zod";
+import { requireRole, type AuthedRequest } from "../middlewares/auth";
 
 const router: IRouter = Router();
 
@@ -43,6 +44,9 @@ router.get("/restaurants", async (req, res): Promise<void> => {
   if (query.search) {
     conditions.push(ilike(restaurantsTable.name, `%${query.search}%`));
   }
+  if (query.ownerId !== undefined) {
+    conditions.push(eq(restaurantsTable.ownerId, query.ownerId));
+  }
 
   const restaurants = conditions.length > 0
     ? await db.select().from(restaurantsTable).where(and(...conditions))
@@ -51,14 +55,18 @@ router.get("/restaurants", async (req, res): Promise<void> => {
   res.json(restaurants);
 });
 
-router.post("/restaurants", async (req, res): Promise<void> => {
+router.post("/restaurants", requireRole("admin"), async (req: AuthedRequest, res): Promise<void> => {
   const parsed = CreateRestaurantBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
     return;
   }
 
-  const ownerId = (req as any).userId || 1;
+  if (!req.userId) {
+    res.status(401).json({ error: "Authentication required" });
+    return;
+  }
+  const ownerId = req.userId;
 
   const [restaurant] = await db.insert(restaurantsTable).values({
     ...parsed.data,
@@ -87,7 +95,24 @@ router.get("/restaurants/:id", async (req, res): Promise<void> => {
   res.json(restaurant);
 });
 
-router.patch("/restaurants/:id", async (req, res): Promise<void> => {
+router.patch("/restaurants/:id", requireRole("admin", "restaurant_owner"), async (req: AuthedRequest, res): Promise<void> => {
+  // Ownership check: non-admin owners may only modify their own restaurant.
+  if (req.userRole !== "admin") {
+    const idParam = parseInt(req.params.id ?? "", 10);
+    if (Number.isNaN(idParam)) {
+      res.status(400).json({ error: "Invalid id" });
+      return;
+    }
+    const [existing] = await db.select().from(restaurantsTable).where(eq(restaurantsTable.id, idParam)).limit(1);
+    if (!existing) {
+      res.status(404).json({ error: "Restaurant not found" });
+      return;
+    }
+    if (existing.ownerId !== req.userId) {
+      res.status(403).json({ error: "Forbidden: you do not own this restaurant" });
+      return;
+    }
+  }
   const params = UpdateRestaurantParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
@@ -114,7 +139,7 @@ router.patch("/restaurants/:id", async (req, res): Promise<void> => {
   res.json(restaurant);
 });
 
-router.delete("/restaurants/:id", async (req, res): Promise<void> => {
+router.delete("/restaurants/:id", requireRole("admin"), async (req: AuthedRequest, res): Promise<void> => {
   const params = DeleteRestaurantParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });

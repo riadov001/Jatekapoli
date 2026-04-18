@@ -1,6 +1,7 @@
 import { Router, type IRouter } from "express";
-import { db, menuItemsTable } from "@workspace/db";
+import { db, menuItemsTable, restaurantsTable } from "@workspace/db";
 import { eq, and } from "drizzle-orm";
+import { requireRole, type AuthedRequest } from "../middlewares/auth";
 import {
   CreateMenuItemBody,
   CreateMenuItemParams,
@@ -13,6 +14,26 @@ import {
 } from "@workspace/api-zod";
 
 const router: IRouter = Router();
+
+/** Returns the owner id of the parent restaurant for a menu item, or null if either is missing. */
+async function getMenuItemOwnerId(menuItemId: number): Promise<number | null> {
+  const [row] = await db
+    .select({ ownerId: restaurantsTable.ownerId })
+    .from(menuItemsTable)
+    .innerJoin(restaurantsTable, eq(menuItemsTable.restaurantId, restaurantsTable.id))
+    .where(eq(menuItemsTable.id, menuItemId))
+    .limit(1);
+  return row?.ownerId ?? null;
+}
+
+async function getRestaurantOwnerId(restaurantId: number): Promise<number | null> {
+  const [row] = await db
+    .select({ ownerId: restaurantsTable.ownerId })
+    .from(restaurantsTable)
+    .where(eq(restaurantsTable.id, restaurantId))
+    .limit(1);
+  return row?.ownerId ?? null;
+}
 
 router.get("/restaurants/:restaurantId/menu", async (req, res): Promise<void> => {
   const pathParams = ListMenuItemsParams.safeParse(req.params);
@@ -34,7 +55,7 @@ router.get("/restaurants/:restaurantId/menu", async (req, res): Promise<void> =>
   res.json(items);
 });
 
-router.post("/restaurants/:restaurantId/menu", async (req, res): Promise<void> => {
+router.post("/restaurants/:restaurantId/menu", requireRole("admin", "restaurant_owner"), async (req: AuthedRequest, res): Promise<void> => {
   const pathParams = CreateMenuItemParams.safeParse(req.params);
   if (!pathParams.success) {
     res.status(400).json({ error: pathParams.error.message });
@@ -47,10 +68,22 @@ router.post("/restaurants/:restaurantId/menu", async (req, res): Promise<void> =
     return;
   }
 
+  if (req.userRole !== "admin") {
+    const ownerId = await getRestaurantOwnerId(pathParams.data.restaurantId);
+    if (ownerId == null) {
+      res.status(404).json({ error: "Restaurant not found" });
+      return;
+    }
+    if (ownerId !== req.userId) {
+      res.status(403).json({ error: "Forbidden: you do not own this restaurant" });
+      return;
+    }
+  }
+
   const [item] = await db.insert(menuItemsTable).values({
     ...parsed.data,
     restaurantId: pathParams.data.restaurantId,
-    isAvailable: true,
+    isAvailable: parsed.data.isAvailable ?? true,
     isPopular: parsed.data.isPopular ?? false,
   }).returning();
 
@@ -73,7 +106,7 @@ router.get("/menu/:id", async (req, res): Promise<void> => {
   res.json(item);
 });
 
-router.patch("/menu/:id", async (req, res): Promise<void> => {
+router.patch("/menu/:id", requireRole("admin", "restaurant_owner"), async (req: AuthedRequest, res): Promise<void> => {
   const params = UpdateMenuItemParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
@@ -84,6 +117,18 @@ router.patch("/menu/:id", async (req, res): Promise<void> => {
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
     return;
+  }
+
+  if (req.userRole !== "admin") {
+    const ownerId = await getMenuItemOwnerId(params.data.id);
+    if (ownerId == null) {
+      res.status(404).json({ error: "Menu item not found" });
+      return;
+    }
+    if (ownerId !== req.userId) {
+      res.status(403).json({ error: "Forbidden: you do not own this menu item" });
+      return;
+    }
   }
 
   const [item] = await db
@@ -100,11 +145,23 @@ router.patch("/menu/:id", async (req, res): Promise<void> => {
   res.json(item);
 });
 
-router.delete("/menu/:id", async (req, res): Promise<void> => {
+router.delete("/menu/:id", requireRole("admin", "restaurant_owner"), async (req: AuthedRequest, res): Promise<void> => {
   const params = DeleteMenuItemParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
     return;
+  }
+
+  if (req.userRole !== "admin") {
+    const ownerId = await getMenuItemOwnerId(params.data.id);
+    if (ownerId == null) {
+      res.status(404).json({ error: "Menu item not found" });
+      return;
+    }
+    if (ownerId !== req.userId) {
+      res.status(403).json({ error: "Forbidden: you do not own this menu item" });
+      return;
+    }
   }
 
   await db.delete(menuItemsTable).where(eq(menuItemsTable.id, params.data.id));

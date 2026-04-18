@@ -56,8 +56,10 @@ users, restaurants, menuItems, orders, orderItems, drivers, reviews
 - `/rewards` — Loyalty points & tier (Bronze/Silver/Gold)
 - `/profile` — User profile
 - `/login`, `/register` — Auth
-- `/admin/dashboard` — Admin stats
+- `/admin` — Redirects to `/admin/dashboard`
+- `/admin/dashboard` — Admin stats (all `/admin/*` routes are gated by `AdminRoute` which requires `role === "admin"`)
 - `/admin/users`, `/admin/restaurants`, `/admin/drivers`, `/admin/orders`
+- `/admin/restaurants/:id/menu` — Admin menu CRUD for any restaurant
 - `/restaurant/dashboard` — Restaurant owner order management
 - `/restaurant/menu` — Menu CRUD
 - `/driver/dashboard` — Driver availability + earnings
