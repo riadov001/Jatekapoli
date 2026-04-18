@@ -62,6 +62,16 @@ users, restaurants, menuItems, orders, orderItems, drivers, reviews
 - `/restaurant/menu` — Menu CRUD
 - `/driver/dashboard` — Driver availability + earnings
 
+### Internationalisation (i18n)
+- Stack: `i18next` + `react-i18next` + `i18next-browser-languagedetector`
+- Languages: English (`en`), French (`fr`), Arabic (`ar` — RTL)
+- Translation files: `artifacts/food-delivery/src/locales/{en,fr,ar}.json`
+- Config: `artifacts/food-delivery/src/i18n.ts` (imported in `main.tsx`)
+- Language stored in `localStorage` key `tawsila_lang`
+- RTL: `document.documentElement.dir` toggled in `Layout.tsx` via `useEffect`
+- Switcher: Globe icon in header dropdown (🇬🇧 English / 🇫🇷 Français / 🇲🇦 العربية)
+- All pages/components use `useTranslation()` hook
+
 ### Auth Flow
 JWT stored in localStorage (`tawsila_token`). `setAuthTokenGetter` registered in `main.tsx` to inject `Authorization: Bearer` header on all API calls.
 

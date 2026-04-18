@@ -185,7 +185,9 @@
     "toNext": "{{count}} more points to reach {{tier}}",
     "loginRequired": "Please login to view your rewards",
     "login": "Login",
-    "pts": "pts"
+    "pts": "pts",
+    "validDays": "Valid for {{days}} days",
+    "premiumReward": "Premium reward"
   },
   "card": {
     "freeDelivery": "Free delivery",

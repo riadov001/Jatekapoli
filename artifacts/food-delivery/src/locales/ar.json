@@ -185,7 +185,9 @@
     "toNext": "{{count}} نقطة أخرى للوصول إلى {{tier}}",
     "loginRequired": "يرجى تسجيل الدخول لعرض مكافآتك",
     "login": "تسجيل الدخول",
-    "pts": "نقطة"
+    "pts": "نقطة",
+    "validDays": "صالح لـ {{days}} أيام",
+    "premiumReward": "مكافأة مميزة"
   },
   "card": {
     "freeDelivery": "توصيل مجاني",
