@@ -10,7 +10,7 @@ const statusColors: Record<string, string> = {
   accepted: "bg-primary/15 text-primary border border-primary/25",
   preparing: "bg-primary/20 text-primary border border-primary/30",
   ready: "bg-primary/25 text-primary border border-primary/35",
-  picked_up: "bg-primary/35 text-primary-foreground bg-primary",
+  picked_up: "bg-primary text-primary-foreground",
   delivered: "bg-foreground/90 text-background",
   cancelled: "bg-muted text-muted-foreground border border-border",
 };
