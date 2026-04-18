@@ -24,9 +24,38 @@ export default function OrderDetailPage() {
   const { t } = useTranslation();
   const id = match ? parseInt(params!.id, 10) : 0;
 
-  const { data: order, isLoading } = useGetOrder(id, { query: { enabled: !!id, refetchInterval: 15000 } });
+  const { data: order, isLoading, refetch } = useGetOrder(id, { query: { enabled: !!id, refetchInterval: 20000 } });
 
   const [driverLocation, setDriverLocation] = useState<DriverLocation | null>(null);
+
+  // Real-time updates via SSE: order_status (re-fetches order) + driver_location
+  useEffect(() => {
+    if (!id) return;
+    const base = import.meta.env.BASE_URL?.replace(/\/$/, "") || "";
+    const channels = [`order:${id}`, order?.driverId ? `driver:${order.driverId}` : ""].filter(Boolean).join(",");
+    const url = `${base}/api/events?channels=${encodeURIComponent(channels)}`;
+    const es = new EventSource(url);
+    es.addEventListener("order_status", () => { refetch(); });
+    es.addEventListener("driver_location", (e) => {
+      try {
+        const data = JSON.parse((e as MessageEvent).data);
+        if (data?.latitude != null && data?.longitude != null) {
+          setDriverLocation((prev) => ({
+            latitude: data.latitude,
+            longitude: data.longitude,
+            locationUpdatedAt: data.updatedAt ?? new Date().toISOString(),
+            name: prev?.name,
+          }));
+        }
+      } catch (err) {
+        console.warn("[order-detail] failed to parse driver_location event", err);
+      }
+    });
+    es.onerror = (err) => {
+      console.warn("[order-detail] SSE error; polling will continue as fallback", err);
+    };
+    return () => { es.close(); };
+  }, [id, order?.driverId, refetch]);
 
   const steps = [
     { key: "pending", label: t("step.orderPlaced"), icon: Package },
