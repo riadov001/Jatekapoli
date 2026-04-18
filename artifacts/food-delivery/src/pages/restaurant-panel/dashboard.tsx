@@ -1,13 +1,35 @@
 import { useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
-import { Package, DollarSign, Clock, TrendingUp, Bell, ChefHat, CheckCircle, XCircle, Truck } from "lucide-react";
+import { Package, DollarSign, Clock, TrendingUp, Bell, ChefHat, CheckCircle, XCircle, Truck, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useListRestaurants, useListOrders, useUpdateOrderStatus } from "@workspace/api-client-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+} from "@/components/ui/dialog";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
+import { useListRestaurants, useListOrders, useUpdateOrderStatus, useUpdateRestaurant } from "@workspace/api-client-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { useTranslation } from "react-i18next";
+
+const BUSINESS_TYPES = ["restaurant", "grocery", "pharmacy", "bakery"];
+
+type RestaurantFormState = {
+  name: string;
+  category: string;
+  businessType: string;
+  address: string;
+  phone: string;
+  imageUrl: string;
+  deliveryTime: string;
+  deliveryFee: string;
+  minimumOrder: string;
+};
 
 const statusColors: Record<string, string> = {
   pending: "bg-accent text-accent-foreground border-primary/20",
@@ -85,8 +107,14 @@ export default function RestaurantDashboardPage() {
   const [alertVisible, setAlertVisible] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const esRef = useRef<EventSource | null>(null);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [restaurantForm, setRestaurantForm] = useState<RestaurantFormState>({
+    name: "", category: "", businessType: "restaurant", address: "",
+    phone: "", imageUrl: "", deliveryTime: "", deliveryFee: "", minimumOrder: "",
+  });
+  const updateRestaurant = useUpdateRestaurant();
 
-  const { data: restaurants } = useListRestaurants({ ownerId: user?.id });
+  const { data: restaurants, refetch: refetchRestaurants } = useListRestaurants({ ownerId: user?.id });
   const myRestaurant = restaurants?.[0];
 
   const { data: orders, isLoading, refetch } = useListOrders(
@@ -148,6 +176,59 @@ export default function RestaurantDashboardPage() {
     });
   };
 
+  const openSettings = () => {
+    if (!myRestaurant) return;
+    setRestaurantForm({
+      name: myRestaurant.name,
+      category: myRestaurant.category,
+      businessType: myRestaurant.businessType,
+      address: myRestaurant.address,
+      phone: myRestaurant.phone ?? "",
+      imageUrl: myRestaurant.imageUrl ?? "",
+      deliveryTime: myRestaurant.deliveryTime != null ? String(myRestaurant.deliveryTime) : "",
+      deliveryFee: myRestaurant.deliveryFee != null ? String(myRestaurant.deliveryFee) : "",
+      minimumOrder: myRestaurant.minimumOrder != null ? String(myRestaurant.minimumOrder) : "",
+    });
+    setSettingsOpen(true);
+  };
+
+  const handleSaveRestaurant = () => {
+    if (!myRestaurant) return;
+    if (!restaurantForm.name.trim() || !restaurantForm.category.trim() || !restaurantForm.address.trim()) {
+      toast({ title: "Name, category and address are required", variant: "destructive" });
+      return;
+    }
+    const numOrUndef = (s: string) => {
+      if (!s) return undefined;
+      const n = parseFloat(s);
+      return Number.isFinite(n) ? n : undefined;
+    };
+    const intOrUndef = (s: string) => {
+      if (!s) return undefined;
+      const n = parseInt(s, 10);
+      return Number.isFinite(n) ? n : undefined;
+    };
+    const payload = {
+      name: restaurantForm.name.trim(),
+      category: restaurantForm.category.trim(),
+      businessType: restaurantForm.businessType,
+      address: restaurantForm.address.trim(),
+      phone: restaurantForm.phone.trim() || undefined,
+      imageUrl: restaurantForm.imageUrl.trim() || undefined,
+      deliveryTime: intOrUndef(restaurantForm.deliveryTime),
+      deliveryFee: numOrUndef(restaurantForm.deliveryFee),
+      minimumOrder: numOrUndef(restaurantForm.minimumOrder),
+    };
+    updateRestaurant.mutate({ id: myRestaurant.id, data: payload }, {
+      onSuccess: () => {
+        toast({ title: "Restaurant updated" });
+        refetchRestaurants();
+        setSettingsOpen(false);
+      },
+      onError: () => toast({ title: "Failed to update restaurant", variant: "destructive" }),
+    });
+  };
+
   const dismissAlert = () => {
     setAlertVisible(false);
     setUnreadCount(0);
@@ -204,11 +285,85 @@ export default function RestaurantDashboardPage() {
           <p className="text-muted-foreground text-sm">{t("restaurantPanel.panel")}</p>
         </div>
         <div className="flex gap-2">
+          <Button variant="outline" size="sm" className="gap-1.5" onClick={openSettings} data-testid="button-edit-restaurant">
+            <Settings className="w-4 h-4" />
+            Edit details
+          </Button>
           <Button variant="outline" size="sm" onClick={() => setLocation("/restaurant/menu")}>
             {t("restaurantPanel.manageMenu")}
           </Button>
         </div>
       </div>
+
+      <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Edit restaurant details</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-3">
+            <div>
+              <Label>Name</Label>
+              <Input value={restaurantForm.name} onChange={(e) => setRestaurantForm({ ...restaurantForm, name: e.target.value })} className="mt-1" data-testid="input-restaurant-name" />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label>Category</Label>
+                <Input value={restaurantForm.category} onChange={(e) => setRestaurantForm({ ...restaurantForm, category: e.target.value })} placeholder="e.g. Moroccan" className="mt-1" data-testid="input-restaurant-category" />
+              </div>
+              <div>
+                <Label>Business Type</Label>
+                <Select value={restaurantForm.businessType} onValueChange={(v) => setRestaurantForm({ ...restaurantForm, businessType: v })}>
+                  <SelectTrigger className="mt-1" data-testid="select-business-type">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {BUSINESS_TYPES.map((bt) => (
+                      <SelectItem key={bt} value={bt}>{bt}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div>
+              <Label>Address</Label>
+              <Input value={restaurantForm.address} onChange={(e) => setRestaurantForm({ ...restaurantForm, address: e.target.value })} className="mt-1" />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label>Phone</Label>
+                <Input value={restaurantForm.phone} onChange={(e) => setRestaurantForm({ ...restaurantForm, phone: e.target.value })} className="mt-1" />
+              </div>
+              <div>
+                <Label>Delivery time (min)</Label>
+                <Input type="number" value={restaurantForm.deliveryTime} onChange={(e) => setRestaurantForm({ ...restaurantForm, deliveryTime: e.target.value })} className="mt-1" data-testid="input-delivery-time" />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label>Delivery fee (MAD)</Label>
+                <Input type="number" value={restaurantForm.deliveryFee} onChange={(e) => setRestaurantForm({ ...restaurantForm, deliveryFee: e.target.value })} className="mt-1" />
+              </div>
+              <div>
+                <Label>Min. order (MAD)</Label>
+                <Input type="number" value={restaurantForm.minimumOrder} onChange={(e) => setRestaurantForm({ ...restaurantForm, minimumOrder: e.target.value })} className="mt-1" />
+              </div>
+            </div>
+            <div>
+              <Label>Image URL</Label>
+              <Input value={restaurantForm.imageUrl} onChange={(e) => setRestaurantForm({ ...restaurantForm, imageUrl: e.target.value })} placeholder="https://..." className="mt-1" data-testid="input-image-url" />
+              {restaurantForm.imageUrl && (
+                <img src={restaurantForm.imageUrl} alt="" className="mt-2 w-full h-32 object-cover rounded-lg border" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
+              )}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setSettingsOpen(false)}>Cancel</Button>
+            <Button onClick={handleSaveRestaurant} disabled={updateRestaurant.isPending} data-testid="button-save-restaurant">
+              {updateRestaurant.isPending ? "Saving..." : "Save"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
