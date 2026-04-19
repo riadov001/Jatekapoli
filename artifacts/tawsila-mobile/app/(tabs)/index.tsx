@@ -13,10 +13,10 @@ import { RestaurantCard } from "@/components/RestaurantCard";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const TOP_CATEGORIES = [
-  { id: "restaurant", label: "Restos",   emoji: "🍽️", ring: "#FFD9E8" },
-  { id: "grocery",    label: "Courses",  emoji: "🛒", ring: "#FFE8B0" },
-  { id: "health",     label: "Santé",    emoji: "💊", ring: "#C9F0D7" },
-  { id: "other",      label: "Cadeaux",  emoji: "🎁", ring: "#D9E3FF" },
+  { id: "restaurant", label: "Restos",   emoji: "🍽️", bg: "#D7EDE9" }, // mint/turquoise
+  { id: "grocery",    label: "Courses",  emoji: "🛒", bg: "#FFE066" }, // mustard yellow
+  { id: "health",     label: "Santé",    emoji: "💊", bg: "#BFE8DE" }, // light turquoise
+  { id: "other",      label: "Cadeaux",  emoji: "🎁", bg: "#FFE5F0" }, // soft pink
 ] as const;
 
 type TopId = typeof TOP_CATEGORIES[number]["id"];
@@ -120,36 +120,30 @@ export default function HomeScreen() {
 
   const ListHeader = (
     <>
-      {/* Circular category icons (Flink-style) */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.circleRow}
-      >
+      {/* Flink-style colored category tiles (2-col grid) */}
+      <View style={styles.tilesHeader}>
+        <Text style={[styles.sectionTitle, { color: colors.heading }]}>Catégories</Text>
+      </View>
+      <View style={styles.tilesGrid}>
         {TOP_CATEGORIES.map((cat) => {
           const active = activeTop === cat.id;
           return (
             <TouchableOpacity
               key={cat.id}
               onPress={() => setActiveTop(cat.id)}
-              activeOpacity={0.7}
-              style={styles.circleItem}
+              activeOpacity={0.85}
+              style={[
+                styles.tile,
+                { backgroundColor: cat.bg },
+                active && { borderWidth: 2, borderColor: colors.primary },
+              ]}
             >
-              <View
-                style={[
-                  styles.circleRing,
-                  { borderColor: active ? colors.primary : cat.ring, backgroundColor: cat.ring + "55" },
-                ]}
-              >
-                <Text style={styles.circleEmoji}>{cat.emoji}</Text>
-              </View>
-              <Text style={[styles.circleLabel, { color: active ? colors.primary : colors.heading, fontFamily: active ? "Inter_700Bold" : "Inter_600SemiBold" }]}>
-                {cat.label}
-              </Text>
+              <Text style={[styles.tileLabel, { color: colors.heading }]}>{cat.label}</Text>
+              <Text style={styles.tileEmoji}>{cat.emoji}</Text>
             </TouchableOpacity>
           );
         })}
-      </ScrollView>
+      </View>
 
       {/* Promo banner */}
       <View style={[styles.promoBanner, { backgroundColor: colors.primarySoft }]}>
@@ -203,8 +197,8 @@ export default function HomeScreen() {
 
   return (
     <View style={[styles.flex, { backgroundColor: colors.background }]}>
-      {/* Pink address-bar header (Flink-style) */}
-      <View style={[styles.headerPink, { backgroundColor: colors.pinkBg, paddingTop: insets.top + 10 + webTopPad }]}>
+      {/* White address-bar header */}
+      <View style={[styles.headerBar, { backgroundColor: colors.background, paddingTop: insets.top + 10 + webTopPad }]}>
         <View style={styles.headerRow}>
           <TouchableOpacity
             activeOpacity={0.7}
@@ -281,12 +275,10 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   flex: { flex: 1 },
 
-  // Pink header
-  headerPink: {
+  // White header
+  headerBar: {
     paddingHorizontal: 16,
-    paddingBottom: 14,
-    borderBottomLeftRadius: 20,
-    borderBottomRightRadius: 20,
+    paddingBottom: 12,
   },
   headerRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 12 },
   addressRow: { flexDirection: "row", alignItems: "center", gap: 8 },
@@ -304,12 +296,21 @@ const styles = StyleSheet.create({
   col2: { paddingHorizontal: 16, gap: 10 },
   cardWrap: { flex: 1 },
 
-  // Circular categories (Flink style)
-  circleRow: { paddingHorizontal: 16, paddingVertical: 14, gap: 14 },
-  circleItem: { alignItems: "center", gap: 6, width: 76 },
-  circleRing: { width: 72, height: 72, borderRadius: 36, borderWidth: 3, alignItems: "center", justifyContent: "center" },
-  circleEmoji: { fontSize: 32 },
-  circleLabel: { fontSize: 12, textAlign: "center" },
+  // Colored category tiles (Flink browse style)
+  tilesHeader: { paddingHorizontal: 16, paddingTop: 14, paddingBottom: 10 },
+  tilesGrid: { flexDirection: "row", flexWrap: "wrap", paddingHorizontal: 12, gap: 10, justifyContent: "space-between", marginBottom: 12 },
+  tile: {
+    width: "48%",
+    aspectRatio: 1.45,
+    borderRadius: 18,
+    paddingHorizontal: 14,
+    paddingTop: 12,
+    paddingBottom: 8,
+    justifyContent: "space-between",
+    overflow: "hidden",
+  },
+  tileLabel: { fontSize: 16, fontFamily: "Inter_700Bold", letterSpacing: -0.3 },
+  tileEmoji: { fontSize: 56, alignSelf: "flex-end", lineHeight: 62 },
 
   // Promo banner
   promoBanner: { flexDirection: "row", alignItems: "center", gap: 12, marginHorizontal: 16, marginBottom: 14, padding: 16, borderRadius: 18 },
