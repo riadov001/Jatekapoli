@@ -13,10 +13,12 @@ import { MenuItemCard } from "@/components/MenuItemCard";
 import { MenuItemDetailModal } from "@/components/MenuItemDetailModal";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { listFavorites, addFavorite, removeFavorite } from "@/lib/api";
+import { useT } from "@/contexts/LanguageContext";
 
 export default function RestaurantScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
+  const t = useT();
   const { id } = useLocalSearchParams<{ id: string }>();
   const restaurantId = parseInt(id, 10);
   const [activeCategory, setActiveCategory] = useState("Tous");
@@ -49,6 +51,8 @@ export default function RestaurantScreen() {
     : (menuItems ?? []).filter((m) => m.category === activeCategory);
 
   const getQty = (itemId: number) => cartItems.find((i) => i.menuItemId === itemId)?.quantity ?? 0;
+  const businessType = (restaurant as any)?.businessType ?? "restaurant";
+  const isServices = businessType === "services";
 
   if (rLoading) {
     return (
@@ -171,19 +175,34 @@ export default function RestaurantScreen() {
         )}
       />
 
-      {/* Cart CTA */}
-      {itemCount > 0 && (
-        <View style={[styles.cartBar, { paddingBottom: insets.bottom + (Platform.OS === "web" ? 34 : 12) }]}>
+      {/* Quote CTA — for service-type merchants (no menu cart) */}
+      {isServices && (
+        <View style={[styles.cartBar, { paddingBottom: insets.bottom + (Platform.OS === "web" ? 34 : 10) }]}>
+          <TouchableOpacity
+            style={[styles.cartBtn, { backgroundColor: colors.primary }]}
+            onPress={() => router.push({ pathname: "/quote/new", params: { restaurantId: String(restaurantId), restaurantName: restaurant.name } })}
+            activeOpacity={0.85}
+          >
+            <Ionicons name="document-text-outline" size={18} color="#fff" />
+            <Text style={styles.cartBtnText} numberOfLines={1}>{t("quote_request")}</Text>
+            <Ionicons name="arrow-forward" size={16} color="#fff" />
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {/* Cart CTA — compact pill, responsive width */}
+      {!isServices && itemCount > 0 && (
+        <View style={[styles.cartBar, { paddingBottom: insets.bottom + (Platform.OS === "web" ? 34 : 10) }]}>
           <TouchableOpacity
             style={[styles.cartBtn, { backgroundColor: colors.primary }]}
             onPress={() => router.push("/cart")}
             activeOpacity={0.85}
           >
-            <View style={[styles.cartQty, { backgroundColor: "rgba(255,255,255,0.3)" }]}>
+            <View style={[styles.cartQty, { backgroundColor: "rgba(255,255,255,0.28)" }]}>
               <Text style={styles.cartQtyText}>{itemCount}</Text>
             </View>
-            <Text style={styles.cartBtnText}>Voir le panier</Text>
-            <Ionicons name="arrow-forward" size={20} color="#fff" />
+            <Text style={styles.cartBtnText} numberOfLines={1}>{t("view_cart")}</Text>
+            <Ionicons name="arrow-forward" size={16} color="#fff" />
           </TouchableOpacity>
         </View>
       )}
@@ -235,14 +254,22 @@ const styles = StyleSheet.create({
     flexDirection: "row", alignItems: "center", gap: 8,
   },
   warningText: { fontSize: 13, fontFamily: "Inter_400Regular", flex: 1 },
-  cartBar: { position: "absolute", bottom: 0, left: 0, right: 0, paddingHorizontal: 16, paddingTop: 8 },
-  cartBtn: {
-    flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 12,
-    height: 60, borderRadius: 30,
-    shadowColor: "#E2006A", shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.35, shadowRadius: 16, elevation: 10,
+  cartBar: {
+    position: "absolute", bottom: 0, left: 0, right: 0,
+    paddingHorizontal: 16, paddingTop: 6,
+    alignItems: "center",
   },
-  cartQty: { minWidth: 30, height: 30, paddingHorizontal: 8, borderRadius: 15, alignItems: "center", justifyContent: "center" },
-  cartQtyText: { color: "#fff", fontSize: 14, fontFamily: "Inter_700Bold" },
-  cartBtnText: { color: "#fff", fontSize: 17, fontFamily: "Inter_700Bold", flex: 1, textAlign: "center" },
+  cartBtn: {
+    flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8,
+    height: 44, borderRadius: 22,
+    paddingHorizontal: 18,
+    minWidth: 200,
+    maxWidth: 360,
+    alignSelf: "center",
+    shadowColor: "#E2006A", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.28, shadowRadius: 12, elevation: 8,
+  },
+  cartQty: { minWidth: 22, height: 22, paddingHorizontal: 6, borderRadius: 11, alignItems: "center", justifyContent: "center" },
+  cartQtyText: { color: "#fff", fontSize: 12, fontFamily: "Inter_700Bold" },
+  cartBtnText: { color: "#fff", fontSize: 14, fontFamily: "Inter_700Bold", textAlign: "center" },
   warning: { color: "#F59E0B" },
 });

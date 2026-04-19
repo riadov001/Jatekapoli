@@ -13,6 +13,8 @@ async function getToken(): Promise<string | null> {
   return SecureStore.getItemAsync(TOKEN_KEY);
 }
 
+export const getAuthToken = getToken;
+
 async function authHeaders(): Promise<Record<string, string>> {
   const token = await getToken();
   return token ? { Authorization: `Bearer ${token}` } : {};

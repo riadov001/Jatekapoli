@@ -16,8 +16,14 @@ export interface AuthedRequest extends Request {
 
 async function decodeUser(req: Request): Promise<{ id: number; name: string; role: string } | null> {
   const header = req.headers.authorization;
-  if (!header || !header.startsWith("Bearer ")) return null;
-  const token = header.slice(7);
+  let token: string | null = null;
+  if (header && header.startsWith("Bearer ")) {
+    token = header.slice(7);
+  } else if (typeof req.query.token === "string" && req.query.token.length > 0) {
+    // Support token in query for browser-opened document URLs (invoices/quote PDFs).
+    token = req.query.token;
+  }
+  if (!token) return null;
   try {
     const payload = jwt.verify(token, JWT_SECRET) as { userId: number };
     const [user] = await db

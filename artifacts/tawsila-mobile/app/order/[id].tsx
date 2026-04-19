@@ -28,7 +28,7 @@ import { useGetOrder, useListDrivers } from "@workspace/api-client-react";
 import { useColors } from "@/hooks/useColors";
 import { useSSE } from "@/hooks/useSSE";
 import { DriverMap } from "@/components/DriverMap";
-import { apiBase, geocodeAddress, getDriverLocation } from "@/lib/api";
+import { apiBase, geocodeAddress, getDriverLocation, getAuthToken } from "@/lib/api";
 import { useT, useLang } from "@/contexts/LanguageContext";
 import type { TKey } from "@/lib/translations";
 
@@ -390,6 +390,25 @@ export default function OrderDetailScreen() {
             <Text style={[styles.notesText, { color: colors.mutedForeground }]}>{order.notes}</Text>
           </View>
         ) : null}
+
+        {/* Invoice button — visible once delivered */}
+        {isCompleted && (
+          <TouchableOpacity
+            style={[styles.invoiceBtn, { borderColor: colors.primary, backgroundColor: colors.primary + "10" }]}
+            activeOpacity={0.8}
+            onPress={async () => {
+              const tok = await getAuthToken();
+              const url = tok
+                ? `${apiBase}/api/orders/${order.id}/invoice?token=${encodeURIComponent(tok)}`
+                : `${apiBase}/api/orders/${order.id}/invoice`;
+              Linking.openURL(url);
+            }}
+          >
+            <Ionicons name="receipt" size={20} color={colors.primary} />
+            <Text style={[styles.invoiceBtnText, { color: colors.primary }]}>{t("invoice_view")}</Text>
+            <Ionicons name="open-outline" size={16} color={colors.primary} />
+          </TouchableOpacity>
+        )}
       </ScrollView>
     </View>
   );
@@ -452,4 +471,9 @@ const styles = StyleSheet.create({
   totalLabel: { flex: 1, fontSize: 15, fontFamily: "Inter_700Bold" },
   totalValue: { fontSize: 17, fontFamily: "Inter_700Bold" },
   notesText: { fontSize: 14, fontFamily: "Inter_400Regular", lineHeight: 20 },
+  invoiceBtn: {
+    flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10,
+    marginHorizontal: 16, marginTop: 4, paddingVertical: 14, borderRadius: 14, borderWidth: 1.5,
+  },
+  invoiceBtnText: { fontSize: 15, fontFamily: "Inter_700Bold" },
 });

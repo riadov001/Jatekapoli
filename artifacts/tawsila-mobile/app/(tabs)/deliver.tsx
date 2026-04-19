@@ -101,14 +101,23 @@ export default function DeliverScreen() {
     if (isOnline) loadAvailable();
   }, [isOnline, loadAvailable]);
 
-  // SSE: listen for new ready orders
+  // SSE: listen for new ready orders + assignments to this driver
   useSSE({
-    url: `${apiBase}/api/events?channels=available_orders`,
-    enabled: isOnline,
+    url: `${apiBase}/api/events?channels=available_orders${myDriver ? `,driver_orders:${myDriver.id}` : ""}`,
+    enabled: isOnline && !!myDriver,
     events: {
-      order_ready: (data: any) => {
+      order_ready: () => {
         haptic("success");
+        Alert.alert("📦 Nouvelle commande prête", "Une commande vient d'être préparée près de vous.");
         loadAvailable();
+      },
+      order_assigned: () => {
+        haptic("success");
+        Alert.alert("🎯 Livraison assignée", "Une nouvelle livraison vous a été attribuée.");
+        refetchMyOrders();
+      },
+      order_status: () => {
+        refetchMyOrders();
       },
     },
   });

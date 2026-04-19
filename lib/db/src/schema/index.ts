@@ -11,3 +11,4 @@ export * from "./paymentMethods";
 export * from "./supportTickets";
 export * from "./notificationPrefs";
 export * from "./userConsents";
+export * from "./quotes";
