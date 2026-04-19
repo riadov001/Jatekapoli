@@ -78,6 +78,10 @@ export const LogoutResponse = zod.object({
 export const SendOtpBody = zod.object({
   phone: zod.string(),
   name: zod.string().optional(),
+  channel: zod
+    .enum(["sms", "whatsapp"])
+    .optional()
+    .describe("Delivery channel for the OTP code"),
 });
 
 export const SendOtpResponse = zod.object({

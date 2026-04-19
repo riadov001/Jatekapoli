@@ -62,9 +62,22 @@ export interface AuthResponse {
   user: User;
 }
 
+/**
+ * Delivery channel for the OTP code
+ */
+export type SendOtpBodyChannel =
+  (typeof SendOtpBodyChannel)[keyof typeof SendOtpBodyChannel];
+
+export const SendOtpBodyChannel = {
+  sms: "sms",
+  whatsapp: "whatsapp",
+} as const;
+
 export interface SendOtpBody {
   phone: string;
   name?: string;
+  /** Delivery channel for the OTP code */
+  channel?: SendOtpBodyChannel;
 }
 
 export interface SendOtpResponse {

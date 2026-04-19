@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
-import { Phone, ArrowRight, ArrowLeft, Truck, RefreshCw, Mail, KeyRound } from "lucide-react";
+import { Phone, ArrowRight, ArrowLeft, Truck, RefreshCw, Mail, KeyRound, MessageCircle, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -12,8 +12,11 @@ import { useSendOtp, useVerifyOtp, useLogin } from "@workspace/api-client-react"
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { useTranslation } from "react-i18next";
+import { CountryPicker } from "@/components/CountryPicker";
+import { DEFAULT_COUNTRY, type Country } from "@/lib/countries";
 
 type Step = "phone" | "otp" | "name" | "email";
+type Channel = "sms" | "whatsapp";
 
 const phoneSchema = z.object({
   phone: z.string().min(8, "Enter a valid phone number"),
@@ -103,6 +106,9 @@ export default function LoginPage() {
   const [demoOtp, setDemoOtp] = useState<string | null>(null);
   const [countdown, setCountdown] = useState(0);
   const [isSavingName, setIsSavingName] = useState(false);
+  const [country, setCountry] = useState<Country>(DEFAULT_COUNTRY);
+  const [showCountryPicker, setShowCountryPicker] = useState(false);
+  const [channel, setChannel] = useState<Channel>("whatsapp");
 
   const sendOtpMutation = useSendOtp();
   const verifyOtpMutation = useVerifyOtp();
@@ -130,9 +136,11 @@ export default function LoginPage() {
     }
   }, [countdown]);
 
-  const handleSendOtp = (phone: string) => {
-    setPhoneValue(phone);
-    sendOtpMutation.mutate({ data: { phone } }, {
+  const handleSendOtp = (rawPhone: string) => {
+    const local = rawPhone.replace(/\s/g, "").replace(/^0+/, "");
+    const fullPhone = `${country.dialCode}${local}`;
+    setPhoneValue(fullPhone);
+    sendOtpMutation.mutate({ data: { phone: fullPhone, channel } }, {
       onSuccess: (res) => {
         setDemoOtp(res.demoOtp ?? null);
         setCountdown(60);
@@ -140,6 +148,18 @@ export default function LoginPage() {
       },
       onError: (err: any) => {
         toast({ title: err?.data?.error || "Could not send OTP. Try again.", variant: "destructive" });
+      },
+    });
+  };
+
+  const handleResendOtp = () => {
+    sendOtpMutation.mutate({ data: { phone: phoneValue, channel } }, {
+      onSuccess: (res) => {
+        setDemoOtp(res.demoOtp ?? null);
+        setCountdown(60);
+      },
+      onError: (err: any) => {
+        toast({ title: err?.data?.error || "Could not resend code.", variant: "destructive" });
       },
     });
   };
@@ -252,6 +272,43 @@ export default function LoginPage() {
 
                 <Form {...phoneForm}>
                   <form onSubmit={phoneForm.handleSubmit((d) => handleSendOtp(d.phone))} className="space-y-4">
+                    {/* Channel selector */}
+                    <div>
+                      <p id="channel-label" className="text-sm font-medium mb-2">{t("login.channelLabel")}</p>
+                      <div role="radiogroup" aria-labelledby="channel-label" className="grid grid-cols-2 gap-1.5 p-1 bg-muted rounded-xl">
+                        <button
+                          type="button"
+                          role="radio"
+                          aria-checked={channel === "whatsapp"}
+                          onClick={() => setChannel("whatsapp")}
+                          className={`flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-semibold transition-all ${
+                            channel === "whatsapp"
+                              ? "bg-card shadow-sm text-foreground"
+                              : "text-muted-foreground"
+                          }`}
+                          data-testid="channel-whatsapp"
+                        >
+                          <MessageCircle className={`w-4 h-4 ${channel === "whatsapp" ? "text-green-500" : ""}`} aria-hidden="true" />
+                          WhatsApp
+                        </button>
+                        <button
+                          type="button"
+                          role="radio"
+                          aria-checked={channel === "sms"}
+                          onClick={() => setChannel("sms")}
+                          className={`flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-semibold transition-all ${
+                            channel === "sms"
+                              ? "bg-card shadow-sm text-foreground"
+                              : "text-muted-foreground"
+                          }`}
+                          data-testid="channel-sms"
+                        >
+                          <Phone className={`w-4 h-4 ${channel === "sms" ? "text-primary" : ""}`} aria-hidden="true" />
+                          SMS
+                        </button>
+                      </div>
+                    </div>
+
                     <FormField
                       control={phoneForm.control}
                       name="phone"
@@ -259,13 +316,23 @@ export default function LoginPage() {
                         <FormItem>
                           <FormLabel className="text-sm font-medium">{t("login.phoneNumber")}</FormLabel>
                           <FormControl>
-                            <div className="relative">
-                              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground font-medium text-sm">🇲🇦</span>
-                              <Input
+                            <div className="flex items-stretch h-12 rounded-xl border border-input bg-background overflow-hidden focus-within:ring-2 focus-within:ring-primary focus-within:border-transparent">
+                              <button
+                                type="button"
+                                onClick={() => setShowCountryPicker(true)}
+                                aria-label={`${t("login.selectCountry")} (${country.name}, ${country.dialCode})`}
+                                className="flex items-center gap-1 px-3 border-e border-input hover:bg-muted/50 transition-colors"
+                                data-testid="country-picker-trigger"
+                              >
+                                <span className="font-semibold text-sm tabular-nums">{country.dialCode}</span>
+                                <ChevronDown className="w-3 h-3 text-muted-foreground" aria-hidden="true" />
+                              </button>
+                              <input
                                 {...field}
                                 type="tel"
-                                placeholder="06 12 34 56 78"
-                                className="pl-10 h-12 text-base rounded-xl"
+                                inputMode="tel"
+                                placeholder="6 12 34 56 78"
+                                className="flex-1 px-3 bg-transparent outline-none text-base"
                                 data-testid="input-phone"
                               />
                             </div>
@@ -276,15 +343,24 @@ export default function LoginPage() {
                     />
                     <Button
                       type="submit"
-                      className="w-full h-12 rounded-xl font-semibold text-base gap-2 shadow-md shadow-primary/20"
+                      className="w-full h-12 rounded-xl font-semibold text-base gap-2 shadow-md"
+                      style={channel === "whatsapp" ? { backgroundColor: "#25D366" } : undefined}
                       disabled={sendOtpMutation.isPending}
                     >
                       {sendOtpMutation.isPending ? (
                         <><RefreshCw className="w-4 h-4 animate-spin" /> {t("login.sending")}</>
                       ) : (
-                        <>{t("login.continue")} <ArrowRight className="w-4 h-4" /></>
+                        <>
+                          {channel === "whatsapp" ? <MessageCircle className="w-4 h-4" /> : <Phone className="w-4 h-4" />}
+                          {channel === "whatsapp" ? t("login.sendWhatsApp") : t("login.sendSms")}
+                          <ArrowRight className="w-4 h-4" />
+                        </>
                       )}
                     </Button>
+
+                    <p className="text-xs text-muted-foreground text-center leading-relaxed">
+                      {channel === "whatsapp" ? t("login.hintWhatsApp") : t("login.hintSms")}
+                    </p>
                   </form>
                 </Form>
 
@@ -352,7 +428,7 @@ export default function LoginPage() {
                     <p className="text-sm text-muted-foreground">{t("login.resendIn", { countdown })}</p>
                   ) : (
                     <button
-                      onClick={() => handleSendOtp(phoneValue)}
+                      onClick={handleResendOtp}
                       disabled={sendOtpMutation.isPending}
                       className="text-sm text-primary font-medium hover:underline disabled:opacity-50"
                     >
@@ -504,6 +580,13 @@ export default function LoginPage() {
           </motion.p>
         )}
       </div>
+
+      <CountryPicker
+        open={showCountryPicker}
+        selected={country}
+        onSelect={setCountry}
+        onClose={() => setShowCountryPicker(false)}
+      />
     </div>
   );
 }
