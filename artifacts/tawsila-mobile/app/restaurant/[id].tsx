@@ -9,6 +9,7 @@ import { useGetRestaurant, useListMenuItems } from "@workspace/api-client-react"
 import { useColors } from "@/hooks/useColors";
 import { useCart } from "@/contexts/CartContext";
 import { MenuItemCard } from "@/components/MenuItemCard";
+import { MenuItemDetailModal } from "@/components/MenuItemDetailModal";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export default function RestaurantScreen() {
@@ -16,14 +17,15 @@ export default function RestaurantScreen() {
   const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams<{ id: string }>();
   const restaurantId = parseInt(id, 10);
-  const [activeCategory, setActiveCategory] = useState("All");
+  const [activeCategory, setActiveCategory] = useState("Tous");
+  const [selectedItem, setSelectedItem] = useState<any | null>(null);
   const { items: cartItems, addItem, updateQuantity, restaurantId: cartRestaurantId, itemCount } = useCart();
 
   const { data: restaurant, isLoading: rLoading } = useGetRestaurant(restaurantId);
   const { data: menuItems, isLoading: mLoading } = useListMenuItems(restaurantId);
 
-  const categories = ["All", ...Array.from(new Set((menuItems ?? []).map((m) => m.category).filter(Boolean)))];
-  const filtered = activeCategory === "All"
+  const categories = ["Tous", ...Array.from(new Set((menuItems ?? []).map((m) => m.category).filter(Boolean)))];
+  const filtered = activeCategory === "Tous"
     ? (menuItems ?? [])
     : (menuItems ?? []).filter((m) => m.category === activeCategory);
 
@@ -40,7 +42,7 @@ export default function RestaurantScreen() {
   if (!restaurant) {
     return (
       <View style={[styles.flex, styles.center, { backgroundColor: colors.background }]}>
-        <Text style={{ color: colors.foreground }}>Restaurant not found</Text>
+        <Text style={{ color: colors.foreground }}>Restaurant introuvable</Text>
       </View>
     );
   }
@@ -94,7 +96,7 @@ export default function RestaurantScreen() {
                 {restaurant.deliveryFee != null && (
                   <View style={styles.metaItem}>
                     <Ionicons name="bicycle-outline" size={14} color={colors.mutedForeground} />
-                    <Text style={[styles.metaText, { color: colors.mutedForeground }]}>{restaurant.deliveryFee > 0 ? `${restaurant.deliveryFee} MAD` : "Free delivery"}</Text>
+                    <Text style={[styles.metaText, { color: colors.mutedForeground }]}>{restaurant.deliveryFee > 0 ? `${restaurant.deliveryFee} MAD` : "Livraison offerte"}</Text>
                   </View>
                 )}
               </View>
@@ -119,7 +121,7 @@ export default function RestaurantScreen() {
               <View style={[styles.warningBanner, { backgroundColor: colors.warning + "20", borderColor: colors.warning + "40" }]}>
                 <Ionicons name="warning-outline" size={16} color={colors.warning} />
                 <Text style={[styles.warningText, { color: colors.warning }]}>
-                  Adding items will clear your current cart
+                  Ajouter des produits videra votre panier actuel
                 </Text>
               </View>
             )}
@@ -128,14 +130,18 @@ export default function RestaurantScreen() {
           </>
         }
         renderItem={({ item }) => (
-          <View style={styles.menuItemWrap}>
+          <TouchableOpacity
+            activeOpacity={0.7}
+            onPress={() => setSelectedItem(item)}
+            style={styles.menuItemWrap}
+          >
             <MenuItemCard
               item={item}
               quantity={getQty(item.id)}
               onAdd={() => addItem(restaurantId, restaurant.name, { menuItemId: item.id, name: item.name, price: item.price, imageUrl: item.imageUrl })}
               onRemove={() => updateQuantity(item.id, getQty(item.id) - 1)}
             />
-          </View>
+          </TouchableOpacity>
         )}
       />
 
@@ -150,11 +156,30 @@ export default function RestaurantScreen() {
             <View style={[styles.cartQty, { backgroundColor: "rgba(255,255,255,0.3)" }]}>
               <Text style={styles.cartQtyText}>{itemCount}</Text>
             </View>
-            <Text style={styles.cartBtnText}>View Cart</Text>
-            <Ionicons name="arrow-forward" size={18} color="#fff" />
+            <Text style={styles.cartBtnText}>Voir le panier</Text>
+            <Ionicons name="arrow-forward" size={20} color="#fff" />
           </TouchableOpacity>
         </View>
       )}
+
+      {/* Product detail modal */}
+      <MenuItemDetailModal
+        visible={!!selectedItem}
+        item={selectedItem}
+        initialQty={selectedItem ? getQty(selectedItem.id) : 0}
+        onClose={() => setSelectedItem(null)}
+        onAdd={(qty) => {
+          if (!selectedItem) return;
+          for (let i = 0; i < qty; i++) {
+            addItem(restaurantId, restaurant.name, {
+              menuItemId: selectedItem.id,
+              name: selectedItem.name,
+              price: selectedItem.price,
+              imageUrl: selectedItem.imageUrl,
+            });
+          }
+        }}
+      />
     </View>
   );
 }
@@ -186,12 +211,12 @@ const styles = StyleSheet.create({
   warningText: { fontSize: 13, fontFamily: "Inter_400Regular", flex: 1 },
   cartBar: { position: "absolute", bottom: 0, left: 0, right: 0, paddingHorizontal: 16, paddingTop: 8 },
   cartBtn: {
-    flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10,
-    height: 54, borderRadius: 16,
-    shadowColor: "#E2006A", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 12, elevation: 8,
+    flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 12,
+    height: 60, borderRadius: 30,
+    shadowColor: "#E2006A", shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.35, shadowRadius: 16, elevation: 10,
   },
-  cartQty: { width: 26, height: 26, borderRadius: 13, alignItems: "center", justifyContent: "center" },
-  cartQtyText: { color: "#fff", fontSize: 13, fontFamily: "Inter_700Bold" },
-  cartBtnText: { color: "#fff", fontSize: 16, fontFamily: "Inter_600SemiBold", flex: 1, textAlign: "center" },
+  cartQty: { minWidth: 30, height: 30, paddingHorizontal: 8, borderRadius: 15, alignItems: "center", justifyContent: "center" },
+  cartQtyText: { color: "#fff", fontSize: 14, fontFamily: "Inter_700Bold" },
+  cartBtnText: { color: "#fff", fontSize: 17, fontFamily: "Inter_700Bold", flex: 1, textAlign: "center" },
   warning: { color: "#F59E0B" },
 });

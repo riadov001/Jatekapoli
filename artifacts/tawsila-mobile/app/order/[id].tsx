@@ -31,12 +31,12 @@ import { DriverMap } from "@/components/DriverMap";
 import { apiBase, geocodeAddress, getDriverLocation } from "@/lib/api";
 
 const STEPS = [
-  { key: "pending",    label: "Order placed",     icon: "bag-add-outline",          desc: "Sent to the restaurant" },
-  { key: "accepted",   label: "Accepted",         icon: "checkmark-circle-outline", desc: "Restaurant confirmed" },
-  { key: "preparing",  label: "Preparing",        icon: "restaurant-outline",       desc: "Chef is cooking" },
-  { key: "ready",      label: "Ready for pickup", icon: "bag-check-outline",        desc: "Waiting for a driver" },
-  { key: "picked_up",  label: "On the way",       icon: "bicycle-outline",          desc: "Driver is heading to you" },
-  { key: "delivered",  label: "Delivered",        icon: "home-outline",             desc: "Bon appétit!" },
+  { key: "pending",    label: "Commande passée",   icon: "bag-add-outline",          desc: "Envoyée au restaurant" },
+  { key: "accepted",   label: "Acceptée",          icon: "checkmark-circle-outline", desc: "Le restaurant a confirmé" },
+  { key: "preparing",  label: "En préparation",    icon: "restaurant-outline",       desc: "Le chef est aux fourneaux" },
+  { key: "ready",      label: "Prête",             icon: "bag-check-outline",        desc: "En attente d'un livreur" },
+  { key: "picked_up",  label: "En route",          icon: "bicycle-outline",          desc: "Le livreur arrive vers vous" },
+  { key: "delivered",  label: "Livrée",            icon: "home-outline",             desc: "Bon appétit !" },
 ];
 const STATUS_ORDER = STEPS.map((s) => s.key);
 
@@ -151,7 +151,7 @@ export default function OrderDetailScreen() {
         <TouchableOpacity onPress={() => router.replace("/(tabs)/orders")} hitSlop={8}>
           <Ionicons name="arrow-back" size={24} color={colors.foreground} />
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: colors.foreground }]}>Order #{order.id}</Text>
+        <Text style={[styles.headerTitle, { color: colors.foreground }]}>Commande #{order.id}</Text>
         <View style={{ width: 24 }} />
       </View>
 
@@ -173,7 +173,7 @@ export default function OrderDetailScreen() {
             </View>
             <View style={{ flex: 1 }}>
               <Text style={[styles.heroLabel, { color: colors.mutedForeground }]}>
-                {isCancelled ? "Order cancelled" : isCompleted ? "Completed" : "Status"}
+                {isCancelled ? "Commande annulée" : isCompleted ? "Terminée" : "Statut"}
               </Text>
               <Text style={[styles.heroValue, { color: colors.foreground }]}>{currentStep.label}</Text>
               <Text style={[styles.heroDesc, { color: colors.mutedForeground }]}>{currentStep.desc}</Text>
@@ -194,7 +194,7 @@ export default function OrderDetailScreen() {
             />
             <View style={styles.mapOverlay}>
               <PulsingDot color="#22C55E" />
-              <Text style={styles.mapOverlayText}>Live tracking</Text>
+              <Text style={styles.mapOverlayText}>Suivi en direct</Text>
             </View>
           </Animated.View>
         )}
@@ -207,7 +207,7 @@ export default function OrderDetailScreen() {
                 <Ionicons name="person" size={26} color={colors.primary} />
               </View>
               <View style={styles.driverInfo}>
-                <Text style={[styles.driverName, { color: colors.foreground }]}>{driver.name ?? "Your driver"}</Text>
+                <Text style={[styles.driverName, { color: colors.foreground }]}>{driver.name ?? "Votre livreur"}</Text>
                 <View style={styles.driverMetaRow}>
                   {driver.rating != null && (
                     <View style={styles.driverMeta}>
@@ -249,7 +249,7 @@ export default function OrderDetailScreen() {
         {/* Progress tracker */}
         {!isCancelled && (
           <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            <Text style={[styles.cardTitle, { color: colors.foreground }]}>Order progress</Text>
+            <Text style={[styles.cardTitle, { color: colors.foreground }]}>Suivi de la commande</Text>
             {STEPS.map((step, idx) => {
               const done = idx <= currentIdx;
               const active = idx === currentIdx;
@@ -284,7 +284,7 @@ export default function OrderDetailScreen() {
               <Ionicons name="location" size={18} color={colors.primary} />
             </View>
             <View style={styles.addrInfo}>
-              <Text style={[styles.addrLabel, { color: colors.mutedForeground }]}>Delivering to</Text>
+              <Text style={[styles.addrLabel, { color: colors.mutedForeground }]}>Livraison à</Text>
               <Text style={[styles.addrText, { color: colors.foreground }]}>{order.deliveryAddress}</Text>
             </View>
           </View>
@@ -292,7 +292,7 @@ export default function OrderDetailScreen() {
 
         {/* Items + summary */}
         <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <Text style={[styles.cardTitle, { color: colors.foreground }]}>Items</Text>
+          <Text style={[styles.cardTitle, { color: colors.foreground }]}>Articles</Text>
           {order.items.map((item, idx) => (
             <View key={item.id}>
               <View style={styles.itemRow}>
@@ -305,11 +305,11 @@ export default function OrderDetailScreen() {
           ))}
           <View style={[styles.divider, { backgroundColor: colors.border, marginTop: 6 }]} />
           <View style={styles.itemRow}>
-            <Text style={[styles.summaryLabel, { color: colors.mutedForeground }]}>Subtotal</Text>
+            <Text style={[styles.summaryLabel, { color: colors.mutedForeground }]}>Sous-total</Text>
             <Text style={[styles.summaryValue, { color: colors.foreground }]}>{order.subtotal.toFixed(0)} MAD</Text>
           </View>
           <View style={styles.itemRow}>
-            <Text style={[styles.summaryLabel, { color: colors.mutedForeground }]}>Delivery</Text>
+            <Text style={[styles.summaryLabel, { color: colors.mutedForeground }]}>Livraison</Text>
             <Text style={[styles.summaryValue, { color: colors.foreground }]}>{order.deliveryFee.toFixed(0)} MAD</Text>
           </View>
           <View style={[styles.divider, { backgroundColor: colors.border }]} />

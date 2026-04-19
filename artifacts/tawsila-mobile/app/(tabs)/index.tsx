@@ -3,6 +3,7 @@ import {
   StyleSheet, Text, View, FlatList, TextInput,
   TouchableOpacity, ActivityIndicator, Platform, ScrollView, Animated, Image,
 } from "react-native";
+import Reanimated, { FadeInDown } from "react-native-reanimated";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useListRestaurants } from "@workspace/api-client-react";
@@ -62,7 +63,7 @@ function FeaturedBanner({ items }: { items: any[] }) {
         onScroll={Animated.event([{ nativeEvent: { contentOffset: { x: scrollX } } }], { useNativeDriver: false })}
         renderItem={({ item }) => (
           <TouchableOpacity
-            style={[styles.bannerCard, { backgroundColor: colors.card, borderColor: colors.border }]}
+            style={styles.bannerCard}
             onPress={() => router.push({ pathname: "/restaurant/[id]", params: { id: String(item.id) } })}
             activeOpacity={0.85}
           >
@@ -125,22 +126,27 @@ export default function HomeScreen() {
         <Text style={[styles.sectionTitle, { color: colors.heading }]}>Catégories</Text>
       </View>
       <View style={styles.tilesGrid}>
-        {TOP_CATEGORIES.map((cat) => {
+        {TOP_CATEGORIES.map((cat, i) => {
           const active = activeTop === cat.id;
           return (
-            <TouchableOpacity
+            <Reanimated.View
               key={cat.id}
-              onPress={() => setActiveTop(cat.id)}
-              activeOpacity={0.85}
-              style={[
-                styles.tile,
-                { backgroundColor: cat.bg },
-                active && { borderWidth: 2, borderColor: colors.primary },
-              ]}
+              entering={FadeInDown.delay(i * 70).duration(360).springify()}
+              style={styles.tileWrap}
             >
-              <Text style={[styles.tileLabel, { color: colors.heading }]}>{cat.label}</Text>
-              <Text style={styles.tileEmoji}>{cat.emoji}</Text>
-            </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => setActiveTop(cat.id)}
+                activeOpacity={0.85}
+                style={[
+                  styles.tile,
+                  { backgroundColor: cat.bg },
+                  active && { borderWidth: 2, borderColor: colors.primary },
+                ]}
+              >
+                <Text style={[styles.tileLabel, { color: colors.heading }]}>{cat.label}</Text>
+                <Text style={styles.tileEmoji}>{cat.emoji}</Text>
+              </TouchableOpacity>
+            </Reanimated.View>
           );
         })}
       </View>
@@ -299,8 +305,9 @@ const styles = StyleSheet.create({
   // Colored category tiles (Flink browse style)
   tilesHeader: { paddingHorizontal: 16, paddingTop: 14, paddingBottom: 10 },
   tilesGrid: { flexDirection: "row", flexWrap: "wrap", paddingHorizontal: 12, gap: 10, justifyContent: "space-between", marginBottom: 12 },
+  tileWrap: { width: "48%" },
   tile: {
-    width: "48%",
+    width: "100%",
     aspectRatio: 1.45,
     borderRadius: 18,
     paddingHorizontal: 14,
@@ -332,7 +339,7 @@ const styles = StyleSheet.create({
   sectionHeader2: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 16, marginBottom: 10 },
   sectionTitle: { fontSize: 18, fontFamily: "Inter_700Bold" },
   sectionCount: { fontSize: 12, fontFamily: "Inter_400Regular" },
-  bannerCard: { width: 200, borderRadius: 16, overflow: "hidden", borderWidth: 1 },
+  bannerCard: { width: 200, borderRadius: 16, overflow: "hidden", borderWidth: 0, backgroundColor: "transparent" },
   bannerImg: { width: "100%", height: 110, alignItems: "center", justifyContent: "center", position: "relative", overflow: "hidden" },
   bannerEmoji: { fontSize: 36 },
   delivTimePill: { position: "absolute", bottom: 6, left: 6, flexDirection: "row", alignItems: "center", gap: 3, backgroundColor: "#E2006A", paddingHorizontal: 7, paddingVertical: 3, borderRadius: 99 },

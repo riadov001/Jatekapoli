@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { StyleSheet, Text, View, TouchableOpacity, Alert, ScrollView, Platform, Modal, ActivityIndicator } from "react-native";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import Animated, { FadeInDown } from "react-native-reanimated";
 import { useColors } from "@/hooks/useColors";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -121,45 +122,88 @@ export default function ProfileScreen() {
       contentContainerStyle={{ paddingBottom: insets.bottom + (Platform.OS === "web" ? 34 : 90) }}
       showsVerticalScrollIndicator={false}
     >
-      {/* Pink hero "Welcome back" */}
+      {/* Pink hero "Welcome back" with avatar */}
       <View style={[styles.heroPink, { backgroundColor: colors.pinkBg, paddingTop: insets.top + 28 + webTopPad }]}>
-        <Text style={[styles.heroHello, { color: colors.primary }]}>
-          Bon retour,{"\n"}{user?.name?.split(" ")[0] ?? "vous"}
-        </Text>
+        <View style={styles.heroTopRow}>
+          <View style={[styles.avatar, { backgroundColor: colors.primary }]}>
+            <Text style={styles.avatarText}>{(user?.name ?? "J").charAt(0).toUpperCase()}</Text>
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.heroHello, { color: colors.primary }]}>
+              Bon retour,{"\n"}{user?.name?.split(" ")[0] ?? "vous"}
+            </Text>
+          </View>
+        </View>
       </View>
 
       {/* Floating quick-action cards row */}
-      <View style={styles.quickRow}>
-        <QuickCard icon="heart-outline" label="Mes favoris" onPress={() => {}} />
+      <Animated.View entering={FadeInDown.duration(380)} style={styles.quickRow}>
+        <QuickCard icon="heart-outline" label="Favoris" onPress={() => {}} />
         <QuickCard icon="bag-handle-outline" label="Commandes" onPress={() => router.push("/(tabs)/orders")} />
-        <QuickCard icon="gift" label="Gagner pts" accent onPress={() => {}} />
-      </View>
+        <QuickCard icon="gift" label="Récompenses" accent onPress={() => {}} />
+      </Animated.View>
 
-      <Text style={[styles.sectionHeader, { color: colors.heading }]}>Gérer le compte</Text>
-      <View style={[styles.section, { backgroundColor: colors.card }]}>
-        <Row icon="person-circle-outline" label="Compte & préférences" onPress={() => {}} />
-        <Row icon="card-outline" label="Modes de paiement" onPress={() => {}} />
-        <Row icon="location-outline" label="Adresses enregistrées" onPress={() => {}} />
-        <Row icon="pricetag-outline" label="Bons de réduction" onPress={() => {}} />
-      </View>
+      {/* Jatek+ premium upsell */}
+      <Animated.View entering={FadeInDown.delay(80).duration(380)}>
+        <TouchableOpacity activeOpacity={0.85} style={[styles.premiumCard, { backgroundColor: "#0A1B3D" }]}>
+          <View style={styles.premiumIcon}>
+            <Ionicons name="sparkles" size={22} color="#FFD700" />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.premiumTitle}>Jatek+ <Text style={{ color: "#FFD700" }}>Essai gratuit</Text></Text>
+            <Text style={styles.premiumSub}>Livraison gratuite illimitée et offres exclusives</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={20} color="rgba(255,255,255,0.6)" />
+        </TouchableOpacity>
+      </Animated.View>
 
-      <Text style={[styles.sectionHeader, { color: colors.heading }]}>Aide & Support</Text>
-      <View style={[styles.section, { backgroundColor: colors.card }]}>
-        <Row icon="chatbubbles-outline" label="Centre d'aide" onPress={() => {}} />
-        <Row icon="create-outline" label="Donner mon avis" onPress={() => {}} />
-      </View>
+      <Animated.View entering={FadeInDown.delay(120).duration(380)}>
+        <Text style={[styles.sectionHeader, { color: colors.heading }]}>Mon activité</Text>
+        <View style={[styles.section, { backgroundColor: colors.card }]}>
+          <Row icon="bag-handle-outline" label="Mes commandes" subtitle="Voir l'historique et le suivi en direct" onPress={() => router.push("/(tabs)/orders")} />
+          <Row icon="heart-outline" label="Mes favoris" subtitle="Restos et produits sauvegardés" onPress={() => {}} />
+          <Row icon="repeat-outline" label="Recommander" subtitle="Refaire une commande passée" onPress={() => {}} />
+          <Row icon="star-outline" label="Mes avis" onPress={() => {}} />
+        </View>
+      </Animated.View>
 
-      <Text style={[styles.sectionHeader, { color: colors.heading }]}>Légal & Confidentialité</Text>
-      <View style={[styles.section, { backgroundColor: colors.card }]}>
-        <Row icon="shield-checkmark-outline" label="Politique de confidentialité" onPress={() => {}} />
-        <Row icon="document-text-outline" label="Conditions d'utilisation" onPress={() => {}} />
-        <Row icon="business-outline" label="Mentions légales" onPress={() => {}} />
-      </View>
+      <Animated.View entering={FadeInDown.delay(160).duration(380)}>
+        <Text style={[styles.sectionHeader, { color: colors.heading }]}>Gérer le compte</Text>
+        <View style={[styles.section, { backgroundColor: colors.card }]}>
+          <Row icon="person-circle-outline" label="Informations personnelles" subtitle={user?.email ?? "Compte & préférences"} onPress={() => {}} />
+          <Row icon="card-outline" label="Modes de paiement" subtitle="Cartes, wallets, espèces" onPress={() => {}} />
+          <Row icon="location-outline" label="Adresses enregistrées" subtitle="Domicile, travail…" onPress={() => {}} />
+          <Row icon="pricetag-outline" label="Bons de réduction" subtitle="JATEK10 actif" onPress={() => {}} />
+          <Row icon="notifications-outline" label="Notifications" onPress={() => {}} />
+          <Row icon="language-outline" label="Langue & région" subtitle="Français · Maroc" onPress={() => {}} />
+        </View>
+      </Animated.View>
 
-      <View style={[styles.section, { backgroundColor: colors.card, marginTop: 16 }]}>
-        <Row icon="log-out-outline" label="Se déconnecter" onPress={handleLogout} danger />
-        <Row icon="trash-outline" label="Supprimer mon compte" subtitle="Action irréversible" onPress={() => setDeleteModal(true)} danger />
-      </View>
+      <Animated.View entering={FadeInDown.delay(200).duration(380)}>
+        <Text style={[styles.sectionHeader, { color: colors.heading }]}>Aide & Support</Text>
+        <View style={[styles.section, { backgroundColor: colors.card }]}>
+          <Row icon="chatbubbles-outline" label="Centre d'aide" onPress={() => {}} />
+          <Row icon="headset-outline" label="Contacter le support" onPress={() => {}} />
+          <Row icon="create-outline" label="Donner mon avis" onPress={() => {}} />
+          <Row icon="bug-outline" label="Signaler un problème" onPress={() => {}} />
+        </View>
+      </Animated.View>
+
+      <Animated.View entering={FadeInDown.delay(240).duration(380)}>
+        <Text style={[styles.sectionHeader, { color: colors.heading }]}>Légal & Confidentialité</Text>
+        <View style={[styles.section, { backgroundColor: colors.card }]}>
+          <Row icon="shield-checkmark-outline" label="Politique de confidentialité" onPress={() => {}} />
+          <Row icon="document-text-outline" label="Conditions d'utilisation" onPress={() => {}} />
+          <Row icon="business-outline" label="Mentions légales" onPress={() => {}} />
+        </View>
+      </Animated.View>
+
+      <Animated.View entering={FadeInDown.delay(280).duration(380)}>
+        <View style={[styles.section, { backgroundColor: colors.card, marginTop: 16 }]}>
+          <Row icon="log-out-outline" label="Se déconnecter" onPress={handleLogout} danger />
+          <Row icon="trash-outline" label="Supprimer mon compte" subtitle="Action irréversible" onPress={() => setDeleteModal(true)} danger />
+        </View>
+      </Animated.View>
 
       <Text style={[styles.versionText, { color: colors.mutedForeground }]}>2026.04.0</Text>
 
@@ -192,7 +236,10 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   // Hero
   heroPink: { paddingHorizontal: 24, paddingBottom: 56, borderBottomLeftRadius: 24, borderBottomRightRadius: 24 },
-  heroHello: { fontSize: 28, fontFamily: "Inter_700Bold", lineHeight: 34, letterSpacing: -0.5 },
+  heroTopRow: { flexDirection: "row", alignItems: "center", gap: 14 },
+  avatar: { width: 56, height: 56, borderRadius: 28, alignItems: "center", justifyContent: "center", shadowColor: "#E2006A", shadowOpacity: 0.3, shadowRadius: 10, shadowOffset: { width: 0, height: 4 }, elevation: 4 },
+  avatarText: { color: "#fff", fontSize: 22, fontFamily: "Inter_700Bold" },
+  heroHello: { fontSize: 24, fontFamily: "Inter_700Bold", lineHeight: 30, letterSpacing: -0.5 },
   guestHero: { paddingHorizontal: 24, paddingBottom: 32, alignItems: "center", borderBottomLeftRadius: 24, borderBottomRightRadius: 24 },
   guestEmoji: { fontSize: 64, marginBottom: 12 },
   guestTitle: { fontSize: 22, fontFamily: "Inter_700Bold", textAlign: "center", lineHeight: 28, paddingHorizontal: 8 },
@@ -202,6 +249,16 @@ const styles = StyleSheet.create({
   quickRow: { flexDirection: "row", gap: 10, paddingHorizontal: 16, marginTop: -28 },
   quickCard: { flex: 1, height: 96, borderRadius: 16, borderWidth: 1, alignItems: "center", justifyContent: "center", gap: 8, shadowColor: "#000", shadowOpacity: 0.05, shadowRadius: 6, shadowOffset: { width: 0, height: 2 }, elevation: 2 },
   quickLabel: { fontSize: 12, fontFamily: "Inter_600SemiBold", textAlign: "center", paddingHorizontal: 4 },
+
+  // Premium upsell card
+  premiumCard: {
+    flexDirection: "row", alignItems: "center", gap: 14,
+    marginHorizontal: 16, marginTop: 18, padding: 16, borderRadius: 18,
+    shadowColor: "#0A1B3D", shadowOpacity: 0.2, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 5,
+  },
+  premiumIcon: { width: 44, height: 44, borderRadius: 22, backgroundColor: "rgba(255,215,0,0.15)", alignItems: "center", justifyContent: "center" },
+  premiumTitle: { color: "#fff", fontSize: 16, fontFamily: "Inter_700Bold" },
+  premiumSub: { color: "rgba(255,255,255,0.7)", fontSize: 12, fontFamily: "Inter_400Regular", marginTop: 2 },
 
   // Section
   sectionHeader: { fontSize: 18, fontFamily: "Inter_700Bold", paddingHorizontal: 20, marginTop: 28, marginBottom: 10 },
