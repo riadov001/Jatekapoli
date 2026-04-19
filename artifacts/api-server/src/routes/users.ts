@@ -8,6 +8,7 @@ import {
   DeleteUserParams,
   ListUsersQueryParams,
 } from "@workspace/api-zod";
+import { requireAuth, type AuthedRequest } from "../middlewares/auth";
 
 const router: IRouter = Router();
 
@@ -50,8 +51,12 @@ router.get("/users/:id", async (req, res): Promise<void> => {
   res.json(user);
 });
 
-router.patch("/users/:id", async (req, res): Promise<void> => {
+router.patch("/users/:id", requireAuth, async (req: AuthedRequest, res): Promise<void> => {
   const params = UpdateUserParams.safeParse(req.params);
+  if (params.success && req.userId !== params.data.id && req.userRole !== "admin") {
+    res.status(403).json({ error: "Forbidden" });
+    return;
+  }
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
     return;
@@ -77,8 +82,12 @@ router.patch("/users/:id", async (req, res): Promise<void> => {
   res.json(user);
 });
 
-router.delete("/users/:id", async (req, res): Promise<void> => {
+router.delete("/users/:id", requireAuth, async (req: AuthedRequest, res): Promise<void> => {
   const params = DeleteUserParams.safeParse(req.params);
+  if (params.success && req.userId !== params.data.id && req.userRole !== "admin") {
+    res.status(403).json({ error: "Forbidden" });
+    return;
+  }
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
     return;

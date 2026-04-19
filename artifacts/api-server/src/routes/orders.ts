@@ -52,7 +52,7 @@ router.get("/orders/available", async (req, res): Promise<void> => {
   res.json(ordersWithItems);
 });
 
-router.get("/orders", async (req, res): Promise<void> => {
+router.get("/orders", requireAuth, async (req: AuthedRequest, res): Promise<void> => {
   const queryParams = ListOrdersQueryParams.safeParse(req.query);
 
   let conditions: any[] = [];
@@ -63,6 +63,15 @@ router.get("/orders", async (req, res): Promise<void> => {
     if (userId) conditions.push(eq(ordersTable.userId, userId));
     if (restaurantId) conditions.push(eq(ordersTable.restaurantId, restaurantId));
     if (driverId) conditions.push(eq(ordersTable.driverId, driverId));
+  }
+
+  // Customers may only see their own orders unless filtering as restaurant owner/driver.
+  const role = req.userRole;
+  const filtersRestaurantOrDriver = conditions.some(() => false) ||
+    (queryParams.success && (queryParams.data.restaurantId || queryParams.data.driverId));
+  if (role === "customer" || (!filtersRestaurantOrDriver && role !== "admin")) {
+    conditions = conditions.filter((_, i) => true);
+    conditions.push(eq(ordersTable.userId, req.userId!));
   }
 
   const orders = conditions.length > 0

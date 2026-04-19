@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   StyleSheet, Text, View, FlatList, TouchableOpacity,
   Image, ActivityIndicator, Platform, ScrollView,
@@ -8,9 +8,11 @@ import { Ionicons } from "@expo/vector-icons";
 import { useGetRestaurant, useListMenuItems } from "@workspace/api-client-react";
 import { useColors } from "@/hooks/useColors";
 import { useCart } from "@/contexts/CartContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { MenuItemCard } from "@/components/MenuItemCard";
 import { MenuItemDetailModal } from "@/components/MenuItemDetailModal";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { listFavorites, addFavorite, removeFavorite } from "@/lib/api";
 
 export default function RestaurantScreen() {
   const colors = useColors();
@@ -20,6 +22,23 @@ export default function RestaurantScreen() {
   const [activeCategory, setActiveCategory] = useState("Tous");
   const [selectedItem, setSelectedItem] = useState<any | null>(null);
   const { items: cartItems, addItem, updateQuantity, restaurantId: cartRestaurantId, itemCount } = useCart();
+  const { token } = useAuth();
+  const [isFav, setIsFav] = useState(false);
+
+  useEffect(() => {
+    if (!token || !restaurantId) return;
+    listFavorites().then((rows) => setIsFav(rows.some((r) => r.restaurantId === restaurantId))).catch(() => {});
+  }, [token, restaurantId]);
+
+  const toggleFav = async () => {
+    if (!token) { router.push("/(auth)/login" as any); return; }
+    const next = !isFav;
+    setIsFav(next);
+    try {
+      if (next) await addFavorite(restaurantId);
+      else await removeFavorite(restaurantId);
+    } catch { setIsFav(!next); }
+  };
 
   const { data: restaurant, isLoading: rLoading } = useGetRestaurant(restaurantId);
   const { data: menuItems, isLoading: mLoading } = useListMenuItems(restaurantId);
@@ -71,6 +90,13 @@ export default function RestaurantScreen() {
                 style={[styles.backBtn, { backgroundColor: "rgba(0,0,0,0.4)" }]}
               >
                 <Ionicons name="arrow-back" size={22} color="#fff" />
+              </TouchableOpacity>
+              {/* Favorite button */}
+              <TouchableOpacity
+                onPress={toggleFav}
+                style={[styles.backBtn, { backgroundColor: "rgba(0,0,0,0.4)", left: undefined, right: 16 }]}
+              >
+                <Ionicons name={isFav ? "heart" : "heart-outline"} size={22} color={isFav ? "#E2006A" : "#fff"} />
               </TouchableOpacity>
             </View>
 

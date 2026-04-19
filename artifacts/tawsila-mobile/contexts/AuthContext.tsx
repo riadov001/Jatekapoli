@@ -13,6 +13,8 @@ export interface AuthUser {
   phone: string | null;
   role: string;
   loyaltyPoints: number;
+  address?: string | null;
+  avatarUrl?: string | null;
 }
 
 interface AuthContextType {

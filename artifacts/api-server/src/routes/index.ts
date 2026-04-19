@@ -10,6 +10,11 @@ import reviewsRouter from "./reviews";
 import rewardsRouter from "./rewards";
 import adminRouter from "./admin";
 import storageRouter from "./storage";
+import favoritesRouter from "./favorites";
+import addressesRouter from "./addresses";
+import paymentMethodsRouter from "./paymentMethods";
+import supportTicketsRouter from "./supportTickets";
+import notificationPrefsRouter from "./notificationPrefs";
 import { subscribe } from "../lib/sse";
 
 const router: IRouter = Router();
@@ -25,6 +30,11 @@ router.use(reviewsRouter);
 router.use(rewardsRouter);
 router.use(adminRouter);
 router.use(storageRouter);
+router.use(favoritesRouter);
+router.use(addressesRouter);
+router.use(paymentMethodsRouter);
+router.use(supportTicketsRouter);
+router.use(notificationPrefsRouter);
 
 /**
  * SSE endpoint — clients subscribe to one or more channels:

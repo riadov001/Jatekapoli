@@ -101,15 +101,15 @@ export default function ProfileScreen() {
 
         <Text style={[styles.sectionHeader, { color: colors.heading }]}>Aide & Support</Text>
         <View style={[styles.section, { backgroundColor: colors.card }]}>
-          <Row icon="chatbubbles-outline" label="Centre d'aide" onPress={() => {}} />
-          <Row icon="create-outline" label="Donner mon avis" onPress={() => {}} />
+          <Row icon="chatbubbles-outline" label="Centre d'aide" onPress={() => router.push("/profile/help" as any)} />
+          <Row icon="create-outline" label="Donner mon avis" onPress={() => router.push("/profile/feedback" as any)} />
         </View>
 
         <Text style={[styles.sectionHeader, { color: colors.heading }]}>Légal & Confidentialité</Text>
         <View style={[styles.section, { backgroundColor: colors.card }]}>
-          <Row icon="shield-checkmark-outline" label="Politique de confidentialité" onPress={() => {}} />
-          <Row icon="document-text-outline" label="Conditions d'utilisation" onPress={() => {}} />
-          <Row icon="business-outline" label="Mentions légales" onPress={() => {}} />
+          <Row icon="shield-checkmark-outline" label="Politique de confidentialité" onPress={() => router.push("/profile/legal?type=privacy" as any)} />
+          <Row icon="document-text-outline" label="Conditions d'utilisation" onPress={() => router.push("/profile/legal?type=terms" as any)} />
+          <Row icon="business-outline" label="Mentions légales" onPress={() => router.push("/profile/legal?type=mentions" as any)} />
         </View>
       </ScrollView>
     );
@@ -138,9 +138,9 @@ export default function ProfileScreen() {
 
       {/* Floating quick-action cards row */}
       <Animated.View entering={FadeInDown.duration(380)} style={styles.quickRow}>
-        <QuickCard icon="heart-outline" label="Favoris" onPress={() => {}} />
+        <QuickCard icon="heart-outline" label="Favoris" onPress={() => router.push("/profile/favorites" as any)} />
         <QuickCard icon="bag-handle-outline" label="Commandes" onPress={() => router.push("/(tabs)/orders")} />
-        <QuickCard icon="gift" label="Récompenses" accent onPress={() => {}} />
+        <QuickCard icon="gift" label="Récompenses" accent onPress={() => router.push("/profile/coupons" as any)} />
       </Animated.View>
 
       {/* Jatek+ premium upsell */}
@@ -161,40 +161,40 @@ export default function ProfileScreen() {
         <Text style={[styles.sectionHeader, { color: colors.heading }]}>Mon activité</Text>
         <View style={[styles.section, { backgroundColor: colors.card }]}>
           <Row icon="bag-handle-outline" label="Mes commandes" subtitle="Voir l'historique et le suivi en direct" onPress={() => router.push("/(tabs)/orders")} />
-          <Row icon="heart-outline" label="Mes favoris" subtitle="Restos et produits sauvegardés" onPress={() => {}} />
-          <Row icon="repeat-outline" label="Recommander" subtitle="Refaire une commande passée" onPress={() => {}} />
-          <Row icon="star-outline" label="Mes avis" onPress={() => {}} />
+          <Row icon="heart-outline" label="Mes favoris" subtitle="Restos et produits sauvegardés" onPress={() => router.push("/profile/favorites" as any)} />
+          <Row icon="repeat-outline" label="Recommander" subtitle="Refaire une commande passée" onPress={() => router.push("/profile/reorder" as any)} />
+          <Row icon="star-outline" label="Mes avis" onPress={() => router.push("/profile/reviews" as any)} />
         </View>
       </Animated.View>
 
       <Animated.View entering={FadeInDown.delay(160).duration(380)}>
         <Text style={[styles.sectionHeader, { color: colors.heading }]}>Gérer le compte</Text>
         <View style={[styles.section, { backgroundColor: colors.card }]}>
-          <Row icon="person-circle-outline" label="Informations personnelles" subtitle={user?.email ?? "Compte & préférences"} onPress={() => {}} />
-          <Row icon="card-outline" label="Modes de paiement" subtitle="Cartes, wallets, espèces" onPress={() => {}} />
-          <Row icon="location-outline" label="Adresses enregistrées" subtitle="Domicile, travail…" onPress={() => {}} />
-          <Row icon="pricetag-outline" label="Bons de réduction" subtitle="JATEK10 actif" onPress={() => {}} />
-          <Row icon="notifications-outline" label="Notifications" onPress={() => {}} />
-          <Row icon="language-outline" label="Langue & région" subtitle="Français · Maroc" onPress={() => {}} />
+          <Row icon="person-circle-outline" label="Informations personnelles" subtitle={user?.email ?? "Compte & préférences"} onPress={() => router.push("/profile/info" as any)} />
+          <Row icon="card-outline" label="Modes de paiement" subtitle="Cartes, wallets, espèces" onPress={() => router.push("/profile/payments" as any)} />
+          <Row icon="location-outline" label="Adresses enregistrées" subtitle="Domicile, travail…" onPress={() => router.push("/profile/addresses" as any)} />
+          <Row icon="pricetag-outline" label="Bons de réduction" subtitle="JATEK10 actif" onPress={() => router.push("/profile/coupons" as any)} />
+          <Row icon="notifications-outline" label="Notifications" onPress={() => router.push("/profile/notifications" as any)} />
+          <Row icon="language-outline" label="Langue & région" subtitle="Français · Maroc" onPress={() => router.push("/profile/language" as any)} />
         </View>
       </Animated.View>
 
       <Animated.View entering={FadeInDown.delay(200).duration(380)}>
         <Text style={[styles.sectionHeader, { color: colors.heading }]}>Aide & Support</Text>
         <View style={[styles.section, { backgroundColor: colors.card }]}>
-          <Row icon="chatbubbles-outline" label="Centre d'aide" onPress={() => {}} />
-          <Row icon="headset-outline" label="Contacter le support" onPress={() => {}} />
-          <Row icon="create-outline" label="Donner mon avis" onPress={() => {}} />
-          <Row icon="bug-outline" label="Signaler un problème" onPress={() => {}} />
+          <Row icon="chatbubbles-outline" label="Centre d'aide" onPress={() => router.push("/profile/help" as any)} />
+          <Row icon="headset-outline" label="Contacter le support" onPress={() => router.push("/profile/support" as any)} />
+          <Row icon="create-outline" label="Donner mon avis" onPress={() => router.push("/profile/feedback" as any)} />
+          <Row icon="bug-outline" label="Signaler un problème" onPress={() => router.push("/profile/report" as any)} />
         </View>
       </Animated.View>
 
       <Animated.View entering={FadeInDown.delay(240).duration(380)}>
         <Text style={[styles.sectionHeader, { color: colors.heading }]}>Légal & Confidentialité</Text>
         <View style={[styles.section, { backgroundColor: colors.card }]}>
-          <Row icon="shield-checkmark-outline" label="Politique de confidentialité" onPress={() => {}} />
-          <Row icon="document-text-outline" label="Conditions d'utilisation" onPress={() => {}} />
-          <Row icon="business-outline" label="Mentions légales" onPress={() => {}} />
+          <Row icon="shield-checkmark-outline" label="Politique de confidentialité" onPress={() => router.push("/profile/legal?type=privacy" as any)} />
+          <Row icon="document-text-outline" label="Conditions d'utilisation" onPress={() => router.push("/profile/legal?type=terms" as any)} />
+          <Row icon="business-outline" label="Mentions légales" onPress={() => router.push("/profile/legal?type=mentions" as any)} />
         </View>
       </Animated.View>
 

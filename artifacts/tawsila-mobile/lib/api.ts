@@ -18,44 +18,55 @@ async function authHeaders(): Promise<Record<string, string>> {
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
+async function jsonFetch<T = any>(path: string, init?: RequestInit): Promise<T> {
+  const res = await fetch(`${API_BASE}${path}`, {
+    ...init,
+    headers: {
+      ...(init?.body ? { "Content-Type": "application/json" } : {}),
+      ...(await authHeaders()),
+      ...(init?.headers as Record<string, string> | undefined),
+    },
+  });
+  if (!res.ok) {
+    let msg = `HTTP ${res.status}`;
+    try {
+      const err = await res.json();
+      msg = err?.error || msg;
+    } catch {}
+    throw new Error(msg);
+  }
+  if (res.status === 204) return undefined as T;
+  return res.json();
+}
+
 export const apiBase = API_BASE;
 
+// Drivers ------------------------------------------------------------
 export async function fetchAvailableOrders(): Promise<any[]> {
-  const res = await fetch(`${API_BASE}/api/orders/available`, {
-    headers: { ...(await authHeaders()) },
-  });
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  return res.json();
+  return jsonFetch("/api/orders/available");
 }
 
 export async function acceptDelivery(orderId: number, driverId: number): Promise<any> {
-  const res = await fetch(`${API_BASE}/api/orders/${orderId}/accept-delivery`, {
+  return jsonFetch(`/api/orders/${orderId}/accept-delivery`, {
     method: "POST",
-    headers: { "Content-Type": "application/json", ...(await authHeaders()) },
     body: JSON.stringify({ driverId }),
   });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.error || `HTTP ${res.status}`);
-  }
-  return res.json();
 }
 
 export async function updateDriverLocation(driverId: number, lat: number, lng: number): Promise<void> {
-  await fetch(`${API_BASE}/api/drivers/${driverId}/location`, {
+  await jsonFetch(`/api/drivers/${driverId}/location`, {
     method: "PATCH",
-    headers: { "Content-Type": "application/json", ...(await authHeaders()) },
     body: JSON.stringify({ latitude: lat, longitude: lng }),
   });
 }
 
 export async function getDriverLocation(driverId: number): Promise<{ latitude: number | null; longitude: number | null } | null> {
-  const res = await fetch(`${API_BASE}/api/drivers/${driverId}`, {
-    headers: { ...(await authHeaders()) },
-  });
-  if (!res.ok) return null;
-  const driver = await res.json();
-  return { latitude: driver.latitude, longitude: driver.longitude };
+  try {
+    const driver = await jsonFetch<any>(`/api/drivers/${driverId}`);
+    return { latitude: driver.latitude, longitude: driver.longitude };
+  } catch {
+    return null;
+  }
 }
 
 /** Geocode an address to lat/lng using OpenStreetMap Nominatim (free, no API key). */
@@ -67,4 +78,78 @@ export async function geocodeAddress(address: string): Promise<{ lat: number; ln
     if (data?.[0]) return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
   } catch {}
   return null;
+}
+
+// Users --------------------------------------------------------------
+export async function fetchMe(): Promise<any> {
+  return jsonFetch("/api/auth/me");
+}
+
+export async function updateUserProfile(userId: number, data: { name?: string; email?: string; phone?: string | null; address?: string | null; avatarUrl?: string | null }): Promise<any> {
+  return jsonFetch(`/api/users/${userId}`, { method: "PATCH", body: JSON.stringify(data) });
+}
+
+// Favorites ----------------------------------------------------------
+export async function listFavorites(): Promise<Array<{ id: number; restaurantId: number; restaurant: any }>> {
+  return jsonFetch("/api/favorites");
+}
+export async function addFavorite(restaurantId: number): Promise<any> {
+  return jsonFetch("/api/favorites", { method: "POST", body: JSON.stringify({ restaurantId }) });
+}
+export async function removeFavorite(restaurantId: number): Promise<void> {
+  await jsonFetch(`/api/favorites/${restaurantId}`, { method: "DELETE" });
+}
+
+// Addresses ----------------------------------------------------------
+export interface SavedAddress { id: number; label: string; fullAddress: string; details: string | null; isDefault: boolean; }
+export async function listAddresses(): Promise<SavedAddress[]> { return jsonFetch("/api/addresses"); }
+export async function createAddress(data: Omit<SavedAddress, "id">): Promise<SavedAddress> {
+  return jsonFetch("/api/addresses", { method: "POST", body: JSON.stringify(data) });
+}
+export async function updateAddress(id: number, data: Partial<Omit<SavedAddress, "id">>): Promise<SavedAddress> {
+  return jsonFetch(`/api/addresses/${id}`, { method: "PATCH", body: JSON.stringify(data) });
+}
+export async function deleteAddress(id: number): Promise<void> { await jsonFetch(`/api/addresses/${id}`, { method: "DELETE" }); }
+
+// Payment methods ----------------------------------------------------
+export interface PaymentMethod { id: number; type: string; label: string; last4: string | null; brand: string | null; isDefault: boolean; }
+export async function listPaymentMethods(): Promise<PaymentMethod[]> { return jsonFetch("/api/payment-methods"); }
+export async function createPaymentMethod(data: Omit<PaymentMethod, "id">): Promise<PaymentMethod> {
+  return jsonFetch("/api/payment-methods", { method: "POST", body: JSON.stringify(data) });
+}
+export async function updatePaymentMethod(id: number, data: Partial<Omit<PaymentMethod, "id">>): Promise<PaymentMethod> {
+  return jsonFetch(`/api/payment-methods/${id}`, { method: "PATCH", body: JSON.stringify(data) });
+}
+export async function deletePaymentMethod(id: number): Promise<void> { await jsonFetch(`/api/payment-methods/${id}`, { method: "DELETE" }); }
+
+// Support tickets ----------------------------------------------------
+export interface SupportTicket { id: number; category: string; subject: string; message: string; status: string; createdAt: string; }
+export async function listSupportTickets(): Promise<SupportTicket[]> { return jsonFetch("/api/support-tickets"); }
+export async function createSupportTicket(data: { category: string; subject: string; message: string }): Promise<SupportTicket> {
+  return jsonFetch("/api/support-tickets", { method: "POST", body: JSON.stringify(data) });
+}
+
+// Notification prefs -------------------------------------------------
+export interface NotifPrefs { pushOrders: boolean; pushPromos: boolean; emailReceipts: boolean; emailNewsletter: boolean; smsAlerts: boolean; language: string; }
+export async function fetchNotifPrefs(): Promise<NotifPrefs> { return jsonFetch("/api/notification-prefs"); }
+export async function updateNotifPrefs(data: Partial<NotifPrefs>): Promise<NotifPrefs> {
+  return jsonFetch("/api/notification-prefs", { method: "PATCH", body: JSON.stringify(data) });
+}
+
+// Reviews ------------------------------------------------------------
+export async function listReviews(params?: { userId?: number; restaurantId?: number }): Promise<any[]> {
+  const q = new URLSearchParams();
+  if (params?.userId) q.set("userId", String(params.userId));
+  if (params?.restaurantId) q.set("restaurantId", String(params.restaurantId));
+  const qs = q.toString();
+  return jsonFetch(`/api/reviews${qs ? `?${qs}` : ""}`);
+}
+export async function createReview(data: { restaurantId: number; rating: number; comment?: string }): Promise<any> {
+  return jsonFetch("/api/reviews", { method: "POST", body: JSON.stringify(data) });
+}
+export async function deleteReview(id: number): Promise<void> { await jsonFetch(`/api/reviews/${id}`, { method: "DELETE" }); }
+
+// Orders -------------------------------------------------------------
+export async function listMyOrders(): Promise<any[]> {
+  return jsonFetch("/api/orders");
 }

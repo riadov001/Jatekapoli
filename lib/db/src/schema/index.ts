@@ -5,3 +5,8 @@ export * from "./orders";
 export * from "./drivers";
 export * from "./reviews";
 export * from "./otpCodes";
+export * from "./favorites";
+export * from "./addresses";
+export * from "./paymentMethods";
+export * from "./supportTickets";
+export * from "./notificationPrefs";
