@@ -31,42 +31,78 @@ function normalizePhone(phone: string): string {
   return p;
 }
 
-/**
- * Build a Twilio client, preferring API Key auth (more secure) over Auth Token.
- * Priority: TWILIO_API_KEY_2 + TWILIO_API_KEY_SECRET → TWILIO_API_TOKEN
- */
-async function getTwilioClient() {
-  const twilio = (await import("twilio")).default;
-  const accountSid = process.env.TWILIO_ACCOUNT_SID!;
-  const apiKeySid = process.env.TWILIO_API_KEY_2;
-  const apiKeySecret = process.env.TWILIO_API_KEY_SECRET;
+// ─── SMS / WhatsApp via Infobip ───────────────────────────────────────────────
+//
+// Required env vars:
+//   INFOBIP_API_KEY   — API key from Infobip dashboard (API Keys section)
+//   INFOBIP_BASE_URL  — Your personal base URL, e.g. "abc123.api.infobip.com"
+//
+// Optional:
+//   INFOBIP_SENDER    — Alphanumeric sender ID (default: "Jatek")
+//                       Morocco supports alphanumeric senders — no +15... number needed.
+//   INFOBIP_WA_SENDER — WhatsApp Business number registered in Infobip (e.g. "+212...") 
 
-  if (apiKeySid && apiKeySecret) {
-    // API Key auth — recommended for production
-    return twilio(apiKeySid, apiKeySecret, { accountSid });
-  }
-  // Fallback: Auth Token
-  const authToken = process.env.TWILIO_API_TOKEN!;
-  return twilio(accountSid, authToken);
+function infobipConfigured(): boolean {
+  return !!(process.env.INFOBIP_API_KEY && process.env.INFOBIP_BASE_URL);
 }
 
 async function sendSms(to: string, body: string): Promise<void> {
-  const accountSid = process.env.TWILIO_ACCOUNT_SID;
-  const from = process.env.TWILIO_FROM_NUMBER;
-  if (!accountSid || !from) return;
-  const client = await getTwilioClient();
-  await client.messages.create({ body, from, to });
+  const apiKey = process.env.INFOBIP_API_KEY;
+  const baseUrl = process.env.INFOBIP_BASE_URL;
+  if (!apiKey || !baseUrl) return;
+
+  const sender = process.env.INFOBIP_SENDER || "Jatek";
+  const url = `https://${baseUrl}/sms/2/text/advanced`;
+
+  const payload = {
+    messages: [{ from: sender, destinations: [{ to }], text: body }],
+  };
+
+  const res = await fetch(url, {
+    method: "POST",
+    headers: {
+      Authorization: `App ${apiKey}`,
+      "Content-Type": "application/json",
+      Accept: "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(`Infobip SMS error ${res.status}: ${err}`);
+  }
 }
 
 async function sendWhatsApp(to: string, body: string): Promise<void> {
-  const accountSid = process.env.TWILIO_ACCOUNT_SID;
-  // Use TWILIO_WHATSAPP_FROM if set; otherwise fall back to TWILIO_FROM_NUMBER with whatsapp: prefix
-  const rawFrom = process.env.TWILIO_WHATSAPP_FROM || process.env.TWILIO_FROM_NUMBER;
-  if (!accountSid || !rawFrom) return;
-  const from = rawFrom.startsWith("whatsapp:") ? rawFrom : `whatsapp:${rawFrom}`;
-  const toWa = to.startsWith("whatsapp:") ? to : `whatsapp:${to}`;
-  const client = await getTwilioClient();
-  await client.messages.create({ body, from, to: toWa });
+  const apiKey = process.env.INFOBIP_API_KEY;
+  const baseUrl = process.env.INFOBIP_BASE_URL;
+  const from = process.env.INFOBIP_WA_SENDER;
+  if (!apiKey || !baseUrl || !from) {
+    // WhatsApp not configured — fall back to SMS silently
+    await sendSms(to, body);
+    return;
+  }
+
+  const url = `https://${baseUrl}/whatsapp/1/message/text`;
+  const payload = { from, to, content: { text: body } };
+
+  const res = await fetch(url, {
+    method: "POST",
+    headers: {
+      Authorization: `App ${apiKey}`,
+      "Content-Type": "application/json",
+      Accept: "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!res.ok) {
+    const err = await res.text();
+    // Log and fall back to SMS
+    console.warn(`[OTP] Infobip WhatsApp error ${res.status}, falling back to SMS: ${err}`);
+    await sendSms(to, body);
+  }
 }
 
 // ─── Register (email/password, for admin/driver panel) ──────────────────────
@@ -163,38 +199,31 @@ router.post("/auth/send-otp", async (req, res): Promise<void> => {
 
   const messageBody = `Votre code Jatek : ${code}\nValable ${OTP_EXPIRY_MINUTES} minutes. Ne le communiquez à personne.`;
 
-  const twilioConfigured = !!(process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_API_TOKEN);
+  const smsProviderReady = infobipConfigured();
+  const isDev = process.env.NODE_ENV !== "production";
 
   let smsSent = false;
   let actualChannel = deliveryChannel;
 
   try {
     if (deliveryChannel === "whatsapp") {
+      // sendWhatsApp already falls back to SMS if WA sender not configured
       await sendWhatsApp(normalizedPhone, messageBody);
-      smsSent = twilioConfigured;
     } else {
       await sendSms(normalizedPhone, messageBody);
-      smsSent = twilioConfigured;
     }
-  } catch (whatsappErr: any) {
-    const code_ = whatsappErr?.code ?? 0;
-    // Twilio channel errors (63007 = no WhatsApp channel, 63031 = same To/From,
-    // 21608 = unverified trial number) — fall back to SMS automatically.
-    const isFallbackable = [63007, 63031, 21608, 21211].includes(code_) ||
-      String(whatsappErr?.message).includes("Channel") ||
-      String(whatsappErr?.message).includes("unverified");
-
-    if (deliveryChannel === "whatsapp" && isFallbackable) {
-      console.warn(`[OTP] WhatsApp failed (${code_}), falling back to SMS`);
+    smsSent = smsProviderReady;
+  } catch (err: any) {
+    console.error(`[OTP] ${actualChannel} send failed:`, err?.message ?? err);
+    // If WhatsApp fails hard (not already handled inside sendWhatsApp), retry via SMS
+    if (deliveryChannel === "whatsapp") {
       try {
         await sendSms(normalizedPhone, messageBody);
-        smsSent = twilioConfigured;
-        actualChannel = "sms"; // report that SMS was used
-      } catch (smsErr) {
-        console.error("[OTP] SMS fallback also failed:", smsErr);
+        smsSent = smsProviderReady;
+        actualChannel = "sms";
+      } catch (smsErr: any) {
+        console.error("[OTP] SMS fallback also failed:", smsErr?.message ?? smsErr);
       }
-    } else {
-      console.error(`[OTP] ${deliveryChannel} send failed:`, whatsappErr);
     }
   }
 
@@ -203,7 +232,8 @@ router.post("/auth/send-otp", async (req, res): Promise<void> => {
     channel: actualChannel,
     message: `Code envoyé via ${actualChannel} à ${normalizedPhone}`,
     smsSent,
-    demoOtp: (!twilioConfigured || process.env.NODE_ENV !== "production") ? code : undefined,
+    // Always expose OTP in dev mode OR when no SMS provider is configured (for testing)
+    demoOtp: (isDev || !smsProviderReady) ? code : undefined,
   });
 });
 

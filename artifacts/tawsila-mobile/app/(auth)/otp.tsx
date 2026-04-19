@@ -37,6 +37,18 @@ export default function OtpScreen() {
     }
   }, [countdown]);
 
+  // Auto-fill demo OTP for testing (shown in dev mode / when no SMS provider configured)
+  useEffect(() => {
+    if (demoOtp && demoOtp.length === 6) {
+      const filled = demoOtp.split("").slice(0, 6);
+      setDigits(filled);
+      // Auto-verify after 800ms so the user can see the filled code first
+      const t = setTimeout(() => handleVerify(demoOtp), 800);
+      return () => clearTimeout(t);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [demoOtp]);
+
   const code = digits.join("");
 
   const handleDigit = (index: number, value: string) => {
