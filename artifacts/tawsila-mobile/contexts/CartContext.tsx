@@ -19,19 +19,23 @@ interface CartContextType {
   clearCart: () => void;
   subtotal: number;
   itemCount: number;
+  selectedAddress: string;
+  setSelectedAddress: (a: string) => void;
 }
 
 const CartContext = createContext<CartContextType | null>(null);
 const CART_KEY = "tawsila_cart_v2";
+const ADDR_KEY = "tawsila_selected_address_v1";
 
 export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
   const [restaurantId, setRestaurantId] = useState<number | null>(null);
   const [restaurantName, setRestaurantName] = useState("");
+  const [selectedAddress, setSelectedAddressState] = useState<string>("");
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    AsyncStorage.getItem(CART_KEY).then((raw) => {
+    Promise.all([AsyncStorage.getItem(CART_KEY), AsyncStorage.getItem(ADDR_KEY)]).then(([raw, addr]) => {
       if (raw) {
         try {
           const s = JSON.parse(raw);
@@ -40,6 +44,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
           setRestaurantName(s.restaurantName ?? "");
         } catch {}
       }
+      if (addr) setSelectedAddressState(addr);
       setReady(true);
     });
   }, []);
@@ -48,6 +53,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
     if (!ready) return;
     AsyncStorage.setItem(CART_KEY, JSON.stringify({ items, restaurantId, restaurantName }));
   }, [items, restaurantId, restaurantName, ready]);
+
+  const setSelectedAddress = (a: string) => {
+    setSelectedAddressState(a);
+    AsyncStorage.setItem(ADDR_KEY, a).catch(() => {});
+  };
 
   const addItem = (rId: number, rName: string, item: Omit<CartItem, "quantity">) => {
     if (restaurantId && restaurantId !== rId) {
@@ -84,7 +94,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const itemCount = items.reduce((s, i) => s + i.quantity, 0);
 
   return (
-    <CartContext.Provider value={{ items, restaurantId, restaurantName, addItem, removeItem, updateQuantity, clearCart, subtotal, itemCount }}>
+    <CartContext.Provider value={{ items, restaurantId, restaurantName, addItem, removeItem, updateQuantity, clearCart, subtotal, itemCount, selectedAddress, setSelectedAddress }}>
       {children}
     </CartContext.Provider>
   );

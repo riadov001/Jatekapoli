@@ -12,23 +12,16 @@ import { useCart } from "@/contexts/CartContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
-import { AddressAutocomplete } from "@/components/AddressAutocomplete";
-
 const DELIVERY_FEE = 15;
 
 export default function CartScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { items, restaurantId, restaurantName, updateQuantity, removeItem, clearCart, subtotal, itemCount } = useCart();
-  const { user, token } = useAuth();
+  const { items, restaurantId, restaurantName, updateQuantity, removeItem, clearCart, subtotal, itemCount, selectedAddress } = useCart();
+  const { token } = useAuth();
   const createOrder = useCreateOrder();
-  const [address, setAddress] = useState((user as any)?.address ?? "");
+  const address = selectedAddress;
   const [notes, setNotes] = useState("");
-  const [addressInZone, setAddressInZone] = useState(true);
-
-  const handleZoneChange = (inZone: boolean) => {
-    setAddressInZone(inZone);
-  };
 
   const handlePlaceOrder = () => {
     if (!token) {
@@ -39,16 +32,10 @@ export default function CartScreen() {
       return;
     }
     if (!address.trim()) {
-      Alert.alert("Address required", "Please enter your delivery address.");
-      return;
-    }
-    if (!addressInZone) {
-      Alert.alert(
-        "Outside delivery zone",
-        "Sorry, we currently only deliver within 15 km of Oujda city centre. Please choose a closer address.",
-        [{ text: "OK" }]
-      );
-      if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      Alert.alert("Adresse requise", "Veuillez choisir une adresse de livraison.", [
+        { text: "Annuler", style: "cancel" },
+        { text: "Choisir", onPress: () => router.push("/profile/addresses?select=1") },
+      ]);
       return;
     }
     createOrder.mutate({
@@ -89,7 +76,7 @@ export default function CartScreen() {
     );
   }
 
-  const orderDisabled = createOrder.isPending || !addressInZone;
+  const orderDisabled = createOrder.isPending;
 
   return (
     <View style={[styles.flex, { backgroundColor: colors.background }]}>
@@ -156,15 +143,24 @@ export default function CartScreen() {
           ))}
         </View>
 
-        {/* Delivery address with autocomplete + GPS */}
-        <Text style={[styles.sectionLabel, { color: colors.foreground }]}>Delivery address</Text>
-        <View style={styles.addressWrap}>
-          <AddressAutocomplete
-            value={address}
-            onChange={setAddress}
-            onZoneChange={handleZoneChange}
-          />
-        </View>
+        {/* Delivery address — tap to choose from saved addresses */}
+        <Text style={[styles.sectionLabel, { color: colors.foreground }]}>Adresse de livraison</Text>
+        <TouchableOpacity
+          activeOpacity={0.7}
+          onPress={() => router.push("/profile/addresses?select=1")}
+          style={[styles.addressCard, { backgroundColor: colors.card, borderColor: address ? colors.primary + "40" : colors.border }]}
+        >
+          <View style={[styles.addressIcon, { backgroundColor: colors.primary + "15" }]}>
+            <Ionicons name="location" size={20} color={colors.primary} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.addressTitle, { color: colors.foreground }]}>{address ? "Livraison à" : "Choisir une adresse"}</Text>
+            <Text style={[styles.addressValue, { color: address ? colors.foreground : colors.mutedForeground }]} numberOfLines={2}>
+              {address || "Sélectionnez une adresse enregistrée ou ajoutez-en une nouvelle"}
+            </Text>
+          </View>
+          <Ionicons name="chevron-forward" size={20} color={colors.mutedForeground} />
+        </TouchableOpacity>
 
         {/* Notes */}
         <Text style={[styles.sectionLabel, { color: colors.foreground }]}>Notes (optional)</Text>
@@ -201,12 +197,6 @@ export default function CartScreen() {
 
       {/* Place order button */}
       <View style={[styles.footer, { paddingBottom: insets.bottom + (Platform.OS === "web" ? 34 : 16), borderTopColor: colors.border }]}>
-        {!addressInZone && (
-          <View style={styles.zoneBlocker}>
-            <Ionicons name="warning" size={14} color="#DC2626" />
-            <Text style={styles.zoneBlockerText}>Address is outside our delivery zone</Text>
-          </View>
-        )}
         <TouchableOpacity
           style={[
             styles.orderBtn,
@@ -224,7 +214,7 @@ export default function CartScreen() {
           ) : (
             <>
               <Text style={[styles.orderBtnText, { color: orderDisabled ? colors.mutedForeground : "#fff" }]}>
-                {!addressInZone ? "Address out of zone" : "Place Order"}
+                Place Order
               </Text>
               {!orderDisabled && (
                 <Text style={[styles.orderBtnPrice, { backgroundColor: "rgba(255,255,255,0.25)" }]}>
@@ -259,7 +249,10 @@ const styles = StyleSheet.create({
   cartItemTotal: { fontSize: 14, fontFamily: "Inter_600SemiBold", minWidth: 56, textAlign: "right" },
   divider: { height: StyleSheet.hairlineWidth, marginHorizontal: 14 },
   sectionLabel: { fontSize: 14, fontFamily: "Inter_600SemiBold", paddingHorizontal: 16, marginBottom: 8 },
-  addressWrap: { marginHorizontal: 16, marginBottom: 16, zIndex: 10 },
+  addressCard: { flexDirection: "row", alignItems: "center", gap: 12, marginHorizontal: 16, marginBottom: 16, padding: 14, borderRadius: 14, borderWidth: 1 },
+  addressIcon: { width: 40, height: 40, borderRadius: 20, alignItems: "center", justifyContent: "center" },
+  addressTitle: { fontSize: 12, fontFamily: "Inter_500Medium", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 2 },
+  addressValue: { fontSize: 14, fontFamily: "Inter_500Medium" },
   inputWrap: {
     marginHorizontal: 16, borderRadius: 12, borderWidth: 1,
     flexDirection: "row", alignItems: "flex-start", gap: 10,

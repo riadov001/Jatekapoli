@@ -98,7 +98,7 @@ export default function HomeScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
-  const { itemCount } = useCart();
+  const { itemCount, selectedAddress } = useCart();
   const [search, setSearch] = useState("");
   const [activeTop, setActiveTop] = useState<TopId>("restaurant");
   const [activeSub, setActiveSub] = useState("Tous");
@@ -209,9 +209,11 @@ export default function HomeScreen() {
           <TouchableOpacity
             activeOpacity={0.7}
             style={styles.addressRow}
-            onPress={() => router.push("/(tabs)/profile")}
+            onPress={() => router.push("/profile/addresses?select=1")}
           >
-            <Text style={[styles.addressLabel, { color: colors.primary }]}>Choisir l'adresse</Text>
+            <Text style={[styles.addressLabel, { color: colors.primary }]} numberOfLines={1}>
+              {selectedAddress ? selectedAddress.split(",")[0] : "Choisir l'adresse"}
+            </Text>
             <View style={[styles.triangle, { borderTopColor: colors.primary }]} />
           </TouchableOpacity>
 

@@ -54,13 +54,30 @@ export function checkDeliveryZone(
   return { inZone: distanceKm <= MAX_RADIUS_KM, distanceKm };
 }
 
+const GOOGLE_PLACES_KEY = (process.env.EXPO_PUBLIC_GOOGLE_PLACES_KEY ?? "").trim();
+const useGoogle = GOOGLE_PLACES_KEY.length > 0;
+
 /**
- * Nominatim reverse-geocode: coords → human-readable address string.
+ * Reverse geocode: coords → human-readable address.
+ * Uses Google Geocoding API if EXPO_PUBLIC_GOOGLE_PLACES_KEY is set,
+ * otherwise falls back to OpenStreetMap Nominatim.
  */
 export async function reverseGeocode(
   latitude: number,
   longitude: number
 ): Promise<{ address: string; displayName: string }> {
+  if (useGoogle) {
+    const url = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&language=fr&key=${GOOGLE_PLACES_KEY}`;
+    const res = await fetch(url);
+    if (res.ok) {
+      const data = await res.json();
+      const first = data.results?.[0];
+      if (first) {
+        const display = first.formatted_address as string;
+        return { address: display, displayName: display };
+      }
+    }
+  }
   const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}&accept-language=fr`;
   const res = await fetch(url, {
     headers: { "User-Agent": "JatekMobileApp/1.0" },
@@ -97,6 +114,41 @@ export interface PlaceSuggestion {
 
 export async function searchPlaces(query: string): Promise<PlaceSuggestion[]> {
   if (query.trim().length < 3) return [];
+
+  if (useGoogle) {
+    try {
+      const params = new URLSearchParams({
+        input: query,
+        language: "fr",
+        components: "country:ma",
+        location: `${OUJDA_CENTER.latitude},${OUJDA_CENTER.longitude}`,
+        radius: String(MAX_RADIUS_KM * 1000),
+        key: GOOGLE_PLACES_KEY,
+      });
+      const res = await fetch(`https://maps.googleapis.com/maps/api/place/autocomplete/json?${params}`);
+      if (res.ok) {
+        const data = await res.json();
+        const preds: any[] = data.predictions ?? [];
+        const detailed = await Promise.all(preds.slice(0, 6).map(async (p) => {
+          const dRes = await fetch(`https://maps.googleapis.com/maps/api/place/details/json?place_id=${p.place_id}&fields=geometry,formatted_address&language=fr&key=${GOOGLE_PLACES_KEY}`);
+          if (!dRes.ok) return null;
+          const d = await dRes.json();
+          const loc = d.result?.geometry?.location;
+          if (!loc) return null;
+          return {
+            placeId: p.place_id,
+            displayName: d.result?.formatted_address ?? p.description,
+            shortName: p.structured_formatting?.main_text ?? p.description,
+            secondaryText: p.structured_formatting?.secondary_text ?? "",
+            latitude: loc.lat,
+            longitude: loc.lng,
+          } as PlaceSuggestion;
+        }));
+        const out = detailed.filter(Boolean) as PlaceSuggestion[];
+        if (out.length > 0) return out;
+      }
+    } catch { /* fall through to Nominatim */ }
+  }
 
   const params = new URLSearchParams({
     format: "json",

@@ -1,12 +1,24 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, ScrollView, Modal, TextInput, Alert } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { router, useLocalSearchParams } from "expo-router";
 import ProfileScreenLayout from "@/components/ProfileScreenLayout";
 import { useColors } from "@/hooks/useColors";
 import { listAddresses, createAddress, updateAddress, deleteAddress, type SavedAddress } from "@/lib/api";
+import { AddressAutocomplete } from "@/components/AddressAutocomplete";
+import { useCart } from "@/contexts/CartContext";
 
 export default function AddressesScreen() {
   const colors = useColors();
+  const { select } = useLocalSearchParams<{ select?: string }>();
+  const selectMode = select === "1";
+  const { setSelectedAddress } = useCart();
+
+  const pickAddress = (a: SavedAddress) => {
+    const full = a.details ? `${a.fullAddress} (${a.details})` : a.fullAddress;
+    setSelectedAddress(full);
+    if (router.canGoBack()) router.back(); else router.replace("/cart");
+  };
   const [items, setItems] = useState<SavedAddress[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -60,10 +72,16 @@ export default function AddressesScreen() {
 
   return (
     <ProfileScreenLayout
-      title="Adresses enregistrées"
+      title={selectMode ? "Choisir une adresse" : "Adresses enregistrées"}
       headerRight={<TouchableOpacity onPress={openAdd} hitSlop={10}><Ionicons name="add" size={26} color={colors.primary} /></TouchableOpacity>}
       scroll={false}
     >
+      {selectMode && (
+        <View style={[styles.selectHint, { backgroundColor: colors.primary + "12", borderColor: colors.primary + "30" }]}>
+          <Ionicons name="information-circle-outline" size={16} color={colors.primary} />
+          <Text style={[styles.selectHintText, { color: colors.primary }]} numberOfLines={2}>Touchez une adresse pour la sélectionner. Appui long pour modifier.</Text>
+        </View>
+      )}
       {loading ? (
         <View style={styles.center}><ActivityIndicator color={colors.primary} /></View>
       ) : (
@@ -79,7 +97,7 @@ export default function AddressesScreen() {
               <View style={[styles.iconWrap, { backgroundColor: colors.primary + "15" }]}>
                 <Ionicons name={a.label.toLowerCase().includes("dom") ? "home" : a.label.toLowerCase().includes("trav") || a.label.toLowerCase().includes("bur") ? "briefcase" : "location"} size={20} color={colors.primary} />
               </View>
-              <TouchableOpacity onPress={() => openEdit(a)} style={{ flex: 1 }} activeOpacity={0.7}>
+              <TouchableOpacity onPress={() => selectMode ? pickAddress(a) : openEdit(a)} onLongPress={() => openEdit(a)} style={{ flex: 1 }} activeOpacity={0.7}>
                 <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
                   <Text style={[styles.title, { color: colors.heading }]}>{a.label}</Text>
                   {a.isDefault && (
@@ -118,7 +136,7 @@ export default function AddressesScreen() {
             <Text style={[styles.label, { color: colors.mutedForeground }]}>Libellé</Text>
             <TextInput value={label} onChangeText={setLabel} placeholder="Domicile, Bureau..." placeholderTextColor={colors.mutedForeground} style={[styles.input, { backgroundColor: colors.card, color: colors.heading, borderColor: colors.border }]} />
             <Text style={[styles.label, { color: colors.mutedForeground }]}>Adresse complète</Text>
-            <TextInput value={fullAddress} onChangeText={setFullAddress} placeholder="N°, rue, ville" placeholderTextColor={colors.mutedForeground} style={[styles.input, { backgroundColor: colors.card, color: colors.heading, borderColor: colors.border, height: 60, textAlignVertical: "top" }]} multiline />
+            <AddressAutocomplete value={fullAddress} onChange={setFullAddress} />
             <Text style={[styles.label, { color: colors.mutedForeground }]}>Détails (étage, code, etc.)</Text>
             <TextInput value={details} onChangeText={setDetails} placeholder="Optionnel" placeholderTextColor={colors.mutedForeground} style={[styles.input, { backgroundColor: colors.card, color: colors.heading, borderColor: colors.border }]} />
             <TouchableOpacity onPress={() => setIsDefault((v) => !v)} style={{ flexDirection: "row", alignItems: "center", gap: 8, marginTop: 14 }}>
@@ -150,6 +168,8 @@ const styles = StyleSheet.create({
   sub: { fontSize: 12, fontFamily: "Inter_400Regular", marginTop: 2 },
   badge: { paddingHorizontal: 6, paddingVertical: 2, borderRadius: 8 },
   badgeText: { color: "#fff", fontSize: 10, fontFamily: "Inter_700Bold" },
+  selectHint: { flexDirection: "row", alignItems: "center", gap: 8, marginHorizontal: 16, marginTop: 12, padding: 10, borderRadius: 10, borderWidth: 1 },
+  selectHintText: { flex: 1, fontSize: 12, fontFamily: "Inter_500Medium" },
   addBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, padding: 14, borderRadius: 14, borderWidth: 1, borderStyle: "dashed", marginTop: 8 },
   addBtnText: { fontSize: 14, fontFamily: "Inter_600SemiBold" },
   modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" },
