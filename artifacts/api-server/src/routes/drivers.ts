@@ -71,6 +71,47 @@ router.patch("/drivers/:id", async (req, res): Promise<void> => {
   res.json(driver);
 });
 
+/**
+ * Complete the driver's mandatory profile (vehicle plate + national ID).
+ * Sets `profileCompletedAt`, which gates the ability to accept deliveries.
+ */
+router.post("/drivers/:id/complete-profile", async (req: any, res): Promise<void> => {
+  const id = parseInt(req.params.id ?? "", 10);
+  if (Number.isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
+
+  const [existing] = await db.select().from(driversTable).where(eq(driversTable.id, id)).limit(1);
+  if (!existing) { res.status(404).json({ error: "Driver not found" }); return; }
+  if (req.userRole !== "admin" && existing.userId !== req.userId) {
+    res.status(403).json({ error: "Forbidden" });
+    return;
+  }
+
+  const vehicleType = typeof req.body?.vehicleType === "string" ? req.body.vehicleType.trim() : null;
+  const vehiclePlate = typeof req.body?.vehiclePlate === "string" ? req.body.vehiclePlate.trim() : null;
+  const nationalId = typeof req.body?.nationalId === "string" ? req.body.nationalId.trim() : null;
+  const licenseNumber = typeof req.body?.licenseNumber === "string" ? req.body.licenseNumber.trim() : null;
+  const photoUrl = typeof req.body?.photoUrl === "string" ? req.body.photoUrl.trim() : null;
+
+  if (!vehicleType) { res.status(400).json({ error: "vehicleType is required" }); return; }
+  if (!vehiclePlate || vehiclePlate.length < 3) { res.status(400).json({ error: "vehiclePlate is required" }); return; }
+  if (!nationalId || nationalId.length < 4) { res.status(400).json({ error: "nationalId is required" }); return; }
+
+  const [updated] = await db
+    .update(driversTable)
+    .set({
+      vehicleType,
+      vehiclePlate,
+      nationalId,
+      licenseNumber: licenseNumber || null,
+      photoUrl: photoUrl || null,
+      profileCompletedAt: new Date(),
+    })
+    .where(eq(driversTable.id, id))
+    .returning();
+
+  res.json(updated);
+});
+
 router.patch("/drivers/:id/location", async (req, res): Promise<void> => {
   const id = parseInt(req.params.id, 10);
   if (isNaN(id)) { res.status(400).json({ error: "Invalid driver id" }); return; }

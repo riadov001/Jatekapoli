@@ -139,6 +139,53 @@ router.patch("/restaurants/:id", requireRole("admin", "restaurant_owner"), async
   res.json(restaurant);
 });
 
+/**
+ * Complete the restaurant owner's mandatory business profile.
+ * Sets `profileCompletedAt` once legalName + ICE are present, which gates
+ * the ability to accept incoming orders.
+ */
+router.post("/restaurants/:id/complete-profile", requireRole("admin", "restaurant_owner"), async (req: AuthedRequest, res): Promise<void> => {
+  const id = parseInt(req.params.id ?? "", 10);
+  if (Number.isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
+
+  const [existing] = await db.select().from(restaurantsTable).where(eq(restaurantsTable.id, id)).limit(1);
+  if (!existing) { res.status(404).json({ error: "Restaurant not found" }); return; }
+  if (req.userRole !== "admin" && existing.ownerId !== req.userId) {
+    res.status(403).json({ error: "Forbidden" });
+    return;
+  }
+
+  const legalName = typeof req.body?.legalName === "string" ? req.body.legalName.trim() : null;
+  const ice = typeof req.body?.ice === "string" ? req.body.ice.trim() : null;
+  const printerEmail = typeof req.body?.printerEmail === "string" ? req.body.printerEmail.trim() : null;
+
+  if (!legalName || legalName.length < 2) {
+    res.status(400).json({ error: "legalName is required" });
+    return;
+  }
+  if (!ice || !/^\d{8,15}$/.test(ice)) {
+    res.status(400).json({ error: "ICE must be 8 to 15 digits" });
+    return;
+  }
+  if (printerEmail && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(printerEmail)) {
+    res.status(400).json({ error: "printerEmail is not a valid email" });
+    return;
+  }
+
+  const [updated] = await db
+    .update(restaurantsTable)
+    .set({
+      legalName,
+      ice,
+      printerEmail: printerEmail || null,
+      profileCompletedAt: new Date(),
+    })
+    .where(eq(restaurantsTable.id, id))
+    .returning();
+
+  res.json(updated);
+});
+
 router.delete("/restaurants/:id", requireRole("admin"), async (req: AuthedRequest, res): Promise<void> => {
   const params = DeleteRestaurantParams.safeParse(req.params);
   if (!params.success) {

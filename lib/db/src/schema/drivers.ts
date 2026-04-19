@@ -8,6 +8,16 @@ export const driversTable = pgTable("drivers", {
   name: text("name").notNull(),
   phone: text("phone"),
   vehicleType: text("vehicle_type"),
+  /** Vehicle plate / matricule — required to accept deliveries. */
+  vehiclePlate: text("vehicle_plate"),
+  /** National ID number (CIN) — required to accept deliveries. */
+  nationalId: text("national_id"),
+  /** Driver license number (optional but encouraged for car/scooter). */
+  licenseNumber: text("license_number"),
+  /** Profile photo URL (optional). */
+  photoUrl: text("photo_url"),
+  /** Set the moment the driver completes the mandatory onboarding fields. */
+  profileCompletedAt: timestamp("profile_completed_at", { withTimezone: true }),
   isAvailable: boolean("is_available").notNull().default(true),
   totalDeliveries: integer("total_deliveries").notNull().default(0),
   rating: real("rating"),

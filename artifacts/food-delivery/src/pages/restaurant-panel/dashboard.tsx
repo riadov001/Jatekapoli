@@ -31,6 +31,23 @@ type RestaurantFormState = {
   minimumOrder: string;
 };
 
+type BusinessProfileForm = {
+  legalName: string;
+  ice: string;
+  printerEmail: string;
+};
+
+/**
+ * Open the kitchen-ticket print page in a new window using the auth token
+ * passed via querystring (the auth middleware accepts ?token= for browser tabs).
+ */
+function openReceiptWindow(orderId: number) {
+  const base = import.meta.env.BASE_URL?.replace(/\/$/, "") || "";
+  const token = localStorage.getItem("tawsila_token") || "";
+  const url = `${base}/api/orders/${orderId}/receipt?token=${encodeURIComponent(token)}`;
+  window.open(url, "_blank", "width=420,height=700");
+}
+
 const statusColors: Record<string, string> = {
   pending: "bg-accent text-accent-foreground border-primary/20",
   accepted: "bg-primary/15 text-primary border-primary/25",
@@ -41,9 +58,10 @@ const statusColors: Record<string, string> = {
   cancelled: "bg-muted text-muted-foreground border-border",
 };
 
-function ActionButtons({ order, onAction }: {
+function ActionButtons({ order, onAction, profileComplete }: {
   order: any;
   onAction: (id: number, status: string) => void;
+  profileComplete: boolean;
 }) {
   switch (order.status) {
     case "pending":
@@ -53,6 +71,9 @@ function ActionButtons({ order, onAction }: {
             size="sm"
             className="bg-primary hover:bg-primary/90 text-primary-foreground gap-1.5 font-semibold"
             onClick={() => onAction(order.id, "accepted")}
+            disabled={!profileComplete}
+            title={!profileComplete ? "Complete your business profile first" : undefined}
+            data-testid={`button-accept-${order.id}`}
           >
             <CheckCircle className="w-4 h-4" /> Accept
           </Button>
@@ -108,6 +129,9 @@ export default function RestaurantDashboardPage() {
   const [unreadCount, setUnreadCount] = useState(0);
   const esRef = useRef<EventSource | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [profileSaving, setProfileSaving] = useState(false);
+  const [profileForm, setProfileForm] = useState<BusinessProfileForm>({ legalName: "", ice: "", printerEmail: "" });
   const [restaurantForm, setRestaurantForm] = useState<RestaurantFormState>({
     name: "", category: "", businessType: "restaurant", address: "",
     phone: "", imageUrl: "", deliveryTime: "", deliveryFee: "", minimumOrder: "",
@@ -116,6 +140,7 @@ export default function RestaurantDashboardPage() {
 
   const { data: restaurants, refetch: refetchRestaurants } = useListRestaurants({ ownerId: user?.id });
   const myRestaurant = restaurants?.[0];
+  const profileComplete = !!(myRestaurant as any)?.profileCompletedAt;
 
   const { data: orders, isLoading, refetch } = useListOrders(
     myRestaurant ? { restaurantId: myRestaurant.id } : undefined,
@@ -172,8 +197,56 @@ export default function RestaurantDashboardPage() {
       onSuccess: () => {
         toast({ title: status === "cancelled" ? "Order rejected" : `Order ${status}` });
         refetch();
+        // On acceptance, the API mints kitchenCode + pickupCode. Open the
+        // printable kitchen ticket so the kitchen can pick up the order.
+        if (status === "accepted") {
+          setTimeout(() => openReceiptWindow(orderId), 300);
+        }
+      },
+      onError: (err: any) => {
+        const data = err?.response?.data ?? err?.data ?? {};
+        if (data?.code === "OWNER_PROFILE_INCOMPLETE") {
+          toast({ title: "Complete your business profile first", description: data.error, variant: "destructive" });
+          setProfileOpen(true);
+        } else {
+          toast({ title: data?.error || "Action failed", variant: "destructive" });
+        }
       },
     });
+  };
+
+  const openProfile = () => {
+    setProfileForm({
+      legalName: (myRestaurant as any)?.legalName ?? "",
+      ice: (myRestaurant as any)?.ice ?? "",
+      printerEmail: (myRestaurant as any)?.printerEmail ?? "",
+    });
+    setProfileOpen(true);
+  };
+
+  const handleSaveProfile = async () => {
+    if (!myRestaurant) return;
+    setProfileSaving(true);
+    try {
+      const base = import.meta.env.BASE_URL?.replace(/\/$/, "") || "";
+      const token = localStorage.getItem("tawsila_token");
+      const res = await fetch(`${base}/api/restaurants/${myRestaurant.id}/complete-profile`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        body: JSON.stringify(profileForm),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data?.error || "Failed to save");
+      }
+      toast({ title: "Business profile saved — you can now accept orders." });
+      setProfileOpen(false);
+      refetchRestaurants();
+    } catch (e: any) {
+      toast({ title: e?.message || "Failed to save profile", variant: "destructive" });
+    } finally {
+      setProfileSaving(false);
+    }
   };
 
   const openSettings = () => {
@@ -245,6 +318,24 @@ export default function RestaurantDashboardPage() {
 
   return (
     <div className="space-y-6">
+      {/* Profile completion gate banner */}
+      {!profileComplete && (
+        <div className="bg-yellow-50 border border-yellow-300 rounded-2xl p-4 flex items-start gap-4" data-testid="banner-profile-incomplete">
+          <div className="w-10 h-10 rounded-full bg-yellow-100 flex items-center justify-center shrink-0">
+            <Bell className="w-5 h-5 text-yellow-700" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="font-semibold text-yellow-900">Complete your business profile to accept orders</p>
+            <p className="text-sm text-yellow-800 mt-0.5">
+              We need your legal name and ICE number on each kitchen ticket and invoice.
+            </p>
+          </div>
+          <Button size="sm" className="bg-yellow-700 hover:bg-yellow-800 text-white shrink-0" onClick={openProfile} data-testid="button-open-profile">
+            Complete now
+          </Button>
+        </div>
+      )}
+
       {/* New order alert banner */}
       {alertVisible && newOrderAlert && (
         <div className="bg-accent border border-primary/20 rounded-2xl p-4 flex items-start gap-4 animate-in slide-in-from-top duration-300">
@@ -443,12 +534,78 @@ export default function RestaurantDashboardPage() {
                   </p>
                   <p className="text-xs text-muted-foreground truncate">{order.deliveryAddress}</p>
                 </div>
-                <ActionButtons order={order} onAction={handleAction} />
+                <div className="flex flex-col items-end gap-2 shrink-0">
+                  {order.reference && (
+                    <span className="text-[10px] font-mono text-muted-foreground" data-testid={`text-order-ref-${order.id}`}>{order.reference}</span>
+                  )}
+                  {order.kitchenCode && ["accepted", "preparing", "ready"].includes(order.status) && (
+                    <button
+                      type="button"
+                      className="text-[11px] underline text-primary"
+                      onClick={() => openReceiptWindow(order.id)}
+                      data-testid={`button-print-${order.id}`}
+                    >
+                      Code cuisine: <strong>{order.kitchenCode}</strong> · Print
+                    </button>
+                  )}
+                  <ActionButtons order={order} onAction={handleAction} profileComplete={profileComplete} />
+                </div>
               </div>
             ))}
           </div>
         )}
       </div>
+
+      {/* Business profile dialog */}
+      <Dialog open={profileOpen} onOpenChange={setProfileOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Business profile</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-3">
+            <div>
+              <Label>Legal business name</Label>
+              <Input
+                value={profileForm.legalName}
+                onChange={(e) => setProfileForm({ ...profileForm, legalName: e.target.value })}
+                className="mt-1"
+                placeholder="SARL Jatek Restauration"
+                data-testid="input-legal-name"
+              />
+            </div>
+            <div>
+              <Label>ICE (15 digits)</Label>
+              <Input
+                inputMode="numeric"
+                value={profileForm.ice}
+                onChange={(e) => setProfileForm({ ...profileForm, ice: e.target.value.replace(/[^\d]/g, "") })}
+                className="mt-1"
+                placeholder="123456789012345"
+                data-testid="input-ice"
+              />
+              <p className="text-[11px] text-muted-foreground mt-1">Identifiant Commun de l'Entreprise (Maroc).</p>
+            </div>
+            <div>
+              <Label>Printer email (optional)</Label>
+              <Input
+                type="email"
+                value={profileForm.printerEmail}
+                onChange={(e) => setProfileForm({ ...profileForm, printerEmail: e.target.value })}
+                className="mt-1"
+                placeholder="kitchen-printer@example.com"
+                data-testid="input-printer-email"
+              />
+              <p className="text-[11px] text-muted-foreground mt-1">For email-to-print thermal printers.</p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setProfileOpen(false)}>Cancel</Button>
+            <Button onClick={handleSaveProfile} disabled={profileSaving} data-testid="button-save-profile">
+              {profileSaving ? "Saving..." : "Save & enable orders"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

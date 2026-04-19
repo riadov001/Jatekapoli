@@ -183,7 +183,9 @@ export default function OrderDetailScreen() {
         <TouchableOpacity onPress={() => router.replace("/(tabs)/orders")} hitSlop={8}>
           <Ionicons name="arrow-back" size={24} color={colors.foreground} />
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: colors.foreground }]}>{t("order_title")} #{order.id}</Text>
+        <Text style={[styles.headerTitle, { color: colors.foreground }]}>
+          {(order as any).reference || `${t("order_title")} #${order.id}`}
+        </Text>
         <View style={{ width: 24 }} />
       </View>
 
@@ -218,6 +220,19 @@ export default function OrderDetailScreen() {
             {!isCancelled && !isCompleted && <PulsingDot color={colors.primary} />}
           </View>
         </Animated.View>
+
+        {/* Pickup hand-off code — shown to the customer once the order is accepted. */}
+        {(order as any).pickupCode && !["delivered", "cancelled"].includes(order.status) && (
+          <Animated.View entering={FadeInDown.duration(300)} style={[styles.pickupCard, { backgroundColor: colors.primary }]}>
+            <Text style={styles.pickupLabel}>
+              {t("order_pickup_code_title", { defaultValue: "Hand-off code" } as any)}
+            </Text>
+            <Text style={styles.pickupCode} testID="text-pickup-code">{(order as any).pickupCode}</Text>
+            <Text style={styles.pickupHelp}>
+              {t("order_pickup_code_help", { defaultValue: "Show this 4-digit code to your driver to confirm delivery." } as any)}
+            </Text>
+          </Animated.View>
+        )}
 
         {/* Live map */}
         {showMap && (
@@ -476,4 +491,21 @@ const styles = StyleSheet.create({
     marginHorizontal: 16, marginTop: 4, paddingVertical: 14, borderRadius: 14, borderWidth: 1.5,
   },
   invoiceBtnText: { fontSize: 15, fontFamily: "Inter_700Bold" },
+
+  pickupCard: {
+    marginHorizontal: 16, marginTop: 4, marginBottom: 12, padding: 18, borderRadius: 18,
+    alignItems: "center", justifyContent: "center",
+    shadowColor: "#000", shadowOpacity: 0.1, shadowRadius: 12, shadowOffset: { width: 0, height: 4 }, elevation: 3,
+  },
+  pickupLabel: {
+    color: "rgba(255,255,255,0.9)", fontSize: 11, fontFamily: "Inter_700Bold",
+    letterSpacing: 1.2, textTransform: "uppercase",
+  },
+  pickupCode: {
+    color: "#fff", fontSize: 44, fontFamily: "Inter_700Bold",
+    letterSpacing: 8, marginTop: 4, marginBottom: 6,
+  },
+  pickupHelp: {
+    color: "rgba(255,255,255,0.92)", fontSize: 12, textAlign: "center",
+  },
 });

@@ -120,13 +120,25 @@ export default function OrderDetailPage() {
 
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="font-display font-bold text-xl">Order #{order.id}</h1>
+          <h1 className="font-display font-bold text-xl">{(order as any).reference || `Order #${order.id}`}</h1>
           <p className="text-sm text-muted-foreground">{order.restaurantName}</p>
         </div>
         {order.status === "cancelled" ? (
           <Badge className="bg-gray-100 text-gray-600 border-0">{t("orderDetail.cancelled")}</Badge>
         ) : null}
       </div>
+
+      {/* Pickup code — shown to the customer to read out to the driver. */}
+      {(order as any).pickupCode && !["delivered", "cancelled"].includes(order.status) && (
+        <div
+          className="bg-gradient-to-br from-primary to-primary/80 text-primary-foreground rounded-2xl p-5 text-center shadow-md"
+          data-testid="card-pickup-code"
+        >
+          <p className="text-xs uppercase tracking-wider opacity-90 font-semibold">{t("orderDetail.pickupCodeTitle", { defaultValue: "Hand-off code" })}</p>
+          <p className="font-mono font-bold text-5xl tracking-[0.5rem] mt-2" data-testid="text-pickup-code">{(order as any).pickupCode}</p>
+          <p className="text-xs mt-2 opacity-90">{t("orderDetail.pickupCodeHelp", { defaultValue: "Show this 4-digit code to your driver to confirm delivery." })}</p>
+        </div>
+      )}
 
       {/* Live driver map */}
       {showMap && (

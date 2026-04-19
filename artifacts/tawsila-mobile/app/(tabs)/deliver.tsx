@@ -41,8 +41,10 @@ import {
   apiBase,
   fetchAvailableOrders,
   acceptDelivery,
+  confirmDelivery,
   updateDriverLocation,
 } from "@/lib/api";
+import { PickupCodeModal } from "@/components/PickupCodeModal";
 
 function haptic(type: "light" | "medium" | "success" | "warning" | "error" = "light") {
   if (Platform.OS === "web") return;
@@ -77,9 +79,12 @@ export default function DeliverScreen() {
   const [loadingAvailable, setLoadingAvailable] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [accepting, setAccepting] = useState<number | null>(null);
+  const [pickupModalOrderId, setPickupModalOrderId] = useState<number | null>(null);
+  const [confirmingPickup, setConfirmingPickup] = useState(false);
   const watchRef = useRef<Location.LocationSubscription | null>(null);
 
   const isOnline = !!myDriver?.isAvailable;
+  const profileComplete = !!(myDriver as any)?.profileCompletedAt;
   const activeDelivery = myOrders?.find((o) =>
     ["ready", "picked_up"].includes(o.status)
   );
@@ -182,6 +187,18 @@ export default function DeliverScreen() {
 
   const onAccept = async (orderId: number) => {
     if (!myDriver) return;
+    if (!profileComplete) {
+      haptic("warning");
+      Alert.alert(
+        "Profile incomplete",
+        "Please complete your driver profile (vehicle, plate, ID) before accepting deliveries.",
+        [
+          { text: "Later", style: "cancel" },
+          { text: "Complete now", onPress: () => router.push("/driver-onboarding") },
+        ]
+      );
+      return;
+    }
     setAccepting(orderId);
     haptic("medium");
     try {
@@ -198,14 +215,24 @@ export default function DeliverScreen() {
     }
   };
 
-  const onMarkDelivered = async (orderId: number) => {
+  const onMarkDelivered = (orderId: number) => {
     haptic("medium");
+    setPickupModalOrderId(orderId);
+  };
+
+  const onConfirmPickupCode = async (code: string) => {
+    if (pickupModalOrderId == null) return;
+    setConfirmingPickup(true);
     try {
-      await updateStatus.mutateAsync({ id: orderId, data: { status: "delivered" } });
+      await confirmDelivery(pickupModalOrderId, code);
       haptic("success");
+      setPickupModalOrderId(null);
       refetchMyOrders();
-    } catch {
+    } catch (e: any) {
       haptic("error");
+      Alert.alert("Wrong code", e?.message ?? "The code does not match. Ask the customer to read it again.");
+    } finally {
+      setConfirmingPickup(false);
     }
   };
 
@@ -258,6 +285,12 @@ export default function DeliverScreen() {
 
   return (
     <View style={[styles.flex, { backgroundColor: colors.background }]}>
+      <PickupCodeModal
+        visible={pickupModalOrderId != null}
+        loading={confirmingPickup}
+        onCancel={() => setPickupModalOrderId(null)}
+        onSubmit={onConfirmPickupCode}
+      />
       <ScrollView
         contentContainerStyle={{
           paddingTop: insets.top + 12,
@@ -274,6 +307,25 @@ export default function DeliverScreen() {
           </View>
           <View style={[styles.dotPulse, { backgroundColor: isOnline ? "#22C55E" : colors.mutedForeground }]} />
         </View>
+
+        {/* Profile completion gate */}
+        {!profileComplete && (
+          <Animated.View entering={FadeIn.duration(350)}>
+            <TouchableOpacity
+              activeOpacity={0.85}
+              onPress={() => router.push("/driver-onboarding")}
+              style={[styles.profileGate, { backgroundColor: "#FEF3C7", borderColor: "#FBBF24" }]}
+              testID="banner-driver-profile"
+            >
+              <Ionicons name="warning-outline" size={22} color="#92400E" />
+              <View style={{ flex: 1 }}>
+                <Text style={styles.profileGateTitle}>Complete your driver profile</Text>
+                <Text style={styles.profileGateSub}>Add your vehicle plate and national ID to start accepting deliveries.</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color="#92400E" />
+            </TouchableOpacity>
+          </Animated.View>
+        )}
 
         {/* Online toggle hero */}
         <Animated.View entering={FadeIn.duration(400)} layout={Layout.springify()}>
@@ -376,6 +428,12 @@ export default function DeliverScreen() {
               <Text style={[styles.activeRest, { color: colors.foreground }]}>
                 {activeDelivery.restaurantName}
               </Text>
+
+              {(activeDelivery as any).reference && (
+                <Text style={{ color: colors.mutedForeground, fontFamily: "Inter_500Medium", fontSize: 12 }}>
+                  Réf · {(activeDelivery as any).reference}
+                </Text>
+              )}
 
               <TouchableOpacity
                 style={[styles.addrPill, { backgroundColor: colors.accent }]}
@@ -546,6 +604,13 @@ const styles = StyleSheet.create({
   onlineSub: { fontSize: 12, marginTop: 2 },
   toggleTrack: { width: 50, height: 28, borderRadius: 14, padding: 3, justifyContent: "center" },
   toggleThumb: { width: 22, height: 22, borderRadius: 11 },
+
+  profileGate: {
+    marginHorizontal: 16, marginBottom: 14, padding: 14, borderRadius: 16, borderWidth: 1,
+    flexDirection: "row", alignItems: "center", gap: 12,
+  },
+  profileGateTitle: { color: "#92400E", fontSize: 13, fontFamily: "Inter_700Bold" },
+  profileGateSub: { color: "#78350F", fontSize: 11, marginTop: 2 },
 
   statsRow: { flexDirection: "row", gap: 8, paddingHorizontal: 16, marginTop: 14, marginBottom: 16 },
   statBox: { flex: 1, padding: 12, borderRadius: 14, borderWidth: 1, alignItems: "center" },

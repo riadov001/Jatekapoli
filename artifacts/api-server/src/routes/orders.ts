@@ -1,7 +1,18 @@
 import { Router, type IRouter } from "express";
-import { db, ordersTable, orderItemsTable, menuItemsTable, restaurantsTable, usersTable, driversTable } from "@workspace/db";
+import {
+  db,
+  ordersTable,
+  orderItemsTable,
+  menuItemsTable,
+  restaurantsTable,
+  usersTable,
+  driversTable,
+  generateUniqueOrderReference,
+  generateKitchenCode,
+  generatePickupCode,
+} from "@workspace/db";
 import { eq, and, inArray, isNull } from "drizzle-orm";
-import { requireAuth, type AuthedRequest } from "../middlewares/auth";
+import { requireAuth, attachAuth, type AuthedRequest } from "../middlewares/auth";
 import {
   CreateOrderBody,
   GetOrderParams,
@@ -129,7 +140,10 @@ router.post("/orders", requireAuth, async (req: AuthedRequest, res): Promise<voi
   const deliveryFee = restaurant.deliveryFee || 0;
   const total = subtotal + deliveryFee;
 
+  const reference = await generateUniqueOrderReference();
+
   const [order] = await db.insert(ordersTable).values({
+    reference,
     userId,
     restaurantId,
     restaurantName: restaurant.name,
@@ -163,7 +177,7 @@ router.post("/orders", requireAuth, async (req: AuthedRequest, res): Promise<voi
   res.status(201).json(orderWithItems);
 });
 
-router.get("/orders/:id", async (req, res): Promise<void> => {
+router.get("/orders/:id", attachAuth, async (req: AuthedRequest, res): Promise<void> => {
   const params = GetOrderParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
@@ -176,7 +190,14 @@ router.get("/orders/:id", async (req, res): Promise<void> => {
     return;
   }
 
-  res.json(order);
+  // The pickup code is the secret that authorises the driver hand-off.
+  // Only the customer who placed the order (and admins) may see it; the
+  // assigned driver must request it verbally from the customer.
+  const isCustomerOwner = req.userId != null && req.userId === order.userId;
+  const isAdmin = req.userRole === "admin";
+  const sanitized = (isCustomerOwner || isAdmin) ? order : { ...order, pickupCode: null };
+
+  res.json(sanitized);
 });
 
 router.patch("/orders/:id/status", requireAuth, async (req: AuthedRequest, res): Promise<void> => {
@@ -192,9 +213,43 @@ router.patch("/orders/:id/status", requireAuth, async (req: AuthedRequest, res):
     return;
   }
 
+  // Drivers must use the dedicated /confirm-delivery endpoint to mark an order
+  // as delivered — that endpoint validates the customer pickup code.
+  if (parsed.data.status === "delivered" && req.userRole === "driver") {
+    res.status(400).json({ error: "Drivers must confirm delivery via /orders/:id/confirm-delivery with the customer pickup code." });
+    return;
+  }
+
   const updateData: any = { status: parsed.data.status };
   if (parsed.data.driverId) {
     updateData.driverId = parsed.data.driverId;
+  }
+
+  // On acceptance, gate on owner profile completeness and mint the
+  // kitchen + customer pickup codes if not already present.
+  if (parsed.data.status === "accepted") {
+    const [existing] = await db.select().from(ordersTable).where(eq(ordersTable.id, params.data.id)).limit(1);
+    if (!existing) { res.status(404).json({ error: "Order not found" }); return; }
+
+    const [restaurant] = await db.select().from(restaurantsTable).where(eq(restaurantsTable.id, existing.restaurantId)).limit(1);
+    if (!restaurant) { res.status(404).json({ error: "Restaurant not found" }); return; }
+
+    // Authorization: only the restaurant owner (or admin) may accept.
+    if (req.userRole !== "admin" && restaurant.ownerId !== req.userId) {
+      res.status(403).json({ error: "Not authorized to accept orders for this restaurant" });
+      return;
+    }
+
+    if (!restaurant.profileCompletedAt) {
+      res.status(412).json({
+        error: "Complete your business profile (legal name + ICE) before accepting orders.",
+        code: "OWNER_PROFILE_INCOMPLETE",
+      });
+      return;
+    }
+
+    if (!existing.kitchenCode) updateData.kitchenCode = generateKitchenCode();
+    if (!existing.pickupCode) updateData.pickupCode = generatePickupCode();
   }
 
   const [order] = await db
@@ -208,16 +263,11 @@ router.patch("/orders/:id/status", requireAuth, async (req: AuthedRequest, res):
     return;
   }
 
-  // Update driver stats on delivery
-  if (parsed.data.status === "delivered" && order.driverId) {
-    const { driversTable } = await import("@workspace/db");
-    const [driver] = await db.select().from(driversTable).where(eq(driversTable.id, order.driverId)).limit(1);
-    if (driver) {
-      await db.update(driversTable).set({
-        totalDeliveries: driver.totalDeliveries + 1,
-      }).where(eq(driversTable.id, order.driverId));
-    }
-  }
+  // NOTE: totalDeliveries is incremented exclusively in
+  // POST /orders/:id/confirm-delivery (the canonical delivery hand-off path).
+  // We intentionally do NOT bump it here even when status flips to "delivered"
+  // via this generic PATCH, otherwise an owner-side correction would
+  // double-count the delivery.
 
   const orderWithItems = await getOrderWithItems(order.id);
 
@@ -270,6 +320,16 @@ router.post("/orders/:id/accept-delivery", requireAuth, async (req: AuthedReques
     return;
   }
 
+  // Profile gate — driver must have completed the mandatory onboarding fields
+  // before they can accept any delivery (vehicle plate + national ID).
+  if (req.userRole !== "admin" && !driver.profileCompletedAt) {
+    res.status(412).json({
+      error: "Complete your driver profile (vehicle, plate, national ID) before accepting deliveries.",
+      code: "DRIVER_PROFILE_INCOMPLETE",
+    });
+    return;
+  }
+
   const [order] = await db
     .update(ordersTable)
     .set({ driverId, status: "picked_up" })
@@ -283,6 +343,150 @@ router.post("/orders/:id/accept-delivery", requireAuth, async (req: AuthedReques
   publish(`restaurant:${order.restaurantId}`, "order_status", { orderId, status: "picked_up", driverName: driver.name });
 
   res.json(orderWithItems);
+});
+
+/**
+ * Driver confirms hand-off by entering the 4-digit code shown on the
+ * customer's screen. Only the assigned driver (or admin) may call this.
+ */
+router.post("/orders/:id/confirm-delivery", requireAuth, async (req: AuthedRequest, res): Promise<void> => {
+  const orderId = parseInt(req.params.id, 10);
+  if (isNaN(orderId)) { res.status(400).json({ error: "Invalid order id" }); return; }
+
+  const code = typeof req.body?.pickupCode === "string" ? req.body.pickupCode.trim() : "";
+  if (!/^\d{4}$/.test(code)) {
+    res.status(400).json({ error: "pickupCode must be a 4-digit string" });
+    return;
+  }
+
+  const [existing] = await db.select().from(ordersTable).where(eq(ordersTable.id, orderId)).limit(1);
+  if (!existing) { res.status(404).json({ error: "Order not found" }); return; }
+  if (existing.status !== "picked_up") {
+    res.status(409).json({ error: "Order is not in transit" });
+    return;
+  }
+
+  // Authorization
+  if (req.userRole !== "admin") {
+    if (!existing.driverId) {
+      res.status(403).json({ error: "Order has no assigned driver" });
+      return;
+    }
+    const [driver] = await db.select().from(driversTable).where(eq(driversTable.id, existing.driverId)).limit(1);
+    if (!driver || driver.userId !== req.userId) {
+      res.status(403).json({ error: "Only the assigned driver can confirm delivery" });
+      return;
+    }
+  }
+
+  if (!existing.pickupCode || existing.pickupCode !== code) {
+    res.status(400).json({ error: "Incorrect pickup code", code: "INVALID_PICKUP_CODE" });
+    return;
+  }
+
+  const [order] = await db
+    .update(ordersTable)
+    .set({ status: "delivered" })
+    .where(eq(ordersTable.id, orderId))
+    .returning();
+
+  // Bump the driver's totalDeliveries counter.
+  if (order.driverId) {
+    const [driver] = await db.select().from(driversTable).where(eq(driversTable.id, order.driverId)).limit(1);
+    if (driver) {
+      await db.update(driversTable).set({
+        totalDeliveries: driver.totalDeliveries + 1,
+      }).where(eq(driversTable.id, order.driverId));
+    }
+  }
+
+  const orderWithItems = await getOrderWithItems(order.id);
+  publish(`order:${order.id}`, "order_status", { orderId: order.id, status: "delivered", order: orderWithItems });
+  publish(`restaurant:${order.restaurantId}`, "order_status", { orderId: order.id, status: "delivered" });
+
+  res.json(orderWithItems);
+});
+
+/**
+ * Printable kitchen ticket. Returns minimal HTML auto-styled for thermal
+ * 80mm printers. Accessible to the restaurant owner via a signed token in
+ * the query string so a freshly opened browser tab can fetch it.
+ */
+router.get("/orders/:id/receipt", requireAuth, async (req: AuthedRequest, res): Promise<void> => {
+  const orderId = parseInt(req.params.id, 10);
+  if (isNaN(orderId)) { res.status(400).send("Invalid order id"); return; }
+
+  const order = await getOrderWithItems(orderId);
+  if (!order) { res.status(404).send("Order not found"); return; }
+
+  const [restaurant] = await db.select().from(restaurantsTable).where(eq(restaurantsTable.id, order.restaurantId)).limit(1);
+  if (!restaurant) { res.status(404).send("Restaurant not found"); return; }
+
+  if (req.userRole !== "admin" && restaurant.ownerId !== req.userId) {
+    res.status(403).send("Forbidden");
+    return;
+  }
+
+  const escape = (s: string) => String(s)
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+
+  const itemsHtml = order.items.map((it: any) => `
+    <tr>
+      <td style="text-align:left">${it.quantity}× ${escape(it.menuItemName)}</td>
+      <td style="text-align:right">${(it.totalPrice ?? 0).toFixed(2)}</td>
+    </tr>`).join("");
+
+  const created = new Date(order.createdAt).toLocaleString("fr-FR");
+
+  const html = `<!doctype html>
+<html><head>
+<meta charset="utf-8" />
+<title>Ticket — ${escape(order.reference || `#${order.id}`)}</title>
+<style>
+  @page { size: 80mm auto; margin: 4mm; }
+  body { font-family: 'Courier New', monospace; max-width: 320px; margin: 0 auto; padding: 12px; color: #000; }
+  h1 { font-size: 16px; margin: 0 0 4px; text-align: center; }
+  .muted { color: #555; font-size: 11px; }
+  .center { text-align: center; }
+  .ref { font-size: 13px; font-weight: bold; text-align: center; margin: 8px 0; letter-spacing: 1px; }
+  .kc { font-size: 36px; font-weight: bold; text-align: center; padding: 10px 0; border-top: 2px dashed #000; border-bottom: 2px dashed #000; margin: 10px 0; letter-spacing: 6px; }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; margin: 8px 0; }
+  td { padding: 2px 0; vertical-align: top; }
+  hr { border: none; border-top: 1px dashed #555; margin: 8px 0; }
+  .total { font-weight: bold; font-size: 14px; }
+  .footer { font-size: 10px; text-align: center; margin-top: 12px; color: #444; }
+  @media print { button { display: none; } }
+</style>
+</head><body onload="setTimeout(()=>window.print(),200)">
+  <button style="float:right" onclick="window.print()">Imprimer</button>
+  <h1>${escape(restaurant.name)}</h1>
+  <div class="center muted">${escape(restaurant.address)}</div>
+  ${restaurant.phone ? `<div class="center muted">${escape(restaurant.phone)}</div>` : ""}
+  ${restaurant.ice ? `<div class="center muted">ICE ${escape(restaurant.ice)}</div>` : ""}
+  <hr/>
+  <div class="ref">${escape(order.reference || `#${order.id}`)}</div>
+  <div class="muted center">${created}</div>
+  <div class="kc">${escape(order.kitchenCode || "—")}</div>
+  <div class="muted center">Code cuisine</div>
+  <hr/>
+  <div><strong>Client:</strong> ${escape(order.userName)}</div>
+  <div class="muted">${escape(order.deliveryAddress)}</div>
+  ${order.notes ? `<div class="muted"><em>Note: ${escape(order.notes)}</em></div>` : ""}
+  <table>${itemsHtml}</table>
+  <hr/>
+  <table>
+    <tr><td>Sous-total</td><td style="text-align:right">${order.subtotal.toFixed(2)}</td></tr>
+    <tr><td>Livraison</td><td style="text-align:right">${(order.deliveryFee ?? 0).toFixed(2)}</td></tr>
+    <tr class="total"><td>TOTAL MAD</td><td style="text-align:right">${order.total.toFixed(2)}</td></tr>
+  </table>
+  <hr/>
+  <div class="footer">Le client présentera son code à 4 chiffres au livreur lors de la remise.</div>
+</body></html>`;
+
+  res.setHeader("Content-Type", "text/html; charset=utf-8");
+  res.setHeader("Cache-Control", "no-store");
+  res.send(html);
 });
 
 export default router;

@@ -21,6 +21,14 @@ export const restaurantsTable = pgTable("restaurants", {
   rating: real("rating"),
   reviewCount: integer("review_count").notNull().default(0),
   isVerified: boolean("is_verified").notNull().default(false),
+  /** Legal/registered business name (may differ from display name). */
+  legalName: text("legal_name"),
+  /** Moroccan Identifiant Commun de l'Entreprise (15 digits). */
+  ice: text("ice"),
+  /** Optional email address for the kitchen printer (email-to-print services). */
+  printerEmail: text("printer_email"),
+  /** Set when the owner has filled in the mandatory business details. */
+  profileCompletedAt: timestamp("profile_completed_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 });

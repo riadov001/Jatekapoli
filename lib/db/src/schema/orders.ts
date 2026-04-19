@@ -4,6 +4,7 @@ import { z } from "zod/v4";
 
 export const ordersTable = pgTable("orders", {
   id: serial("id").primaryKey(),
+  reference: text("reference").unique(),
   userId: integer("user_id").notNull(),
   restaurantId: integer("restaurant_id").notNull(),
   driverId: integer("driver_id"),
@@ -16,6 +17,11 @@ export const ordersTable = pgTable("orders", {
   deliveryAddress: text("delivery_address").notNull(),
   notes: text("notes"),
   estimatedDeliveryTime: integer("estimated_delivery_time"),
+  /** 3-digit numeric code printed on the kitchen ticket for in-store pickup. */
+  kitchenCode: text("kitchen_code"),
+  /** 4-digit numeric code shown to the customer at order acceptance; the driver
+   *  must enter or scan it to confirm hand-off (a la Uber Eats / Glovo). */
+  pickupCode: text("pickup_code"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 });
