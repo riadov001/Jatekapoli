@@ -55,3 +55,6 @@ packages = ["eas-cli"]
 
 [userenv.shared]
 EXPO_PUBLIC_DOMAIN = "tawsila.straight-path.eu"
+
+[objectStorage]
+defaultBucketID = "replit-objstore-d309744f-0e86-4a4e-8252-b999acd660b2"

@@ -66,7 +66,9 @@ router.post("/restaurants", requireRole("admin"), async (req: AuthedRequest, res
     res.status(401).json({ error: "Authentication required" });
     return;
   }
-  const ownerId = req.userId;
+  // Admins can specify a target ownerId in the raw body; all others always own the restaurant themselves
+  const adminOwnerId = req.userRole === "admin" && typeof req.body?.ownerId === "number" ? req.body.ownerId : null;
+  const ownerId = adminOwnerId ?? req.userId;
 
   const [restaurant] = await db.insert(restaurantsTable).values({
     ...parsed.data,

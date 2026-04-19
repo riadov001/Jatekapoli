@@ -249,7 +249,7 @@ export default function ManageScreen() {
     }
   };
 
-  if (!token || user?.role !== "owner") {
+  if (!token || (user?.role !== "owner" && user?.role !== "restaurant_owner")) {
     return (
       <View style={[styles.flex, styles.center, { backgroundColor: colors.background }]}>
         <Ionicons name="storefront-outline" size={48} color={colors.mutedForeground} />

@@ -136,7 +136,7 @@ function ClassicTabLayout({ isDriver, isOwner }: { isDriver: boolean; isOwner: b
 export default function TabLayout() {
   const { user } = useAuth();
   const isDriver = user?.role === "driver";
-  const isOwner = user?.role === "owner";
+  const isOwner = user?.role === "owner" || user?.role === "restaurant_owner";
 
   if (isLiquidGlassAvailable()) {
     return <NativeTabLayout isDriver={isDriver} isOwner={isOwner} />;

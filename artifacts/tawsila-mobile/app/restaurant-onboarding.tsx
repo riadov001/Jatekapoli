@@ -65,7 +65,7 @@ export default function RestaurantOnboardingScreen() {
     }
   };
 
-  if (!user || user.role !== "owner") {
+  if (!user || (user.role !== "owner" && user.role !== "restaurant_owner")) {
     return (
       <View style={[styles.flex, styles.center, { backgroundColor: colors.background }]}>
         <Text style={{ color: colors.foreground }}>Accès propriétaire uniquement.</Text>

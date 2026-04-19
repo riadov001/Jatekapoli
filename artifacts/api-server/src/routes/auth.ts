@@ -151,21 +151,42 @@ router.post("/auth/send-otp", async (req, res): Promise<void> => {
   const twilioConfigured = !!(process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_API_TOKEN);
 
   let smsSent = false;
+  let actualChannel = deliveryChannel;
+
   try {
     if (deliveryChannel === "whatsapp") {
       await sendWhatsApp(normalizedPhone, messageBody);
+      smsSent = twilioConfigured;
     } else {
       await sendSms(normalizedPhone, messageBody);
+      smsSent = twilioConfigured;
     }
-    smsSent = twilioConfigured;
-  } catch (err) {
-    console.error(`[OTP] ${deliveryChannel} send failed:`, err);
+  } catch (whatsappErr: any) {
+    const code_ = whatsappErr?.code ?? 0;
+    // Twilio channel errors (63007 = no WhatsApp channel, 63031 = same To/From,
+    // 21608 = unverified trial number) — fall back to SMS automatically.
+    const isFallbackable = [63007, 63031, 21608, 21211].includes(code_) ||
+      String(whatsappErr?.message).includes("Channel") ||
+      String(whatsappErr?.message).includes("unverified");
+
+    if (deliveryChannel === "whatsapp" && isFallbackable) {
+      console.warn(`[OTP] WhatsApp failed (${code_}), falling back to SMS`);
+      try {
+        await sendSms(normalizedPhone, messageBody);
+        smsSent = twilioConfigured;
+        actualChannel = "sms"; // report that SMS was used
+      } catch (smsErr) {
+        console.error("[OTP] SMS fallback also failed:", smsErr);
+      }
+    } else {
+      console.error(`[OTP] ${deliveryChannel} send failed:`, whatsappErr);
+    }
   }
 
   res.json({
     success: true,
-    channel: deliveryChannel,
-    message: `Code envoyé via ${deliveryChannel} à ${normalizedPhone}`,
+    channel: actualChannel,
+    message: `Code envoyé via ${actualChannel} à ${normalizedPhone}`,
     smsSent,
     demoOtp: (!twilioConfigured || process.env.NODE_ENV !== "production") ? code : undefined,
   });

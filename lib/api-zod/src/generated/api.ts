@@ -167,6 +167,7 @@ export const CreateRestaurantBody = zod.object({
   deliveryTime: zod.number().optional(),
   deliveryFee: zod.number().optional(),
   minimumOrder: zod.number().optional(),
+  ownerId: zod.number().optional(),
 });
 
 /**
@@ -220,6 +221,7 @@ export const UpdateRestaurantBody = zod.object({
   deliveryFee: zod.number().optional(),
   minimumOrder: zod.number().optional(),
   isVerified: zod.boolean().optional(),
+  ownerId: zod.number().optional(),
 });
 
 export const UpdateRestaurantResponse = zod.object({
