@@ -17,6 +17,7 @@ import { setBaseUrl } from "@workspace/api-client-react";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { CartProvider } from "@/contexts/CartContext";
+import CookieConsentBanner from "@/components/CookieConsentBanner";
 
 // Configure the API base URL
 setBaseUrl(`https://${process.env.EXPO_PUBLIC_DOMAIN}`);
@@ -64,6 +65,7 @@ export default function RootLayout() {
               <GestureHandlerRootView>
                 <KeyboardProvider>
                   <RootLayoutNav />
+                  <CookieConsentBanner />
                 </KeyboardProvider>
               </GestureHandlerRootView>
             </CartProvider>

@@ -108,6 +108,7 @@ export default function ProfileScreen() {
         <Text style={[styles.sectionHeader, { color: colors.heading }]}>Légal & Confidentialité</Text>
         <View style={[styles.section, { backgroundColor: colors.card }]}>
           <Row icon="shield-checkmark-outline" label="Politique de confidentialité" onPress={() => router.push("/profile/legal?type=privacy" as any)} />
+          <Row icon="server-outline" label="Politique des cookies" onPress={() => router.push("/profile/legal?type=cookies" as any)} />
           <Row icon="document-text-outline" label="Conditions d'utilisation" onPress={() => router.push("/profile/legal?type=terms" as any)} />
           <Row icon="business-outline" label="Mentions légales" onPress={() => router.push("/profile/legal?type=mentions" as any)} />
         </View>
@@ -192,7 +193,9 @@ export default function ProfileScreen() {
       <Animated.View entering={FadeInDown.delay(240).duration(380)}>
         <Text style={[styles.sectionHeader, { color: colors.heading }]}>Légal & Confidentialité</Text>
         <View style={[styles.section, { backgroundColor: colors.card }]}>
+          <Row icon="lock-closed-outline" label="Confidentialité & RGPD" subtitle="Consentements, export, suppression" onPress={() => router.push("/profile/privacy" as any)} />
           <Row icon="shield-checkmark-outline" label="Politique de confidentialité" onPress={() => router.push("/profile/legal?type=privacy" as any)} />
+          <Row icon="server-outline" label="Politique des cookies" onPress={() => router.push("/profile/legal?type=cookies" as any)} />
           <Row icon="document-text-outline" label="Conditions d'utilisation" onPress={() => router.push("/profile/legal?type=terms" as any)} />
           <Row icon="business-outline" label="Mentions légales" onPress={() => router.push("/profile/legal?type=mentions" as any)} />
         </View>

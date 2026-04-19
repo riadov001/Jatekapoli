@@ -15,6 +15,7 @@ import addressesRouter from "./addresses";
 import paymentMethodsRouter from "./paymentMethods";
 import supportTicketsRouter from "./supportTickets";
 import notificationPrefsRouter from "./notificationPrefs";
+import userConsentsRouter from "./userConsents";
 import { subscribe } from "../lib/sse";
 
 const router: IRouter = Router();
@@ -35,6 +36,7 @@ router.use(addressesRouter);
 router.use(paymentMethodsRouter);
 router.use(supportTicketsRouter);
 router.use(notificationPrefsRouter);
+router.use(userConsentsRouter);
 
 /**
  * SSE endpoint — clients subscribe to one or more channels:

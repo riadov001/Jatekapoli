@@ -153,3 +153,35 @@ export async function deleteReview(id: number): Promise<void> { await jsonFetch(
 export async function listMyOrders(): Promise<any[]> {
   return jsonFetch("/api/orders");
 }
+
+// RGPD / Consents ----------------------------------------------------
+export interface UserConsents {
+  cookiesEssential: boolean;
+  cookiesAnalytics: boolean;
+  cookiesMarketing: boolean;
+  dataProcessing: boolean;
+  dataSharing: boolean;
+  personalization: boolean;
+  marketingEmails: boolean;
+  marketingSms: boolean;
+  marketingPush: boolean;
+  termsAcceptedAt: string | null;
+  privacyAcceptedAt: string | null;
+  cookiesAcceptedAt: string | null;
+  termsVersion: string | null;
+  privacyVersion: string | null;
+  cookiesVersion: string | null;
+  currentVersions?: { terms: string; privacy: string; cookies: string };
+}
+export async function fetchConsents(): Promise<UserConsents> { return jsonFetch("/api/consents"); }
+export async function updateConsents(data: Partial<UserConsents> & { acceptTerms?: boolean; acceptPrivacy?: boolean; acceptCookies?: boolean }): Promise<UserConsents> {
+  return jsonFetch("/api/consents", { method: "PATCH", body: JSON.stringify(data) });
+}
+export async function acceptAllConsents(): Promise<UserConsents> {
+  return jsonFetch("/api/consents/accept-all", { method: "POST", body: JSON.stringify({}) });
+}
+export async function rejectAllConsents(): Promise<UserConsents> {
+  return jsonFetch("/api/consents/reject-all", { method: "POST", body: JSON.stringify({}) });
+}
+export function exportMyDataUrl(): string { return `${API_BASE}/api/me/export`; }
+export async function deleteMyAccount(): Promise<void> { await jsonFetch("/api/me", { method: "DELETE" }); }

@@ -26,6 +26,17 @@ const CONTENT: Record<string, { title: string; sections: Array<{ h: string; p: s
       { h: "6. Litiges", p: "Tout litige sera porté devant les juridictions compétentes du Royaume du Maroc." },
     ],
   },
+  cookies: {
+    title: "Politique des cookies",
+    sections: [
+      { h: "1. Qu'est-ce qu'un cookie ?", p: "Un cookie est un petit fichier déposé sur votre appareil qui permet à une application de mémoriser vos préférences ou d'analyser votre utilisation." },
+      { h: "2. Cookies essentiels", p: "Indispensables au fonctionnement (session, panier, sécurité). Ils ne peuvent pas être désactivés." },
+      { h: "3. Cookies analytiques", p: "Mesure d'audience anonymisée pour améliorer l'application. Activables/désactivables dans Profil > Confidentialité." },
+      { h: "4. Cookies marketing", p: "Personnalisation des offres et publicités. Désactivés par défaut, soumis à votre consentement explicite." },
+      { h: "5. Durée de conservation", p: "12 mois maximum, renouvelés à chaque visite. Vous pouvez retirer votre consentement à tout moment." },
+      { h: "6. Gérer vos cookies", p: "Allez dans Profil > Confidentialité & RGPD pour modifier vos choix à tout moment." },
+    ],
+  },
   mentions: {
     title: "Mentions légales",
     sections: [
