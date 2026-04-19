@@ -51,7 +51,7 @@ export default function RegisterPage() {
     registerMutation.mutate({ data: { ...data, phone: data.phone || undefined } }, {
       onSuccess: (res) => {
         login(res.token, res.user);
-        toast({ title: `Welcome to Tawsila, ${res.user.name}! 🎉` });
+        toast({ title: `Welcome to Jatek, ${res.user.name}! 🎉` });
         setLocation("/");
       },
       onError: (err: any) => {
@@ -73,7 +73,7 @@ export default function RegisterPage() {
               <Truck className="w-8 h-8 text-white" />
             </div>
           </div>
-          <h1 className="font-display font-bold text-3xl text-foreground">{t("register.joinTawsila")}</h1>
+          <h1 className="font-display font-bold text-3xl text-foreground">{t("register.joinJatek")}</h1>
           <p className="text-muted-foreground text-sm mt-1">{t("register.createFreeAccount")}</p>
         </motion.div>
 
@@ -206,7 +206,7 @@ export default function RegisterPage() {
                     {smsConsent && <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
                   </div>
                   <span className="text-xs text-muted-foreground leading-relaxed">
-                    J'accepte de recevoir des SMS promotionnels de Tawsila (optionnel)
+                    J'accepte de recevoir des SMS promotionnels de Jatek (optionnel)
                   </span>
                 </label>
                 <label className="flex items-start gap-3 cursor-pointer group">

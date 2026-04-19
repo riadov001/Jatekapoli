@@ -78,6 +78,9 @@ function FeaturedBanner({ items }: { items: any[] }) {
                 <Ionicons name="flash" size={10} color="#fff" />
                 <Text style={styles.delivTimeText}>{item.deliveryTime ?? 25} min</Text>
               </View>
+              <View style={styles.discountPill}>
+                <Text style={styles.discountText}>-15%</Text>
+              </View>
             </View>
             <View style={styles.bannerInfo}>
               <Text style={[styles.bannerName, { color: colors.heading }]} numberOfLines={1}>{item.name}</Text>
@@ -152,7 +155,7 @@ export default function HomeScreen() {
       <View style={[styles.promoBanner, { backgroundColor: colors.primarySoft }]}>
         <View style={{ flex: 1 }}>
           <Text style={[styles.promoTitle, { color: colors.heading }]}>1ère commande{"\n"}offerte 🎉</Text>
-          <Text style={[styles.promoSub, { color: colors.heading }]}>Code TAWSILA10 — livraison gratuite</Text>
+          <Text style={[styles.promoSub, { color: colors.heading }]}>Code JATEK10 — livraison gratuite</Text>
           <TouchableOpacity
             activeOpacity={0.85}
             style={[styles.promoBtn, { backgroundColor: colors.primary }]}
@@ -201,24 +204,23 @@ export default function HomeScreen() {
   return (
     <View style={[styles.flex, { backgroundColor: colors.background }]}>
       {/* Pink address-bar header (Flink-style) */}
-      <View style={[styles.headerPink, { backgroundColor: colors.pinkBg, paddingTop: insets.top + 14 + webTopPad }]}>
-        <TouchableOpacity
-          activeOpacity={0.7}
-          style={styles.addressRow}
-          onPress={() => router.push("/(tabs)/profile")}
-        >
-          <Ionicons name="location" size={16} color={colors.primary} />
-          <Text style={[styles.addressLabel, { color: colors.primary }]}>Choisir l'adresse</Text>
-          <Ionicons name="chevron-down" size={16} color={colors.primary} />
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => router.push("/cart")} style={styles.cartBtn}>
-          <Ionicons name="bag-handle" size={22} color={colors.heading} />
-          {itemCount > 0 && (
-            <View style={[styles.cartBadge, { backgroundColor: colors.primary }]}>
-              <Text style={styles.cartBadgeText}>{itemCount}</Text>
-            </View>
-          )}
-        </TouchableOpacity>
+      <View style={[styles.headerPink, { backgroundColor: colors.pinkBg, paddingTop: insets.top + 10 + webTopPad }]}>
+        <View style={styles.headerRow}>
+          <TouchableOpacity
+            activeOpacity={0.7}
+            style={styles.addressRow}
+            onPress={() => router.push("/(tabs)/profile")}
+          >
+            <Text style={[styles.addressLabel, { color: colors.primary }]}>Choisir l'adresse</Text>
+            <View style={[styles.triangle, { borderTopColor: colors.primary }]} />
+          </TouchableOpacity>
+
+          <TouchableOpacity activeOpacity={0.85} style={[styles.schedulePill, { backgroundColor: "#EAF1FF" }]}>
+            <Ionicons name="calendar-outline" size={14} color="#0A1B3D" />
+            <Text style={styles.scheduleText}>Planifier</Text>
+            <Ionicons name="chevron-forward" size={14} color="#0A1B3D" />
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Search */}
@@ -281,19 +283,17 @@ const styles = StyleSheet.create({
 
   // Pink header
   headerPink: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
     paddingHorizontal: 16,
-    paddingBottom: 12,
+    paddingBottom: 14,
     borderBottomLeftRadius: 20,
     borderBottomRightRadius: 20,
   },
-  addressRow: { flexDirection: "row", alignItems: "center", gap: 6 },
-  addressLabel: { fontSize: 16, fontFamily: "Inter_700Bold" },
-  cartBtn: { width: 40, height: 40, alignItems: "center", justifyContent: "center" },
-  cartBadge: { position: "absolute", top: 2, right: 2, minWidth: 18, height: 18, borderRadius: 9, paddingHorizontal: 5, alignItems: "center", justifyContent: "center" },
-  cartBadgeText: { color: "#fff", fontSize: 10, fontFamily: "Inter_700Bold" },
+  headerRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 12 },
+  addressRow: { flexDirection: "row", alignItems: "center", gap: 8 },
+  addressLabel: { fontSize: 18, fontFamily: "Inter_700Bold", letterSpacing: -0.3 },
+  triangle: { width: 0, height: 0, borderLeftWidth: 6, borderRightWidth: 6, borderTopWidth: 7, borderLeftColor: "transparent", borderRightColor: "transparent", marginTop: 4 },
+  schedulePill: { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 99 },
+  scheduleText: { color: "#0A1B3D", fontSize: 13, fontFamily: "Inter_700Bold" },
 
   // Search
   searchWrap: { paddingHorizontal: 16, paddingTop: 14, paddingBottom: 4 },
@@ -336,6 +336,8 @@ const styles = StyleSheet.create({
   bannerEmoji: { fontSize: 36 },
   delivTimePill: { position: "absolute", bottom: 6, left: 6, flexDirection: "row", alignItems: "center", gap: 3, backgroundColor: "#E2006A", paddingHorizontal: 7, paddingVertical: 3, borderRadius: 99 },
   delivTimeText: { color: "#fff", fontSize: 10, fontFamily: "Inter_700Bold" },
+  discountPill: { position: "absolute", top: 6, right: 6, backgroundColor: "#FFE066", paddingHorizontal: 8, paddingVertical: 3, borderRadius: 99 },
+  discountText: { color: "#0A1B3D", fontSize: 11, fontFamily: "Inter_700Bold" },
   bannerInfo: { padding: 10 },
   bannerName: { fontSize: 13, fontFamily: "Inter_600SemiBold" },
   bannerCat: { fontSize: 11, fontFamily: "Inter_400Regular", marginTop: 2 },

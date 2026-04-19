@@ -158,7 +158,7 @@ export default function DeliverScreen() {
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== "granted") {
         haptic("error");
-        Alert.alert("Location required", "Tawsila needs location access to accept deliveries.");
+        Alert.alert("Location required", "Jatek needs location access to accept deliveries.");
         return;
       }
       const loc = await Location.getCurrentPositionAsync({});

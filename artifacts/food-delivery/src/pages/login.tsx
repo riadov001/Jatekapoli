@@ -177,7 +177,7 @@ export default function LoginPage() {
       const json = await response.json();
       if (!response.ok) throw new Error(json.error || "Could not save name");
       login(token!, json.user);
-      toast({ title: `Welcome to Tawsila, ${json.user.name}! 🎉` });
+      toast({ title: `Welcome to Jatek, ${json.user.name}! 🎉` });
       setLocation("/");
     } catch (err: any) {
       toast({ title: err.message || "Something went wrong.", variant: "destructive" });
@@ -220,7 +220,7 @@ export default function LoginPage() {
               <Truck className="w-8 h-8 text-white" />
             </div>
           </div>
-          <h1 className="font-display font-bold text-3xl text-foreground">Tawsila</h1>
+          <h1 className="font-display font-bold text-3xl text-foreground">Jatek</h1>
           <p className="text-muted-foreground text-sm mt-1">{t("login.fastDelivery")}</p>
         </motion.div>
 

@@ -14,7 +14,7 @@ import { useTranslation } from "react-i18next";
 
 async function reverseGeocode(lat: number, lng: number): Promise<string> {
   const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}&accept-language=en`;
-  const res = await fetch(url, { headers: { "User-Agent": "TawsilaApp/1.0" } });
+  const res = await fetch(url, { headers: { "User-Agent": "JatekApp/1.0" } });
   if (!res.ok) throw new Error("Geocoding failed");
   const data = await res.json();
   const addr = data.address || {};

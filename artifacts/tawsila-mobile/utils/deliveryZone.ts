@@ -1,5 +1,5 @@
 /**
- * Delivery zone for Tawsila — Oujda, Morocco
+ * Delivery zone for Jatek — Oujda, Morocco
  * Covers the city and its immediate suburbs within MAX_RADIUS_KM.
  */
 
@@ -63,7 +63,7 @@ export async function reverseGeocode(
 ): Promise<{ address: string; displayName: string }> {
   const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}&accept-language=fr`;
   const res = await fetch(url, {
-    headers: { "User-Agent": "TawsilaMobileApp/1.0" },
+    headers: { "User-Agent": "JatekMobileApp/1.0" },
   });
   if (!res.ok) throw new Error("Reverse geocoding failed");
   const data = await res.json();
@@ -111,7 +111,7 @@ export async function searchPlaces(query: string): Promise<PlaceSuggestion[]> {
 
   const url = `https://nominatim.openstreetmap.org/search?${params}`;
   const res = await fetch(url, {
-    headers: { "User-Agent": "TawsilaMobileApp/1.0" },
+    headers: { "User-Agent": "JatekMobileApp/1.0" },
   });
   if (!res.ok) return [];
 

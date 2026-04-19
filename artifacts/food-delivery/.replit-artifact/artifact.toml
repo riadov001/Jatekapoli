@@ -1,6 +1,6 @@
 kind = "web"
 previewPath = "/"
-title = "Tawsila - Food Delivery"
+title = "Jatek - Food Delivery"
 version = "1.0.0"
 id = "artifacts/food-delivery"
 router = "path"

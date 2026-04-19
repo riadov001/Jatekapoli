@@ -257,7 +257,7 @@ export default function WelcomePage() {
             RGPD
           </button>
         </div>
-        <p className="mt-3">© {new Date().getFullYear()} Tawsila — Livraison express à Oujda</p>
+        <p className="mt-3">© {new Date().getFullYear()} Jatek — Livraison express à Oujda</p>
       </footer>
     </div>
   );

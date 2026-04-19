@@ -49,7 +49,7 @@ export default function LoginScreen() {
         <View style={[styles.logoWrap, { backgroundColor: colors.primary }]}>
           <Ionicons name="bicycle" size={38} color="#fff" />
         </View>
-        <Text style={[styles.brand, { color: colors.foreground }]}>Tawsila</Text>
+        <Text style={[styles.brand, { color: colors.heading, fontStyle: "italic", letterSpacing: -1 }]}>Jatek.</Text>
         <Text style={[styles.subtitle, { color: colors.mutedForeground }]}>
           Fast delivery in Oujda
         </Text>

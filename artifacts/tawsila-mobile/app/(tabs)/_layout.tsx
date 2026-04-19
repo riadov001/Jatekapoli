@@ -14,12 +14,12 @@ function NativeTabLayout({ isDriver }: { isDriver: boolean }) {
   return (
     <NativeTabs>
       <NativeTabs.Trigger name="index">
-        <Icon sf={{ default: "house", selected: "house.fill" }} />
-        <Label>Home</Label>
+        <Icon sf={{ default: "square.grid.2x2", selected: "square.grid.2x2.fill" }} />
+        <Label>Explore</Label>
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="orders">
         <Icon sf={{ default: "bag", selected: "bag.fill" }} />
-        <Label>Orders</Label>
+        <Label>Commandes</Label>
       </NativeTabs.Trigger>
       {isDriver ? (
         <NativeTabs.Trigger name="deliver">
@@ -34,7 +34,7 @@ function NativeTabLayout({ isDriver }: { isDriver: boolean }) {
       )}
       <NativeTabs.Trigger name="profile">
         <Icon sf={{ default: "person", selected: "person.fill" }} />
-        <Label>Profile</Label>
+        <Label>Profil</Label>
       </NativeTabs.Trigger>
     </NativeTabs>
   );
@@ -56,16 +56,17 @@ function ClassicTabLayout({ isDriver }: { isDriver: boolean }) {
         tabBarLabelStyle: {
           fontFamily: "Inter_700Bold",
           fontSize: 11,
-          letterSpacing: 0.2,
+          letterSpacing: 0.1,
+          marginTop: 2,
         },
-        tabBarItemStyle: { paddingTop: 6 },
+        tabBarItemStyle: { paddingTop: 8 },
         tabBarStyle: {
           position: "absolute",
           backgroundColor: isIOS ? "transparent" : colors.card,
-          borderTopWidth: 1,
+          borderTopWidth: StyleSheet.hairlineWidth,
           borderTopColor: colors.border,
           elevation: 0,
-          ...(isWeb ? { height: 84 } : {}),
+          ...(isWeb ? { height: 84 } : { height: 78 }),
         },
         tabBarBackground: () =>
           isIOS ? (
@@ -78,34 +79,34 @@ function ClassicTabLayout({ isDriver }: { isDriver: boolean }) {
       <Tabs.Screen
         name="index"
         options={{
-          title: "Home",
-          tabBarIcon: ({ color }) =>
-            isIOS ? <SymbolView name="house" tintColor={color} size={24} /> : <Ionicons name="home-outline" size={22} color={color} />,
+          title: "Explore",
+          tabBarIcon: ({ color, focused }) =>
+            isIOS ? <SymbolView name={focused ? "square.grid.2x2.fill" : "square.grid.2x2"} tintColor={color} size={24} /> : <Ionicons name={focused ? "grid" : "grid-outline"} size={22} color={color} />,
         }}
       />
       <Tabs.Screen
         name="orders"
         options={{
-          title: "Orders",
-          tabBarIcon: ({ color }) =>
-            isIOS ? <SymbolView name="bag" tintColor={color} size={24} /> : <Ionicons name="bag-outline" size={22} color={color} />,
+          title: "Mes commandes",
+          tabBarIcon: ({ color, focused }) =>
+            isIOS ? <SymbolView name={focused ? "bag.fill" : "bag"} tintColor={color} size={24} /> : <Ionicons name={focused ? "bag-handle" : "bag-handle-outline"} size={22} color={color} />,
         }}
       />
       <Tabs.Screen
         name="deliver"
         options={{
-          title: "Deliver",
+          title: "Livrer",
           href: isDriver ? "/deliver" : null,
-          tabBarIcon: ({ color }) =>
-            isIOS ? <SymbolView name="bicycle" tintColor={color} size={24} /> : <Ionicons name="bicycle-outline" size={22} color={color} />,
+          tabBarIcon: ({ color, focused }) =>
+            isIOS ? <SymbolView name="bicycle" tintColor={color} size={24} /> : <Ionicons name={focused ? "bicycle" : "bicycle-outline"} size={22} color={color} />,
         }}
       />
       <Tabs.Screen
         name="profile"
         options={{
-          title: "Profile",
-          tabBarIcon: ({ color }) =>
-            isIOS ? <SymbolView name="person" tintColor={color} size={24} /> : <Ionicons name="person-outline" size={22} color={color} />,
+          title: "Profil",
+          tabBarIcon: ({ color, focused }) =>
+            isIOS ? <SymbolView name={focused ? "person.fill" : "person"} tintColor={color} size={24} /> : <Ionicons name={focused ? "person" : "person-outline"} size={22} color={color} />,
         }}
       />
     </Tabs>
