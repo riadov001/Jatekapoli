@@ -17,7 +17,7 @@ const DELIVERY_FEE = 15;
 export default function CartScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { items, restaurantId, restaurantName, updateQuantity, removeItem, clearCart, subtotal, itemCount, selectedAddress } = useCart();
+  const { items, restaurantId, restaurantName, updateQuantity, removeItem, clearCart, subtotal, itemCount, selectedAddress, selectedAddressInZone } = useCart();
   const { token } = useAuth();
   const createOrder = useCreateOrder();
   const address = selectedAddress;
@@ -36,6 +36,14 @@ export default function CartScreen() {
         { text: "Annuler", style: "cancel" },
         { text: "Choisir", onPress: () => router.push("/profile/addresses?select=1") },
       ]);
+      return;
+    }
+    if (!selectedAddressInZone) {
+      Alert.alert("Hors zone de livraison", "Cette adresse est en dehors de notre zone (15 km autour d'Oujda). Choisissez une autre adresse.", [
+        { text: "Annuler", style: "cancel" },
+        { text: "Changer", onPress: () => router.push("/profile/addresses?select=1") },
+      ]);
+      if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       return;
     }
     createOrder.mutate({
@@ -76,7 +84,7 @@ export default function CartScreen() {
     );
   }
 
-  const orderDisabled = createOrder.isPending;
+  const orderDisabled = createOrder.isPending || (!!address && !selectedAddressInZone);
 
   return (
     <View style={[styles.flex, { backgroundColor: colors.background }]}>
@@ -197,6 +205,12 @@ export default function CartScreen() {
 
       {/* Place order button */}
       <View style={[styles.footer, { paddingBottom: insets.bottom + (Platform.OS === "web" ? 34 : 16), borderTopColor: colors.border }]}>
+        {!!address && !selectedAddressInZone && (
+          <View style={styles.zoneBlocker}>
+            <Ionicons name="warning" size={14} color="#DC2626" />
+            <Text style={styles.zoneBlockerText}>Adresse hors de notre zone de livraison</Text>
+          </View>
+        )}
         <TouchableOpacity
           style={[
             styles.orderBtn,
@@ -214,7 +228,7 @@ export default function CartScreen() {
           ) : (
             <>
               <Text style={[styles.orderBtnText, { color: orderDisabled ? colors.mutedForeground : "#fff" }]}>
-                Place Order
+                {!!address && !selectedAddressInZone ? "Adresse hors zone" : "Commander"}
               </Text>
               {!orderDisabled && (
                 <Text style={[styles.orderBtnPrice, { backgroundColor: "rgba(255,255,255,0.25)" }]}>

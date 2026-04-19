@@ -67,16 +67,18 @@ export async function reverseGeocode(
   longitude: number
 ): Promise<{ address: string; displayName: string }> {
   if (useGoogle) {
-    const url = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&language=fr&key=${GOOGLE_PLACES_KEY}`;
-    const res = await fetch(url);
-    if (res.ok) {
-      const data = await res.json();
-      const first = data.results?.[0];
-      if (first) {
-        const display = first.formatted_address as string;
-        return { address: display, displayName: display };
+    try {
+      const url = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&language=fr&key=${GOOGLE_PLACES_KEY}`;
+      const res = await fetch(url);
+      if (res.ok) {
+        const data = await res.json();
+        const first = data.results?.[0];
+        if (first) {
+          const display = first.formatted_address as string;
+          return { address: display, displayName: display };
+        }
       }
-    }
+    } catch { /* fall through to Nominatim */ }
   }
   const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}&accept-language=fr`;
   const res = await fetch(url, {

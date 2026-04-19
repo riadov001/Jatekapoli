@@ -20,7 +20,8 @@ interface CartContextType {
   subtotal: number;
   itemCount: number;
   selectedAddress: string;
-  setSelectedAddress: (a: string) => void;
+  selectedAddressInZone: boolean;
+  setSelectedAddress: (a: string, inZone?: boolean) => void;
 }
 
 const CartContext = createContext<CartContextType | null>(null);
@@ -32,6 +33,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [restaurantId, setRestaurantId] = useState<number | null>(null);
   const [restaurantName, setRestaurantName] = useState("");
   const [selectedAddress, setSelectedAddressState] = useState<string>("");
+  const [selectedAddressInZone, setSelectedAddressInZone] = useState<boolean>(true);
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
@@ -44,7 +46,13 @@ export function CartProvider({ children }: { children: ReactNode }) {
           setRestaurantName(s.restaurantName ?? "");
         } catch {}
       }
-      if (addr) setSelectedAddressState(addr);
+      if (addr) {
+        try {
+          const parsed = JSON.parse(addr);
+          if (typeof parsed === "string") { setSelectedAddressState(parsed); setSelectedAddressInZone(true); }
+          else { setSelectedAddressState(parsed.address ?? ""); setSelectedAddressInZone(parsed.inZone !== false); }
+        } catch { setSelectedAddressState(addr); }
+      }
       setReady(true);
     });
   }, []);
@@ -54,9 +62,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
     AsyncStorage.setItem(CART_KEY, JSON.stringify({ items, restaurantId, restaurantName }));
   }, [items, restaurantId, restaurantName, ready]);
 
-  const setSelectedAddress = (a: string) => {
+  const setSelectedAddress = (a: string, inZone: boolean = true) => {
     setSelectedAddressState(a);
-    AsyncStorage.setItem(ADDR_KEY, a).catch(() => {});
+    setSelectedAddressInZone(inZone);
+    AsyncStorage.setItem(ADDR_KEY, JSON.stringify({ address: a, inZone })).catch(() => {});
   };
 
   const addItem = (rId: number, rName: string, item: Omit<CartItem, "quantity">) => {
@@ -94,7 +103,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const itemCount = items.reduce((s, i) => s + i.quantity, 0);
 
   return (
-    <CartContext.Provider value={{ items, restaurantId, restaurantName, addItem, removeItem, updateQuantity, clearCart, subtotal, itemCount, selectedAddress, setSelectedAddress }}>
+    <CartContext.Provider value={{ items, restaurantId, restaurantName, addItem, removeItem, updateQuantity, clearCart, subtotal, itemCount, selectedAddress, selectedAddressInZone, setSelectedAddress }}>
       {children}
     </CartContext.Provider>
   );

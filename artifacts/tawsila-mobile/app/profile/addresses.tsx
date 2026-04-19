@@ -23,6 +23,7 @@ export default function AddressesScreen() {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<SavedAddress | null>(null);
+  const [formAddrInZone, setFormAddrInZone] = useState<boolean>(true);
   const [label, setLabel] = useState("");
   const [fullAddress, setFullAddress] = useState("");
   const [details, setDetails] = useState("");
@@ -36,11 +37,12 @@ export default function AddressesScreen() {
   }, []);
   useEffect(() => { load(); }, [load]);
 
-  const openAdd = () => { setEditing(null); setLabel(""); setFullAddress(""); setDetails(""); setIsDefault(items.length === 0); setShowForm(true); };
-  const openEdit = (a: SavedAddress) => { setEditing(a); setLabel(a.label); setFullAddress(a.fullAddress); setDetails(a.details ?? ""); setIsDefault(a.isDefault); setShowForm(true); };
+  const openAdd = () => { setEditing(null); setLabel(""); setFullAddress(""); setDetails(""); setIsDefault(items.length === 0); setFormAddrInZone(true); setShowForm(true); };
+  const openEdit = (a: SavedAddress) => { setEditing(a); setLabel(a.label); setFullAddress(a.fullAddress); setDetails(a.details ?? ""); setIsDefault(a.isDefault); setFormAddrInZone(true); setShowForm(true); };
 
   const save = async () => {
     if (!label.trim() || !fullAddress.trim()) { Alert.alert("Champs requis", "Le libellé et l'adresse sont requis."); return; }
+    if (!formAddrInZone) { Alert.alert("Hors zone", "Cette adresse est en dehors de notre zone de livraison (15 km autour d'Oujda)."); return; }
     setSaving(true);
     try {
       if (editing) {
@@ -136,7 +138,7 @@ export default function AddressesScreen() {
             <Text style={[styles.label, { color: colors.mutedForeground }]}>Libellé</Text>
             <TextInput value={label} onChangeText={setLabel} placeholder="Domicile, Bureau..." placeholderTextColor={colors.mutedForeground} style={[styles.input, { backgroundColor: colors.card, color: colors.heading, borderColor: colors.border }]} />
             <Text style={[styles.label, { color: colors.mutedForeground }]}>Adresse complète</Text>
-            <AddressAutocomplete value={fullAddress} onChange={setFullAddress} />
+            <AddressAutocomplete value={fullAddress} onChange={setFullAddress} onZoneChange={(inZone) => setFormAddrInZone(inZone)} />
             <Text style={[styles.label, { color: colors.mutedForeground }]}>Détails (étage, code, etc.)</Text>
             <TextInput value={details} onChangeText={setDetails} placeholder="Optionnel" placeholderTextColor={colors.mutedForeground} style={[styles.input, { backgroundColor: colors.card, color: colors.heading, borderColor: colors.border }]} />
             <TouchableOpacity onPress={() => setIsDefault((v) => !v)} style={{ flexDirection: "row", alignItems: "center", gap: 8, marginTop: 14 }}>
