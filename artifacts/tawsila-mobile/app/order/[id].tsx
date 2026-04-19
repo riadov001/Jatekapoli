@@ -224,13 +224,9 @@ export default function OrderDetailScreen() {
         {/* Pickup hand-off code — shown to the customer once the order is accepted. */}
         {(order as any).pickupCode && !["delivered", "cancelled"].includes(order.status) && (
           <Animated.View entering={FadeInDown.duration(300)} style={[styles.pickupCard, { backgroundColor: colors.primary }]}>
-            <Text style={styles.pickupLabel}>
-              {t("order_pickup_code_title", { defaultValue: "Hand-off code" } as any)}
-            </Text>
+            <Text style={styles.pickupLabel}>{t("order_pickup_code_title")}</Text>
             <Text style={styles.pickupCode} testID="text-pickup-code">{(order as any).pickupCode}</Text>
-            <Text style={styles.pickupHelp}>
-              {t("order_pickup_code_help", { defaultValue: "Show this 4-digit code to your driver to confirm delivery." } as any)}
-            </Text>
+            <Text style={styles.pickupHelp}>{t("order_pickup_code_help")}</Text>
           </Animated.View>
         )}
 

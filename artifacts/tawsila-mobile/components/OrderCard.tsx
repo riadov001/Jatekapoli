@@ -20,6 +20,7 @@ interface OrderCardProps {
     restaurantName?: string | null;
     total: number;
     createdAt: string;
+    reference?: string | null;
     items?: Array<{ quantity: number; menuItemName?: string | null }>;
   };
   onPress: () => void;
@@ -43,7 +44,9 @@ export function OrderCard({ order, onPress }: OrderCardProps) {
     >
       <View style={styles.header}>
         <View style={styles.headerLeft}>
-          <Text style={[styles.id, { color: colors.foreground }]}>Order #{order.id}</Text>
+          <Text style={[styles.id, { color: colors.foreground }]}>
+            {order.reference || `#${order.id}`}
+          </Text>
           <Text style={[styles.restaurant, { color: colors.mutedForeground }]} numberOfLines={1}>
             {order.restaurantName}
           </Text>

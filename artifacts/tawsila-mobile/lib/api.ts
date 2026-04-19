@@ -177,6 +177,25 @@ export async function deleteReview(id: number): Promise<void> { await jsonFetch(
 export async function listMyOrders(): Promise<any[]> {
   return jsonFetch("/api/orders");
 }
+export async function updateOrderStatus(orderId: number, status: string): Promise<any> {
+  return jsonFetch(`/api/orders/${orderId}/status`, {
+    method: "PATCH",
+    body: JSON.stringify({ status }),
+  });
+}
+
+// Restaurants --------------------------------------------------------
+export interface RestaurantProfileInput {
+  legalName: string;
+  ice: string;
+  printerEmail?: string;
+}
+export async function completeRestaurantProfile(restaurantId: number, data: RestaurantProfileInput): Promise<any> {
+  return jsonFetch(`/api/restaurants/${restaurantId}/complete-profile`, {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
 
 // RGPD / Consents ----------------------------------------------------
 export interface UserConsents {

@@ -10,7 +10,7 @@ import { Platform, StyleSheet, View, useColorScheme } from "react-native";
 import { useColors } from "@/hooks/useColors";
 import { useAuth } from "@/contexts/AuthContext";
 
-function NativeTabLayout({ isDriver }: { isDriver: boolean }) {
+function NativeTabLayout({ isDriver, isOwner }: { isDriver: boolean; isOwner: boolean }) {
   return (
     <NativeTabs>
       <NativeTabs.Trigger name="index">
@@ -32,6 +32,17 @@ function NativeTabLayout({ isDriver }: { isDriver: boolean }) {
           <Label>Livrer</Label>
         </NativeTabs.Trigger>
       )}
+      {isOwner ? (
+        <NativeTabs.Trigger name="manage">
+          <Icon sf={{ default: "storefront", selected: "storefront.fill" }} />
+          <Label>Gérer</Label>
+        </NativeTabs.Trigger>
+      ) : (
+        <NativeTabs.Trigger name="manage" hidden>
+          <Icon sf={{ default: "storefront", selected: "storefront.fill" }} />
+          <Label>Gérer</Label>
+        </NativeTabs.Trigger>
+      )}
       <NativeTabs.Trigger name="profile">
         <Icon sf={{ default: "person", selected: "person.fill" }} />
         <Label>Profil</Label>
@@ -40,7 +51,7 @@ function NativeTabLayout({ isDriver }: { isDriver: boolean }) {
   );
 }
 
-function ClassicTabLayout({ isDriver }: { isDriver: boolean }) {
+function ClassicTabLayout({ isDriver, isOwner }: { isDriver: boolean; isOwner: boolean }) {
   const colors = useColors();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
@@ -102,6 +113,15 @@ function ClassicTabLayout({ isDriver }: { isDriver: boolean }) {
         }}
       />
       <Tabs.Screen
+        name="manage"
+        options={{
+          title: "Gérer",
+          href: isOwner ? "/manage" : null,
+          tabBarIcon: ({ color, focused }) =>
+            isIOS ? <SymbolView name={focused ? "storefront.fill" : "storefront"} tintColor={color} size={24} /> : <Ionicons name={focused ? "storefront" : "storefront-outline"} size={22} color={color} />,
+        }}
+      />
+      <Tabs.Screen
         name="profile"
         options={{
           title: "Profil",
@@ -116,9 +136,10 @@ function ClassicTabLayout({ isDriver }: { isDriver: boolean }) {
 export default function TabLayout() {
   const { user } = useAuth();
   const isDriver = user?.role === "driver";
+  const isOwner = user?.role === "owner";
 
   if (isLiquidGlassAvailable()) {
-    return <NativeTabLayout isDriver={isDriver} />;
+    return <NativeTabLayout isDriver={isDriver} isOwner={isOwner} />;
   }
-  return <ClassicTabLayout isDriver={isDriver} />;
+  return <ClassicTabLayout isDriver={isDriver} isOwner={isOwner} />;
 }
