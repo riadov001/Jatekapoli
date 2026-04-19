@@ -10,11 +10,14 @@ import { useVerifyOtp, useSendOtp } from "@workspace/api-client-react";
 import { useColors } from "@/hooks/useColors";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useT } from "@/contexts/LanguageContext";
 
 export default function OtpScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { phone, demoOtp } = useLocalSearchParams<{ phone: string; demoOtp: string }>();
+  const t = useT();
+  const { phone, demoOtp, channel } = useLocalSearchParams<{ phone: string; demoOtp: string; channel: string }>();
+  const isWhatsApp = channel === "whatsapp";
   const { login } = useAuth();
   const [digits, setDigits] = useState(["", "", "", "", "", ""]);
   const [error, setError] = useState("");
@@ -29,8 +32,8 @@ export default function OtpScreen() {
 
   useEffect(() => {
     if (countdown > 0) {
-      const t = setTimeout(() => setCountdown((c) => c - 1), 1000);
-      return () => clearTimeout(t);
+      const timer = setTimeout(() => setCountdown((c) => c - 1), 1000);
+      return () => clearTimeout(timer);
     }
   }, [countdown]);
 
@@ -65,7 +68,7 @@ export default function OtpScreen() {
     setError("");
     verifyOtp.mutate({ data: { phone, code: c } }, {
       onSuccess: async (res) => {
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         if ((res as any).isNewUser) {
           setPendingToken(res.token);
           setPendingUser(res.user);
@@ -76,8 +79,8 @@ export default function OtpScreen() {
         }
       },
       onError: (err: any) => {
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-        setError(err?.data?.error || "Invalid code. Try again.");
+        if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+        setError(err?.data?.error || t("otp_invalid"));
       },
     });
   };
@@ -102,8 +105,12 @@ export default function OtpScreen() {
   };
 
   const handleResend = () => {
-    sendOtp.mutate({ data: { phone } }, {
-      onSuccess: () => { setCountdown(60); setDigits(["", "", "", "", "", ""]); setError(""); },
+    sendOtp.mutate({ data: { phone, channel } as any }, {
+      onSuccess: () => {
+        setCountdown(60);
+        setDigits(["", "", "", "", "", ""]);
+        setError("");
+      },
     });
   };
 
@@ -114,14 +121,14 @@ export default function OtpScreen() {
         behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
         <View style={[styles.nameContainer, { paddingTop: insets.top + 40 }]}>
-          <View style={[styles.successIcon, { backgroundColor: colors.success + "20" }]}>
-            <Ionicons name="checkmark-circle" size={40} color={colors.success} />
+          <View style={[styles.successIcon, { backgroundColor: (colors as any).success + "20" || "#22C55E20" }]}>
+            <Ionicons name="checkmark-circle" size={40} color={(colors as any).success || "#22C55E"} />
           </View>
-          <Text style={[styles.title, { color: colors.foreground }]}>Almost there!</Text>
-          <Text style={[styles.sub, { color: colors.mutedForeground }]}>What should we call you?</Text>
+          <Text style={[styles.title, { color: colors.foreground }]}>{t("otp_welcome")}</Text>
+          <Text style={[styles.sub, { color: colors.mutedForeground }]}>{t("otp_name_hint")}</Text>
           <TextInput
             style={[styles.nameInput, { backgroundColor: colors.card, borderColor: colors.border, color: colors.foreground }]}
-            placeholder="Your name"
+            placeholder={t("otp_name_placeholder")}
             placeholderTextColor={colors.mutedForeground}
             value={name}
             onChangeText={setName}
@@ -134,7 +141,7 @@ export default function OtpScreen() {
             onPress={handleSaveName}
             activeOpacity={0.8}
           >
-            <Text style={styles.btnText}>Start ordering</Text>
+            <Text style={styles.btnText}>{t("otp_start")}</Text>
             <Ionicons name="arrow-forward" size={20} color="#fff" />
           </TouchableOpacity>
         </View>
@@ -155,15 +162,31 @@ export default function OtpScreen() {
           <Ionicons name="arrow-back" size={24} color={colors.foreground} />
         </TouchableOpacity>
 
-        <Text style={[styles.title, { color: colors.foreground }]}>Enter the code</Text>
+        {/* Channel badge */}
+        <View style={[styles.channelBadge, { backgroundColor: isWhatsApp ? "#25D36618" : colors.primary + "15" }]}>
+          <Ionicons
+            name={isWhatsApp ? "logo-whatsapp" : "chatbubble-ellipses-outline"}
+            size={16}
+            color={isWhatsApp ? "#25D366" : colors.primary}
+          />
+          <Text style={[styles.channelBadgeText, { color: isWhatsApp ? "#25D366" : colors.primary }]}>
+            {isWhatsApp ? t("otp_via_whatsapp") : t("otp_via_sms")}
+          </Text>
+        </View>
+
+        <Text style={[styles.title, { color: colors.foreground }]}>{t("otp_enter_code")}</Text>
         <Text style={[styles.sub, { color: colors.mutedForeground }]}>
-          Sent to <Text style={{ color: colors.foreground, fontFamily: "Inter_600SemiBold" }}>{phone}</Text>
+          {t("otp_sent_to")}{" "}
+          <Text style={{ color: colors.foreground, fontFamily: "Inter_600SemiBold" }}>{phone}</Text>
         </Text>
 
         {demoOtp ? (
           <View style={[styles.demoBanner, { backgroundColor: colors.warning + "20", borderColor: colors.warning + "40" }]}>
             <Ionicons name="information-circle-outline" size={16} color={colors.warning} />
-            <Text style={[styles.demoText, { color: colors.warning }]}>Demo code: <Text style={{ fontFamily: "Inter_700Bold" }}>{demoOtp}</Text></Text>
+            <Text style={[styles.demoText, { color: colors.warning }]}>
+              {t("otp_demo_code")}{" "}
+              <Text style={{ fontFamily: "Inter_700Bold" }}>{demoOtp}</Text>
+            </Text>
           </View>
         ) : null}
 
@@ -196,19 +219,20 @@ export default function OtpScreen() {
         {verifyOtp.isPending && (
           <View style={styles.loadingRow}>
             <ActivityIndicator color={colors.primary} size="small" />
-            <Text style={[styles.loadingText, { color: colors.mutedForeground }]}>Verifying…</Text>
+            <Text style={[styles.loadingText, { color: colors.mutedForeground }]}>{t("otp_verifying")}</Text>
           </View>
         )}
 
         <View style={styles.resendRow}>
           {countdown > 0 ? (
             <Text style={[styles.countdownText, { color: colors.mutedForeground }]}>
-              Resend in <Text style={{ color: colors.foreground, fontFamily: "Inter_600SemiBold" }}>{countdown}s</Text>
+              {t("otp_resend_in")}{" "}
+              <Text style={{ color: colors.foreground, fontFamily: "Inter_600SemiBold" }}>{countdown}s</Text>
             </Text>
           ) : (
             <TouchableOpacity onPress={handleResend} disabled={sendOtp.isPending}>
               <Text style={[styles.resendBtn, { color: colors.primary }]}>
-                {sendOtp.isPending ? "Sending…" : "Resend code"}
+                {sendOtp.isPending ? t("otp_sending") : t("otp_resend")}
               </Text>
             </TouchableOpacity>
           )}
@@ -222,7 +246,12 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   container: { flexGrow: 1, paddingHorizontal: 24, alignItems: "center" },
   nameContainer: { flex: 1, paddingHorizontal: 24, alignItems: "center", gap: 16 },
-  back: { alignSelf: "flex-start", padding: 4, marginBottom: 24 },
+  back: { alignSelf: "flex-start", padding: 4, marginBottom: 16 },
+  channelBadge: {
+    flexDirection: "row", alignItems: "center", gap: 6,
+    paddingHorizontal: 14, paddingVertical: 8, borderRadius: 99, marginBottom: 20,
+  },
+  channelBadgeText: { fontSize: 13, fontFamily: "Inter_600SemiBold" },
   title: { fontSize: 26, fontFamily: "Inter_700Bold", textAlign: "center" },
   sub: { fontSize: 14, fontFamily: "Inter_400Regular", textAlign: "center", marginTop: 8, marginBottom: 32 },
   demoBanner: {
@@ -253,5 +282,5 @@ const styles = StyleSheet.create({
   },
   btnText: { color: "#fff", fontSize: 16, fontFamily: "Inter_600SemiBold" },
   successIcon: { width: 80, height: 80, borderRadius: 40, alignItems: "center", justifyContent: "center" },
-  success: { color: "#22C55E" },
+  warning: { color: "#F59E0B" },
 });

@@ -123,6 +123,33 @@ const fr = {
   addr_sheet_title: "Adresse de livraison",
   addr_sheet_pick: "Choisir parmi mes adresses",
   addr_sheet_no_saved: "Vous n'avez pas encore d'adresse enregistrée.",
+
+  // Login screen
+  login_subtitle: "Livraison express à Oujda",
+  login_channel_label: "Comment recevoir votre code ?",
+  login_phone_label: "Numéro de téléphone",
+  login_phone_error: "Entrez un numéro valide",
+  login_send_fail: "Échec de l'envoi du code. Réessayez.",
+  login_send_whatsapp: "Envoyer via WhatsApp",
+  login_send_sms: "Envoyer par SMS",
+  login_hint_whatsapp: "Vous allez recevoir un message WhatsApp avec votre code de vérification",
+  login_hint_sms: "Vous allez recevoir un SMS avec votre code de vérification",
+
+  // OTP screen
+  otp_via_whatsapp: "Code via WhatsApp",
+  otp_via_sms: "Code via SMS",
+  otp_enter_code: "Entrez le code",
+  otp_sent_to: "Envoyé à",
+  otp_demo_code: "Code de démo :",
+  otp_invalid: "Code invalide. Réessayez.",
+  otp_welcome: "Bienvenue !",
+  otp_name_hint: "Comment vous appelle-t-on ?",
+  otp_name_placeholder: "Votre prénom",
+  otp_start: "Commencer à commander",
+  otp_verifying: "Vérification…",
+  otp_resend_in: "Renvoyer dans",
+  otp_resend: "Renvoyer le code",
+  otp_sending: "Envoi…",
 };
 
 const en: typeof fr = {
@@ -241,6 +268,31 @@ const en: typeof fr = {
   addr_sheet_title: "Delivery address",
   addr_sheet_pick: "Pick from my addresses",
   addr_sheet_no_saved: "You have no saved address yet.",
+
+  login_subtitle: "Express delivery in Oujda",
+  login_channel_label: "How to receive your code?",
+  login_phone_label: "Phone number",
+  login_phone_error: "Enter a valid phone number",
+  login_send_fail: "Failed to send code. Please try again.",
+  login_send_whatsapp: "Send via WhatsApp",
+  login_send_sms: "Send via SMS",
+  login_hint_whatsapp: "You'll receive a WhatsApp message with your verification code",
+  login_hint_sms: "You'll receive an SMS with your verification code",
+
+  otp_via_whatsapp: "Code via WhatsApp",
+  otp_via_sms: "Code via SMS",
+  otp_enter_code: "Enter the code",
+  otp_sent_to: "Sent to",
+  otp_demo_code: "Demo code:",
+  otp_invalid: "Invalid code. Please try again.",
+  otp_welcome: "Welcome!",
+  otp_name_hint: "What should we call you?",
+  otp_name_placeholder: "Your name",
+  otp_start: "Start ordering",
+  otp_verifying: "Verifying…",
+  otp_resend_in: "Resend in",
+  otp_resend: "Resend code",
+  otp_sending: "Sending…",
 };
 
 const ar: typeof fr = {
@@ -359,6 +411,31 @@ const ar: typeof fr = {
   addr_sheet_title: "عنوان التوصيل",
   addr_sheet_pick: "اختر من عناويني",
   addr_sheet_no_saved: "لا يوجد عنوان محفوظ بعد.",
+
+  login_subtitle: "توصيل سريع في وجدة",
+  login_channel_label: "كيف تريد استقبال الرمز؟",
+  login_phone_label: "رقم الهاتف",
+  login_phone_error: "أدخل رقم هاتف صحيح",
+  login_send_fail: "فشل إرسال الرمز. حاول مجدداً.",
+  login_send_whatsapp: "إرسال عبر واتساب",
+  login_send_sms: "إرسال برسالة نصية",
+  login_hint_whatsapp: "ستتلقى رسالة واتساب تحتوي على رمز التحقق",
+  login_hint_sms: "ستتلقى رسالة نصية تحتوي على رمز التحقق",
+
+  otp_via_whatsapp: "رمز عبر واتساب",
+  otp_via_sms: "رمز عبر رسالة نصية",
+  otp_enter_code: "أدخل الرمز",
+  otp_sent_to: "أُرسل إلى",
+  otp_demo_code: "رمز تجريبي:",
+  otp_invalid: "رمز غير صحيح. حاول مجدداً.",
+  otp_welcome: "أهلاً وسهلاً!",
+  otp_name_hint: "بماذا نناديك؟",
+  otp_name_placeholder: "اسمك",
+  otp_start: "ابدأ الطلب",
+  otp_verifying: "جارٍ التحقق…",
+  otp_resend_in: "إعادة إرسال بعد",
+  otp_resend: "أعِد إرسال الرمز",
+  otp_sending: "جارٍ الإرسال…",
 };
 
 export const translations = { fr, en, ar };

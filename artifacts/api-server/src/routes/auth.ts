@@ -16,12 +16,18 @@ function generateOtp(): string {
   return Math.floor(100000 + Math.random() * 900000).toString();
 }
 
+/**
+ * Normalize a phone number to E.164 format.
+ * - If it already starts with +, trust it as-is (international format from frontend picker).
+ * - Handle 00 prefix → +
+ * - Legacy Moroccan shorthand (06/07 → +212…)
+ */
 function normalizePhone(phone: string): string {
-  let p = phone.replace(/[\s\-]/g, "");
-  if (p.startsWith("00212")) return "+" + p.slice(2);
-  if (p.startsWith("+212")) return p;
-  if (p.startsWith("0")) return "+212" + p.slice(1);
-  if (/^[67]/.test(p)) return "+212" + p;
+  let p = phone.replace(/[\s\-\(\)\.]/g, "");
+  if (p.startsWith("+")) return p;
+  if (p.startsWith("00")) return "+" + p.slice(2);
+  if (p.startsWith("0")) return "+212" + p.slice(1); // legacy Moroccan
+  if (/^[67]/.test(p)) return "+212" + p;            // legacy Moroccan bare digits
   return p;
 }
 
@@ -29,15 +35,26 @@ async function sendSms(to: string, body: string): Promise<void> {
   const accountSid = process.env.TWILIO_ACCOUNT_SID;
   const authToken = process.env.TWILIO_API_TOKEN;
   const from = process.env.TWILIO_FROM_NUMBER;
-
-  if (accountSid && authToken && from) {
-    const twilio = (await import("twilio")).default;
-    const client = twilio(accountSid, authToken);
-    await client.messages.create({ body, from, to });
-  }
-  // If Twilio not configured, we fall through — demoOtp is returned in response
+  if (!accountSid || !authToken || !from) return;
+  const twilio = (await import("twilio")).default;
+  const client = twilio(accountSid, authToken);
+  await client.messages.create({ body, from, to });
 }
 
+async function sendWhatsApp(to: string, body: string): Promise<void> {
+  const accountSid = process.env.TWILIO_ACCOUNT_SID;
+  const authToken = process.env.TWILIO_API_TOKEN;
+  // Use TWILIO_WHATSAPP_FROM if set; otherwise fall back to TWILIO_FROM_NUMBER with whatsapp: prefix
+  const rawFrom = process.env.TWILIO_WHATSAPP_FROM || process.env.TWILIO_FROM_NUMBER;
+  if (!accountSid || !authToken || !rawFrom) return;
+  const from = rawFrom.startsWith("whatsapp:") ? rawFrom : `whatsapp:${rawFrom}`;
+  const toWa = to.startsWith("whatsapp:") ? to : `whatsapp:${to}`;
+  const twilio = (await import("twilio")).default;
+  const client = twilio(accountSid, authToken);
+  await client.messages.create({ body, from, to: toWa });
+}
+
+// ─── Register (email/password, for admin/driver panel) ──────────────────────
 router.post("/auth/register", async (req, res): Promise<void> => {
   const parsed = RegisterBody.safeParse(req.body);
   if (!parsed.success) {
@@ -46,7 +63,6 @@ router.post("/auth/register", async (req, res): Promise<void> => {
   }
 
   const { name, email, password, role, phone } = parsed.data;
-
   const existing = await db.select().from(usersTable).where(eq(usersTable.email, email)).limit(1);
   if (existing.length > 0) {
     res.status(400).json({ error: "Email already registered" });
@@ -55,22 +71,14 @@ router.post("/auth/register", async (req, res): Promise<void> => {
 
   const hashed = await bcrypt.hash(password, 10);
   const [user] = await db.insert(usersTable).values({
-    name,
-    email,
-    password: hashed,
-    role,
-    phone: phone ?? null,
-    loyaltyPoints: 0,
-    isActive: true,
+    name, email, password: hashed, role,
+    phone: phone ?? null, loyaltyPoints: 0, isActive: true,
   }).returning();
 
   if (role === "driver") {
     await db.insert(driversTable).values({
-      userId: user.id,
-      name: user.name,
-      phone: user.phone ?? null,
-      isAvailable: true,
-      totalDeliveries: 0,
+      userId: user.id, name: user.name, phone: user.phone ?? null,
+      isAvailable: true, totalDeliveries: 0,
     });
   }
 
@@ -79,6 +87,7 @@ router.post("/auth/register", async (req, res): Promise<void> => {
   res.status(201).json({ token, user: safeUser });
 });
 
+// ─── Login (email/password) ──────────────────────────────────────────────────
 router.post("/auth/login", async (req, res): Promise<void> => {
   const parsed = LoginBody.safeParse(req.body);
   if (!parsed.success) {
@@ -88,7 +97,6 @@ router.post("/auth/login", async (req, res): Promise<void> => {
 
   const { email, password } = parsed.data;
   const [user] = await db.select().from(usersTable).where(eq(usersTable.email, email)).limit(1);
-
   if (!user) {
     res.status(401).json({ error: "Invalid email or password" });
     return;
@@ -105,10 +113,12 @@ router.post("/auth/login", async (req, res): Promise<void> => {
   res.json({ token, user: safeUser });
 });
 
+// ─── Send OTP (SMS or WhatsApp) ───────────────────────────────────────────────
 router.post("/auth/send-otp", async (req, res): Promise<void> => {
-  const { phone } = req.body;
+  const { phone, channel } = req.body;
+  const deliveryChannel: "sms" | "whatsapp" = channel === "whatsapp" ? "whatsapp" : "sms";
 
-  if (!phone || typeof phone !== "string" || phone.trim().length < 8) {
+  if (!phone || typeof phone !== "string" || phone.trim().length < 7) {
     res.status(400).json({ error: "Valid phone number required" });
     return;
   }
@@ -128,44 +138,51 @@ router.post("/auth/send-otp", async (req, res): Promise<void> => {
     .limit(1);
 
   if (recentOtp.length > 0) {
-    res.status(429).json({ error: "Please wait before requesting a new OTP" });
+    res.status(429).json({ error: "Veuillez attendre avant de demander un nouveau code" });
     return;
   }
 
   const code = generateOtp();
   const expiresAt = new Date(Date.now() + OTP_EXPIRY_MINUTES * 60 * 1000);
-
   await db.insert(otpCodesTable).values({ phone: normalizedPhone, code, expiresAt });
 
-  // Send real SMS via Twilio (or log for demo)
-  const twilioConfigured = !!(process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_API_TOKEN && process.env.TWILIO_FROM_NUMBER);
+  const messageBody = `Votre code Jatek : ${code}\nValable ${OTP_EXPIRY_MINUTES} minutes. Ne le communiquez à personne.`;
+
+  const twilioConfigured = !!(process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_API_TOKEN);
+
+  let smsSent = false;
   try {
-    await sendSms(normalizedPhone, `Your Tawsila verification code is: ${code}. Valid for ${OTP_EXPIRY_MINUTES} minutes.`);
+    if (deliveryChannel === "whatsapp") {
+      await sendWhatsApp(normalizedPhone, messageBody);
+    } else {
+      await sendSms(normalizedPhone, messageBody);
+    }
+    smsSent = twilioConfigured;
   } catch (err) {
-    console.error("[OTP] SMS send failed:", err);
+    console.error(`[OTP] ${deliveryChannel} send failed:`, err);
   }
 
   res.json({
     success: true,
-    message: `OTP sent to ${normalizedPhone}`,
-    smsSent: twilioConfigured,
-    // Always return demoOtp in dev, only return in prod if SMS failed
+    channel: deliveryChannel,
+    message: `Code envoyé via ${deliveryChannel} à ${normalizedPhone}`,
+    smsSent,
     demoOtp: (!twilioConfigured || process.env.NODE_ENV !== "production") ? code : undefined,
   });
 });
 
+// ─── Verify OTP ───────────────────────────────────────────────────────────────
 router.post("/auth/verify-otp", async (req, res): Promise<void> => {
   const { phone, code, name, role } = req.body;
 
   if (!phone || !code) {
-    res.status(400).json({ error: "Phone and OTP code required" });
+    res.status(400).json({ error: "Numéro de téléphone et code requis" });
     return;
   }
 
   const normalizedPhone = normalizePhone(phone.trim());
   const now = new Date();
 
-  // Get the most recent valid OTP (desc order)
   const [otpRecord] = await db
     .select()
     .from(otpCodesTable)
@@ -180,12 +197,12 @@ router.post("/auth/verify-otp", async (req, res): Promise<void> => {
     .limit(1);
 
   if (!otpRecord) {
-    res.status(400).json({ error: "OTP expired or not found. Please request a new one." });
+    res.status(400).json({ error: "Code expiré ou introuvable. Demandez un nouveau code." });
     return;
   }
 
   if (otpRecord.attempts >= OTP_MAX_ATTEMPTS) {
-    res.status(400).json({ error: "Too many incorrect attempts. Please request a new OTP." });
+    res.status(400).json({ error: "Trop de tentatives. Demandez un nouveau code." });
     return;
   }
 
@@ -198,16 +215,14 @@ router.post("/auth/verify-otp", async (req, res): Promise<void> => {
     const remaining = OTP_MAX_ATTEMPTS - (otpRecord.attempts + 1);
     res.status(400).json({
       error: remaining > 0
-        ? `Incorrect OTP. ${remaining} attempt${remaining === 1 ? "" : "s"} remaining.`
-        : "Too many incorrect attempts. Please request a new OTP.",
+        ? `Code incorrect. ${remaining} tentative${remaining === 1 ? "" : "s"} restante${remaining === 1 ? "" : "s"}.`
+        : "Trop de tentatives. Demandez un nouveau code.",
     });
     return;
   }
 
-  // Mark OTP as used
   await db.update(otpCodesTable).set({ used: true }).where(eq(otpCodesTable.id, otpRecord.id));
 
-  // Find or create user by phone
   const [existingUser] = await db
     .select()
     .from(usersTable)
@@ -224,28 +239,18 @@ router.post("/auth/verify-otp", async (req, res): Promise<void> => {
     const dummyPassword = await bcrypt.hash(Math.random().toString(36), 10);
 
     const [newUser] = await db.insert(usersTable).values({
-      name: userName,
-      email: placeholderEmail,
-      password: dummyPassword,
-      role: userRole,
-      phone: normalizedPhone,
-      loyaltyPoints: 0,
-      isActive: true,
+      name: userName, email: placeholderEmail, password: dummyPassword,
+      role: userRole, phone: normalizedPhone, loyaltyPoints: 0, isActive: true,
     }).returning();
 
     if (userRole === "driver") {
       await db.insert(driversTable).values({
-        userId: newUser.id,
-        name: newUser.name,
-        phone: newUser.phone ?? null,
-        isAvailable: true,
-        totalDeliveries: 0,
+        userId: newUser.id, name: newUser.name, phone: newUser.phone ?? null,
+        isAvailable: true, totalDeliveries: 0,
       });
     }
-
     user = newUser;
   } else if (name?.trim() && name.trim() !== user.name) {
-    // Update existing user name if provided
     const [updated] = await db
       .update(usersTable)
       .set({ name: name.trim() })
@@ -259,7 +264,7 @@ router.post("/auth/verify-otp", async (req, res): Promise<void> => {
   res.json({ token, user: safeUser, isNewUser });
 });
 
-// Update user name after OTP verification (for new users completing profile)
+// ─── Update name after OTP for new users ─────────────────────────────────────
 router.patch("/auth/update-name", async (req, res): Promise<void> => {
   const authHeader = req.headers.authorization;
   if (!authHeader?.startsWith("Bearer ")) {
@@ -278,7 +283,7 @@ router.patch("/auth/update-name", async (req, res): Promise<void> => {
 
   const { name } = req.body;
   if (!name || typeof name !== "string" || name.trim().length < 2) {
-    res.status(400).json({ error: "Name must be at least 2 characters" });
+    res.status(400).json({ error: "Le prénom doit comporter au moins 2 caractères" });
     return;
   }
 
@@ -289,7 +294,7 @@ router.patch("/auth/update-name", async (req, res): Promise<void> => {
     .returning();
 
   if (!user) {
-    res.status(404).json({ error: "User not found" });
+    res.status(404).json({ error: "Utilisateur introuvable" });
     return;
   }
 
@@ -297,9 +302,10 @@ router.patch("/auth/update-name", async (req, res): Promise<void> => {
   res.json({ user: safeUser });
 });
 
+// ─── Get current user ─────────────────────────────────────────────────────────
 router.get("/auth/me", async (req, res): Promise<void> => {
   const authHeader = req.headers.authorization;
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+  if (!authHeader?.startsWith("Bearer ")) {
     res.status(401).json({ error: "Unauthorized" });
     return;
   }
@@ -309,7 +315,7 @@ router.get("/auth/me", async (req, res): Promise<void> => {
     const payload = jwt.verify(token, JWT_SECRET) as { userId: number };
     const [user] = await db.select().from(usersTable).where(eq(usersTable.id, payload.userId)).limit(1);
     if (!user) {
-      res.status(404).json({ error: "User not found" });
+      res.status(404).json({ error: "Utilisateur introuvable" });
       return;
     }
     const { password: _pw, ...safeUser } = user;
@@ -325,7 +331,7 @@ router.post("/auth/logout", async (_req, res): Promise<void> => {
 
 router.delete("/auth/me", async (req, res): Promise<void> => {
   const authHeader = req.headers.authorization;
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+  if (!authHeader?.startsWith("Bearer ")) {
     res.status(401).json({ error: "Unauthorized" });
     return;
   }
