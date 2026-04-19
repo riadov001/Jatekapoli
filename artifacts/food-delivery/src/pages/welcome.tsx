@@ -43,7 +43,7 @@ export default function WelcomePage() {
           <div className="w-10 h-10 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
             <Zap className="w-5 h-5 text-white fill-white" />
           </div>
-          <span className="font-display font-bold text-2xl text-white tracking-tight">tawsila</span>
+          <span className="font-display font-bold italic text-2xl text-white tracking-tight">Jatek.</span>
         </motion.div>
 
         <motion.div

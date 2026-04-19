@@ -480,10 +480,10 @@ export default function LoginPage() {
 
                 <div className="mt-4 p-3.5 bg-muted/60 rounded-xl text-xs text-muted-foreground space-y-0.5">
                   <p className="font-semibold mb-1 text-foreground/70">{t("login.demoAccounts")}</p>
-                  <p>Customer: customer@tawsila.ma / password123</p>
-                  <p>Driver: driver@tawsila.ma / password123</p>
-                  <p>Admin: admin@tawsila.ma / password123</p>
-                  <p>Restaurant: owner@tawsila.ma / password123</p>
+                  <p>Customer: customer@jatek.ma / password123</p>
+                  <p>Driver: driver@jatek.ma / password123</p>
+                  <p>Admin: admin@jatek.ma / password123</p>
+                  <p>Restaurant: owner@jatek.ma / password123</p>
                 </div>
               </motion.div>
             )}

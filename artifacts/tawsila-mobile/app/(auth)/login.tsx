@@ -20,7 +20,7 @@ export default function LoginScreen() {
   const handleContinue = () => {
     const trimmed = phone.trim();
     if (trimmed.length < 8) {
-      setError("Enter a valid phone number");
+      setError("Entrez un numéro de téléphone valide");
       return;
     }
     setError("");
@@ -31,7 +31,7 @@ export default function LoginScreen() {
       },
       onError: (err: any) => {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-        setError(err?.data?.error || "Could not send OTP. Try again.");
+        setError(err?.data?.error || "Échec de l'envoi du code. Réessayez.");
       },
     });
   };
@@ -51,11 +51,11 @@ export default function LoginScreen() {
         </View>
         <Text style={[styles.brand, { color: colors.heading, fontStyle: "italic", letterSpacing: -1 }]}>Jatek.</Text>
         <Text style={[styles.subtitle, { color: colors.mutedForeground }]}>
-          Fast delivery in Oujda
+          Livraison express à Oujda
         </Text>
 
         <View style={styles.form}>
-          <Text style={[styles.label, { color: colors.foreground }]}>Phone number</Text>
+          <Text style={[styles.label, { color: colors.foreground }]}>Numéro de téléphone</Text>
           <View style={[styles.inputRow, { backgroundColor: colors.card, borderColor: error ? colors.destructive : colors.border }]}>
             <Text style={[styles.flag, { color: colors.mutedForeground }]}>🇲🇦</Text>
             <TextInput
@@ -82,7 +82,7 @@ export default function LoginScreen() {
               <ActivityIndicator color="#fff" size="small" />
             ) : (
               <>
-                <Text style={styles.btnText}>Continue</Text>
+                <Text style={styles.btnText}>Continuer</Text>
                 <Ionicons name="arrow-forward" size={20} color="#fff" />
               </>
             )}
@@ -90,7 +90,7 @@ export default function LoginScreen() {
         </View>
 
         <Text style={[styles.hint, { color: colors.mutedForeground }]}>
-          We'll send a one-time code to verify your number
+          Nous vous enverrons un code unique pour vérifier votre numéro
         </Text>
       </ScrollView>
     </KeyboardAvoidingView>

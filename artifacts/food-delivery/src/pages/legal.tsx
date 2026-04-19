@@ -11,7 +11,7 @@ Jatek SAS — Société par Actions Simplifiée au capital de 10 000 €
 Siège social : 12 Rue du Commerce, 60000 Oujda, Maroc
 RCS Oujda B 123 456 789
 Directeur de la publication : Équipe Jatek
-Contact : legal@tawsila.ma
+Contact : legal@jatek.ma
 
 **Hébergeur**
 Replit Inc. — 111 Minna Street, San Francisco, CA 94105, USA
@@ -44,7 +44,7 @@ Jatek se réserve le droit de modifier les présentes CGU à tout moment. Les ut
     id: "privacy",
     title: "Politique de confidentialité (RGPD)",
     content: `**Responsable du traitement**
-Jatek SAS — contact : privacy@tawsila.ma
+Jatek SAS — contact : privacy@jatek.ma
 
 **Données collectées**
 - Données d'identification : nom, email, numéro de téléphone
@@ -67,7 +67,7 @@ Jatek SAS — contact : privacy@tawsila.ma
 Les données sont conservées pendant 3 ans après le dernier achat ou la fermeture du compte.
 
 **Vos droits**
-Conformément au RGPD, vous disposez des droits d'accès, rectification, effacement, portabilité et opposition. Pour exercer ces droits : privacy@tawsila.ma
+Conformément au RGPD, vous disposez des droits d'accès, rectification, effacement, portabilité et opposition. Pour exercer ces droits : privacy@jatek.ma
 
 **Cookies**
 Nous utilisons des cookies techniques (nécessaires) et analytiques (avec consentement). Vous pouvez gérer vos préférences depuis votre navigateur.`,
@@ -96,7 +96,7 @@ Jatek s'engage à ne pas envoyer plus de 3 communications marketing par semaine.
     content: `**Suppression définitive du compte**
 Vous pouvez demander la suppression définitive de votre compte à tout moment depuis :
 - L'application mobile : Profil → Paramètres → Supprimer mon compte
-- Par email à : support@tawsila.ma
+- Par email à : support@jatek.ma
 
 La suppression est irréversible. Vos données personnelles seront effacées dans un délai de 30 jours, conformément au RGPD. Certaines données peuvent être conservées plus longtemps pour des obligations légales (données comptables, litiges).
 
@@ -106,7 +106,7 @@ Vos commandes passées resteront dans les archives de Jatek de manière anonymis
     id: "contact",
     title: "Contact & réclamations",
     content: `**Service client**
-Email : support@tawsila.ma
+Email : support@jatek.ma
 Téléphone : +212 600 000 000
 Disponible du lundi au vendredi de 9h à 20h, et le week-end de 10h à 18h.
 

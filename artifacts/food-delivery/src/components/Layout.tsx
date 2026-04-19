@@ -53,7 +53,7 @@ export function Layout({ children }: LayoutProps) {
             <div className="w-9 h-9 bg-primary rounded-2xl flex items-center justify-center shadow-sm shadow-primary/30">
               <Truck className="text-white" style={{ width: "18px", height: "18px" }} />
             </div>
-            <span className="tracking-tighter lowercase text-foreground">tawsila</span>
+            <span className="tracking-tighter italic text-foreground">Jatek.</span>
           </Link>
 
           {/* Location pill */}

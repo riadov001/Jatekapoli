@@ -19,17 +19,17 @@ function NativeTabLayout({ isDriver }: { isDriver: boolean }) {
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="orders">
         <Icon sf={{ default: "bag", selected: "bag.fill" }} />
-        <Label>Commandes</Label>
+        <Label>Mes commandes</Label>
       </NativeTabs.Trigger>
       {isDriver ? (
         <NativeTabs.Trigger name="deliver">
           <Icon sf={{ default: "scooter", selected: "scooter" }} />
-          <Label>Deliver</Label>
+          <Label>Livrer</Label>
         </NativeTabs.Trigger>
       ) : (
         <NativeTabs.Trigger name="deliver" hidden>
           <Icon sf={{ default: "scooter", selected: "scooter" }} />
-          <Label>Deliver</Label>
+          <Label>Livrer</Label>
         </NativeTabs.Trigger>
       )}
       <NativeTabs.Trigger name="profile">
