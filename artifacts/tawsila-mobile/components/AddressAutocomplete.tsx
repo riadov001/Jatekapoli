@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import {
   StyleSheet, Text, View, TextInput, TouchableOpacity,
-  FlatList, ActivityIndicator, Platform, Keyboard,
+  FlatList, ActivityIndicator, Platform, Keyboard, Modal, Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import * as Location from "expo-location";
 import * as Haptics from "expo-haptics";
 import { useColors } from "@/hooks/useColors";
+import { useT } from "@/contexts/LanguageContext";
 import {
   searchPlaces,
   reverseGeocode,
@@ -23,11 +24,13 @@ interface Props {
 
 export function AddressAutocomplete({ value, onChange, onZoneChange }: Props) {
   const colors = useColors();
+  const t = useT();
   const [query, setQuery] = useState(value);
   const [suggestions, setSuggestions] = useState<PlaceSuggestion[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [searching, setSearching] = useState(false);
   const [locating, setLocating] = useState(false);
+  const [showGpsModal, setShowGpsModal] = useState(false);
   const [zoneInfo, setZoneInfo] = useState<{ inZone: boolean; distanceKm: number } | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const inputRef = useRef<TextInput>(null);
@@ -89,13 +92,20 @@ export function AddressAutocomplete({ value, onChange, onZoneChange }: Props) {
     }
   };
 
-  const handleUseLocation = async () => {
+  const requestLocateNow = async () => {
+    setShowGpsModal(false);
     setLocating(true);
     try {
-      const { status } = await Location.requestForegroundPermissionsAsync();
+      const existing = await Location.getForegroundPermissionsAsync();
+      let status = existing.status;
+      if (status !== "granted") {
+        const req = await Location.requestForegroundPermissionsAsync();
+        status = req.status;
+      }
       if (status !== "granted") {
         if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-        setLocating(false);
+        Keyboard.dismiss();
+        Alert.alert(t("gps_denied_title"), t("gps_denied_text"), [{ text: t("ok") }]);
         return;
       }
 
@@ -127,6 +137,11 @@ export function AddressAutocomplete({ value, onChange, onZoneChange }: Props) {
     } finally {
       setLocating(false);
     }
+  };
+
+  const handleUseLocation = () => {
+    Keyboard.dismiss();
+    setShowGpsModal(true);
   };
 
   const handleClear = () => {
@@ -234,6 +249,28 @@ export function AddressAutocomplete({ value, onChange, onZoneChange }: Props) {
           />
         </View>
       )}
+
+      {/* GPS permission popup — branded */}
+      <Modal visible={showGpsModal} transparent animationType="fade" onRequestClose={() => setShowGpsModal(false)}>
+        <View style={gpsStyles.overlay}>
+          <View style={[gpsStyles.card, { backgroundColor: colors.background }]}>
+            <View style={[gpsStyles.iconWrap, { backgroundColor: colors.primary + "18" }]}>
+              <Ionicons name="navigate" size={28} color={colors.primary} />
+            </View>
+            <Text style={[gpsStyles.title, { color: colors.heading }]}>{t("gps_title")}</Text>
+            <Text style={[gpsStyles.text, { color: colors.mutedForeground }]}>{t("gps_text")}</Text>
+            <View style={gpsStyles.row}>
+              <TouchableOpacity onPress={() => setShowGpsModal(false)} style={[gpsStyles.btn, { backgroundColor: colors.muted, flex: 1 }]} activeOpacity={0.85}>
+                <Text style={[gpsStyles.btnText, { color: colors.heading }]}>{t("gps_deny")}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={requestLocateNow} style={[gpsStyles.btn, { backgroundColor: colors.primary, flex: 1.4 }]} activeOpacity={0.85}>
+                <Ionicons name="navigate" size={16} color="#fff" />
+                <Text style={[gpsStyles.btnText, { color: "#fff", marginLeft: 6 }]}>{t("gps_allow")}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
 
       {/* Zone status banner */}
       {zoneInfo !== null && (
@@ -347,4 +384,15 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_400Regular",
     lineHeight: 17,
   },
+});
+
+const gpsStyles = StyleSheet.create({
+  overlay: { flex: 1, backgroundColor: "rgba(10,27,61,0.45)", justifyContent: "center", alignItems: "center", padding: 28 },
+  card: { width: "100%", maxWidth: 380, borderRadius: 22, padding: 24, alignItems: "center", shadowColor: "#000", shadowOpacity: 0.18, shadowRadius: 20, shadowOffset: { width: 0, height: 8 }, elevation: 10 },
+  iconWrap: { width: 64, height: 64, borderRadius: 32, alignItems: "center", justifyContent: "center", marginBottom: 14 },
+  title: { fontSize: 19, fontFamily: "Inter_700Bold", marginBottom: 8, textAlign: "center" },
+  text: { fontSize: 14, fontFamily: "Inter_400Regular", textAlign: "center", lineHeight: 20, marginBottom: 20 },
+  row: { flexDirection: "row", gap: 10, width: "100%" },
+  btn: { height: 48, borderRadius: 14, alignItems: "center", justifyContent: "center", flexDirection: "row" },
+  btnText: { fontSize: 14, fontFamily: "Inter_700Bold" },
 });

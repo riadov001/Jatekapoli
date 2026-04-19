@@ -12,6 +12,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useCart } from "@/contexts/CartContext";
 import { RestaurantCard } from "@/components/RestaurantCard";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { AddressQuickPicker } from "@/components/AddressQuickPicker";
+import { useT } from "@/contexts/LanguageContext";
 
 const TOP_CATEGORIES = [
   { id: "restaurant", label: "Restos",   emoji: "🍽️", bg: "#D7EDE9" }, // mint/turquoise
@@ -99,9 +101,11 @@ export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
   const { itemCount, selectedAddress } = useCart();
+  const t = useT();
   const [search, setSearch] = useState("");
   const [activeTop, setActiveTop] = useState<TopId>("restaurant");
   const [activeSub, setActiveSub] = useState("Tous");
+  const [showAddrPicker, setShowAddrPicker] = useState(false);
   const webTopPad = Platform.OS === "web" ? 67 : 0;
 
   useEffect(() => { setActiveSub("Tous"); }, [activeTop]);
@@ -209,17 +213,20 @@ export default function HomeScreen() {
           <TouchableOpacity
             activeOpacity={0.7}
             style={styles.addressRow}
-            onPress={() => router.push("/profile/addresses?select=1")}
+            onPress={() => setShowAddrPicker(true)}
           >
-            <Text style={[styles.addressLabel, { color: colors.primary }]} numberOfLines={1}>
-              {selectedAddress ? selectedAddress.split(",")[0] : "Choisir l'adresse"}
-            </Text>
+            <Ionicons name="location" size={16} color={colors.primary} style={{ marginTop: 1 }} />
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.addressLabel, { color: colors.primary }]} numberOfLines={2}>
+                {selectedAddress || t("home_choose_address")}
+              </Text>
+            </View>
             <View style={[styles.triangle, { borderTopColor: colors.primary }]} />
           </TouchableOpacity>
 
           <TouchableOpacity activeOpacity={0.85} style={[styles.schedulePill, { backgroundColor: "#EAF1FF" }]}>
             <Ionicons name="calendar-outline" size={14} color="#0A1B3D" />
-            <Text style={styles.scheduleText}>Planifier</Text>
+            <Text style={styles.scheduleText}>{t("home_schedule")}</Text>
             <Ionicons name="chevron-forward" size={14} color="#0A1B3D" />
           </TouchableOpacity>
         </View>
@@ -231,7 +238,7 @@ export default function HomeScreen() {
           <Ionicons name="search-outline" size={18} color={colors.mutedForeground} />
           <TextInput
             style={[styles.searchInput, { color: colors.heading }]}
-            placeholder="Rechercher un commerce ou un plat…"
+            placeholder={t("home_search_ph")}
             placeholderTextColor={colors.mutedForeground}
             value={search}
             onChangeText={setSearch}
@@ -276,6 +283,8 @@ export default function HomeScreen() {
           )}
         />
       )}
+
+      <AddressQuickPicker visible={showAddrPicker} onClose={() => setShowAddrPicker(false)} />
     </View>
   );
 }
@@ -288,9 +297,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingBottom: 12,
   },
-  headerRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 12 },
-  addressRow: { flexDirection: "row", alignItems: "center", gap: 8 },
-  addressLabel: { fontSize: 18, fontFamily: "Inter_700Bold", letterSpacing: -0.3 },
+  headerRow: { flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", gap: 12 },
+  addressRow: { flexDirection: "row", alignItems: "flex-start", gap: 6, flex: 1, paddingRight: 4 },
+  addressLabel: { fontSize: 13, fontFamily: "Inter_700Bold", letterSpacing: -0.2, lineHeight: 17 },
   triangle: { width: 0, height: 0, borderLeftWidth: 6, borderRightWidth: 6, borderTopWidth: 7, borderLeftColor: "transparent", borderRightColor: "transparent", marginTop: 4 },
   schedulePill: { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 99 },
   scheduleText: { color: "#0A1B3D", fontSize: 13, fontFamily: "Inter_700Bold" },

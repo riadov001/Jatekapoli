@@ -29,16 +29,39 @@ import { useColors } from "@/hooks/useColors";
 import { useSSE } from "@/hooks/useSSE";
 import { DriverMap } from "@/components/DriverMap";
 import { apiBase, geocodeAddress, getDriverLocation } from "@/lib/api";
+import { useT, useLang } from "@/contexts/LanguageContext";
+import type { TKey } from "@/lib/translations";
 
-const STEPS = [
-  { key: "pending",    label: "Commande passée",   icon: "bag-add-outline",          desc: "Envoyée au restaurant" },
-  { key: "accepted",   label: "Acceptée",          icon: "checkmark-circle-outline", desc: "Le restaurant a confirmé" },
-  { key: "preparing",  label: "En préparation",    icon: "restaurant-outline",       desc: "Le chef est aux fourneaux" },
-  { key: "ready",      label: "Prête",             icon: "bag-check-outline",        desc: "En attente d'un livreur" },
-  { key: "picked_up",  label: "En route",          icon: "bicycle-outline",          desc: "Le livreur arrive vers vous" },
-  { key: "delivered",  label: "Livrée",            icon: "home-outline",             desc: "Bon appétit !" },
+const STEP_KEYS: { key: string; icon: string; labelKey: TKey; descKey: TKey }[] = [
+  { key: "pending",    icon: "bag-add-outline",          labelKey: "order_status_pending",    descKey: "order_status_pending_desc" },
+  { key: "accepted",   icon: "checkmark-circle-outline", labelKey: "order_status_accepted",   descKey: "order_status_accepted_desc" },
+  { key: "preparing",  icon: "restaurant-outline",       labelKey: "order_status_preparing",  descKey: "order_status_preparing_desc" },
+  { key: "ready",      icon: "bag-check-outline",        labelKey: "order_status_ready",      descKey: "order_status_ready_desc" },
+  { key: "picked_up",  icon: "bicycle-outline",          labelKey: "order_status_picked_up",  descKey: "order_status_picked_up_desc" },
+  { key: "delivered",  icon: "home-outline",             labelKey: "order_status_delivered",  descKey: "order_status_delivered_desc" },
 ];
-const STATUS_ORDER = STEPS.map((s) => s.key);
+const STATUS_ORDER = STEP_KEYS.map((s) => s.key);
+
+function haversineKm(a: { lat: number; lng: number }, b: { lat: number; lng: number }) {
+  const R = 6371;
+  const dLat = ((b.lat - a.lat) * Math.PI) / 180;
+  const dLng = ((b.lng - a.lng) * Math.PI) / 180;
+  const x = Math.sin(dLat / 2) ** 2 + Math.cos((a.lat * Math.PI) / 180) * Math.cos((b.lat * Math.PI) / 180) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(x));
+}
+
+function formatDateTime(iso: string | Date | undefined, locale: string) {
+  if (!iso) return "";
+  const d = typeof iso === "string" ? new Date(iso) : iso;
+  if (isNaN(d.getTime())) return "";
+  try { return d.toLocaleString(locale, { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }); }
+  catch { return d.toISOString(); }
+}
+
+function formatTime(d: Date, locale: string) {
+  try { return d.toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" }); }
+  catch { return d.toTimeString().slice(0, 5); }
+}
 
 function PulsingDot({ color }: { color: string }) {
   const scale = useSharedValue(1);
@@ -71,6 +94,9 @@ function haptic(type: "success" | "light" = "light") {
 export default function OrderDetailScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
+  const t = useT();
+  const { lang } = useLang();
+  const locale = lang === "fr" ? "fr-FR" : lang === "ar" ? "ar-MA" : "en-GB";
   const { id } = useLocalSearchParams<{ id: string }>();
   const orderId = parseInt(id, 10);
 
@@ -135,10 +161,16 @@ export default function OrderDetailScreen() {
     );
   }
 
-  const currentStep = STEPS[currentIdx] ?? STEPS[0];
+  const currentStep = STEP_KEYS[currentIdx] ?? STEP_KEYS[0];
   const showMap = order.status === "picked_up" && driverPos;
   const isCompleted = order.status === "delivered";
   const isCancelled = order.status === "cancelled";
+
+  const distanceKm = driverPos && destPos ? haversineKm(driverPos, destPos) : null;
+  const etaMin = order.estimatedDeliveryTime ?? null;
+  const etaTime = etaMin != null ? formatTime(new Date(Date.now() + etaMin * 60_000), locale) : null;
+  const placedAt = (order as any).createdAt ? formatDateTime((order as any).createdAt, locale) : null;
+  const paymentMethodLabel = (order as any).paymentMethod === "card" ? t("order_payment_card") : t("order_payment_cash");
 
   return (
     <View style={[styles.flex, { backgroundColor: colors.background }]}>
@@ -151,7 +183,7 @@ export default function OrderDetailScreen() {
         <TouchableOpacity onPress={() => router.replace("/(tabs)/orders")} hitSlop={8}>
           <Ionicons name="arrow-back" size={24} color={colors.foreground} />
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: colors.foreground }]}>Commande #{order.id}</Text>
+        <Text style={[styles.headerTitle, { color: colors.foreground }]}>{t("order_title")} #{order.id}</Text>
         <View style={{ width: 24 }} />
       </View>
 
@@ -173,10 +205,15 @@ export default function OrderDetailScreen() {
             </View>
             <View style={{ flex: 1 }}>
               <Text style={[styles.heroLabel, { color: colors.mutedForeground }]}>
-                {isCancelled ? "Commande annulée" : isCompleted ? "Terminée" : "Statut"}
+                {isCancelled ? t("order_status_cancelled") : isCompleted ? t("order_status_completed") : t("order_status")}
               </Text>
-              <Text style={[styles.heroValue, { color: colors.foreground }]}>{currentStep.label}</Text>
-              <Text style={[styles.heroDesc, { color: colors.mutedForeground }]}>{currentStep.desc}</Text>
+              <Text style={[styles.heroValue, { color: colors.foreground }]}>{t(currentStep.labelKey)}</Text>
+              <Text style={[styles.heroDesc, { color: colors.mutedForeground }]}>{t(currentStep.descKey)}</Text>
+              {!isCancelled && !isCompleted && etaMin != null && (
+                <Text style={[styles.heroEta, { color: colors.primary }]}>
+                  {t("order_eta")} · {t("order_eta_min", { n: etaMin })}{etaTime ? ` · ${t("order_eta_at", { time: etaTime })}` : ""}
+                </Text>
+              )}
             </View>
             {!isCancelled && !isCompleted && <PulsingDot color={colors.primary} />}
           </View>
@@ -194,7 +231,7 @@ export default function OrderDetailScreen() {
             />
             <View style={styles.mapOverlay}>
               <PulsingDot color="#22C55E" />
-              <Text style={styles.mapOverlayText}>Suivi en direct</Text>
+              <Text style={styles.mapOverlayText}>{t("order_live_tracking")}</Text>
             </View>
           </Animated.View>
         )}
@@ -207,7 +244,7 @@ export default function OrderDetailScreen() {
                 <Ionicons name="person" size={26} color={colors.primary} />
               </View>
               <View style={styles.driverInfo}>
-                <Text style={[styles.driverName, { color: colors.foreground }]}>{driver.name ?? "Votre livreur"}</Text>
+                <Text style={[styles.driverName, { color: colors.foreground }]}>{driver.name ?? t("order_your_driver")}</Text>
                 <View style={styles.driverMetaRow}>
                   {driver.rating != null && (
                     <View style={styles.driverMeta}>
@@ -222,9 +259,9 @@ export default function OrderDetailScreen() {
                       · {driver.vehicleType}
                     </Text>
                   )}
-                  {driver.licensePlate && (
+                  {(driver as any).licensePlate && (
                     <View style={[styles.platePill, { backgroundColor: colors.muted }]}>
-                      <Text style={[styles.plateText, { color: colors.foreground }]}>{driver.licensePlate}</Text>
+                      <Text style={[styles.plateText, { color: colors.foreground }]}>{(driver as any).licensePlate}</Text>
                     </View>
                   )}
                 </View>
@@ -249,8 +286,8 @@ export default function OrderDetailScreen() {
         {/* Progress tracker */}
         {!isCancelled && (
           <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            <Text style={[styles.cardTitle, { color: colors.foreground }]}>Suivi de la commande</Text>
-            {STEPS.map((step, idx) => {
+            <Text style={[styles.cardTitle, { color: colors.foreground }]}>{t("order_tracking")}</Text>
+            {STEP_KEYS.map((step, idx) => {
               const done = idx <= currentIdx;
               const active = idx === currentIdx;
               return (
@@ -261,21 +298,49 @@ export default function OrderDetailScreen() {
                   }]}>
                     <Ionicons name={step.icon as any} size={16} color={done ? "#fff" : colors.mutedForeground} />
                   </View>
-                  {idx < STEPS.length - 1 && (
+                  {idx < STEP_KEYS.length - 1 && (
                     <View style={[styles.stepLine, { backgroundColor: idx < currentIdx ? colors.primary : colors.border }]} />
                   )}
                   <Text style={[styles.stepLabel, {
                     color: done ? colors.foreground : colors.mutedForeground,
                     fontFamily: active ? "Inter_700Bold" : done ? "Inter_500Medium" : "Inter_400Regular",
                   }]}>
-                    {step.label}
-                    {active && order.estimatedDeliveryTime ? `  · ETA ${order.estimatedDeliveryTime} min` : ""}
+                    {t(step.labelKey)}
+                    {active && etaMin != null ? `  · ${t("order_eta_min", { n: etaMin })}` : ""}
                   </Text>
                 </View>
               );
             })}
           </View>
         )}
+
+        {/* Order metadata: id, placed-at, payment, distance */}
+        <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <View style={styles.metaRow}>
+            <Ionicons name="receipt-outline" size={18} color={colors.primary} style={styles.metaIcon} />
+            <Text style={[styles.metaLabel, { color: colors.mutedForeground }]}>{t("order_id")}</Text>
+            <Text style={[styles.metaValue, { color: colors.foreground }]}>#{order.id}</Text>
+          </View>
+          {placedAt && (
+            <View style={styles.metaRow}>
+              <Ionicons name="time-outline" size={18} color={colors.primary} style={styles.metaIcon} />
+              <Text style={[styles.metaLabel, { color: colors.mutedForeground }]}>{t("order_placed_at")}</Text>
+              <Text style={[styles.metaValue, { color: colors.foreground }]}>{placedAt}</Text>
+            </View>
+          )}
+          <View style={styles.metaRow}>
+            <Ionicons name="card-outline" size={18} color={colors.primary} style={styles.metaIcon} />
+            <Text style={[styles.metaLabel, { color: colors.mutedForeground }]}>{t("order_payment")}</Text>
+            <Text style={[styles.metaValue, { color: colors.foreground }]}>{paymentMethodLabel}</Text>
+          </View>
+          {distanceKm != null && (
+            <View style={styles.metaRow}>
+              <Ionicons name="location-outline" size={18} color={colors.primary} style={styles.metaIcon} />
+              <Text style={[styles.metaLabel, { color: colors.mutedForeground }]}>{t("order_distance_to_you")}</Text>
+              <Text style={[styles.metaValue, { color: colors.foreground }]}>{t("order_km", { n: distanceKm.toFixed(1) })}</Text>
+            </View>
+          )}
+        </View>
 
         {/* Delivery address */}
         <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
@@ -284,7 +349,7 @@ export default function OrderDetailScreen() {
               <Ionicons name="location" size={18} color={colors.primary} />
             </View>
             <View style={styles.addrInfo}>
-              <Text style={[styles.addrLabel, { color: colors.mutedForeground }]}>Livraison à</Text>
+              <Text style={[styles.addrLabel, { color: colors.mutedForeground }]}>{t("order_deliver_to")}</Text>
               <Text style={[styles.addrText, { color: colors.foreground }]}>{order.deliveryAddress}</Text>
             </View>
           </View>
@@ -292,7 +357,7 @@ export default function OrderDetailScreen() {
 
         {/* Items + summary */}
         <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <Text style={[styles.cardTitle, { color: colors.foreground }]}>Articles</Text>
+          <Text style={[styles.cardTitle, { color: colors.foreground }]}>{t("order_items")}</Text>
           {order.items.map((item, idx) => (
             <View key={item.id}>
               <View style={styles.itemRow}>
@@ -305,23 +370,23 @@ export default function OrderDetailScreen() {
           ))}
           <View style={[styles.divider, { backgroundColor: colors.border, marginTop: 6 }]} />
           <View style={styles.itemRow}>
-            <Text style={[styles.summaryLabel, { color: colors.mutedForeground }]}>Sous-total</Text>
+            <Text style={[styles.summaryLabel, { color: colors.mutedForeground }]}>{t("order_subtotal")}</Text>
             <Text style={[styles.summaryValue, { color: colors.foreground }]}>{order.subtotal.toFixed(0)} MAD</Text>
           </View>
           <View style={styles.itemRow}>
-            <Text style={[styles.summaryLabel, { color: colors.mutedForeground }]}>Livraison</Text>
+            <Text style={[styles.summaryLabel, { color: colors.mutedForeground }]}>{t("order_delivery_fee")}</Text>
             <Text style={[styles.summaryValue, { color: colors.foreground }]}>{order.deliveryFee.toFixed(0)} MAD</Text>
           </View>
           <View style={[styles.divider, { backgroundColor: colors.border }]} />
           <View style={styles.itemRow}>
-            <Text style={[styles.totalLabel, { color: colors.foreground }]}>Total</Text>
+            <Text style={[styles.totalLabel, { color: colors.foreground }]}>{t("order_total")}</Text>
             <Text style={[styles.totalValue, { color: colors.primary }]}>{order.total.toFixed(0)} MAD</Text>
           </View>
         </View>
 
         {order.notes ? (
           <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            <Text style={[styles.cardTitle, { color: colors.foreground }]}>Notes</Text>
+            <Text style={[styles.cardTitle, { color: colors.foreground }]}>{t("order_notes")}</Text>
             <Text style={[styles.notesText, { color: colors.mutedForeground }]}>{order.notes}</Text>
           </View>
         ) : null}
@@ -342,6 +407,11 @@ const styles = StyleSheet.create({
   heroLabel: { fontSize: 11, fontFamily: "Inter_500Medium", textTransform: "uppercase", letterSpacing: 0.5 },
   heroValue: { fontSize: 18, fontFamily: "Inter_700Bold", marginTop: 1 },
   heroDesc: { fontSize: 12, fontFamily: "Inter_400Regular", marginTop: 1 },
+  heroEta: { fontSize: 12, fontFamily: "Inter_700Bold", marginTop: 6 },
+  metaRow: { flexDirection: "row", alignItems: "center", gap: 10 },
+  metaIcon: { width: 22 },
+  metaLabel: { flex: 1, fontSize: 13, fontFamily: "Inter_400Regular" },
+  metaValue: { fontSize: 13, fontFamily: "Inter_600SemiBold" },
 
   mapWrap: { marginHorizontal: 16, marginBottom: 12, borderRadius: 16, overflow: "hidden", position: "relative" },
   mapOverlay: { position: "absolute", top: 12, left: 12, flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: "rgba(255,255,255,0.95)", paddingHorizontal: 10, paddingVertical: 6, borderRadius: 20 },

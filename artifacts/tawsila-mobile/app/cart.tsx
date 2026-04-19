@@ -10,6 +10,7 @@ import { useCreateOrder } from "@workspace/api-client-react";
 import { useColors } from "@/hooks/useColors";
 import { useCart } from "@/contexts/CartContext";
 import { useAuth } from "@/contexts/AuthContext";
+import { useT } from "@/contexts/LanguageContext";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 const DELIVERY_FEE = 15;
@@ -17,6 +18,7 @@ const DELIVERY_FEE = 15;
 export default function CartScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
+  const t = useT();
   const { items, restaurantId, restaurantName, updateQuantity, removeItem, clearCart, subtotal, itemCount, selectedAddress, selectedAddressInZone } = useCart();
   const { token } = useAuth();
   const createOrder = useCreateOrder();
@@ -25,23 +27,23 @@ export default function CartScreen() {
 
   const handlePlaceOrder = () => {
     if (!token) {
-      Alert.alert("Sign in required", "Please sign in to place an order.", [
-        { text: "Cancel", style: "cancel" },
-        { text: "Sign In", onPress: () => router.push("/(auth)/login") },
+      Alert.alert(t("cart_signin_required"), t("cart_signin_required_text"), [
+        { text: t("cancel"), style: "cancel" },
+        { text: t("cart_signin"), onPress: () => router.push("/(auth)/login") },
       ]);
       return;
     }
     if (!address.trim()) {
-      Alert.alert("Adresse requise", "Veuillez choisir une adresse de livraison.", [
-        { text: "Annuler", style: "cancel" },
-        { text: "Choisir", onPress: () => router.push("/profile/addresses?select=1") },
+      Alert.alert(t("cart_address_required"), t("cart_address_required_text"), [
+        { text: t("cancel"), style: "cancel" },
+        { text: t("choose"), onPress: () => router.push("/profile/addresses?select=1") },
       ]);
       return;
     }
     if (!selectedAddressInZone) {
-      Alert.alert("Hors zone de livraison", "Cette adresse est en dehors de notre zone (15 km autour d'Oujda). Choisissez une autre adresse.", [
-        { text: "Annuler", style: "cancel" },
-        { text: "Changer", onPress: () => router.push("/profile/addresses?select=1") },
+      Alert.alert(t("cart_address_out_of_zone"), t("cart_address_out_of_zone_text"), [
+        { text: t("cancel"), style: "cancel" },
+        { text: t("change"), onPress: () => router.push("/profile/addresses?select=1") },
       ]);
       if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       return;
@@ -61,7 +63,7 @@ export default function CartScreen() {
       },
       onError: () => {
         if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-        Alert.alert("Error", "Could not place order. Please try again.");
+        Alert.alert(t("cart_order_failed"), t("cart_order_failed_text"));
       },
     });
   };
@@ -72,13 +74,13 @@ export default function CartScreen() {
         <View style={[styles.emptyIcon, { backgroundColor: colors.muted }]}>
           <Ionicons name="bag-outline" size={40} color={colors.mutedForeground} />
         </View>
-        <Text style={[styles.emptyTitle, { color: colors.foreground }]}>Your cart is empty</Text>
-        <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>Add items from a restaurant to get started</Text>
+        <Text style={[styles.emptyTitle, { color: colors.foreground }]}>{t("cart_empty_title")}</Text>
+        <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>{t("cart_empty_text")}</Text>
         <TouchableOpacity
           style={[styles.browseBtn, { backgroundColor: colors.primary }]}
           onPress={() => router.push("/(tabs)")}
         >
-          <Text style={styles.browseBtnText}>Browse restaurants</Text>
+          <Text style={styles.browseBtnText}>{t("cart_browse")}</Text>
         </TouchableOpacity>
       </View>
     );
@@ -93,11 +95,11 @@ export default function CartScreen() {
         <TouchableOpacity onPress={() => router.back()}>
           <Ionicons name="arrow-back" size={24} color={colors.foreground} />
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: colors.foreground }]}>Cart</Text>
+        <Text style={[styles.headerTitle, { color: colors.foreground }]}>{t("cart_title")}</Text>
         <TouchableOpacity onPress={() => {
-          Alert.alert("Clear cart?", "Remove all items?", [
-            { text: "Cancel" },
-            { text: "Clear", style: "destructive", onPress: clearCart },
+          Alert.alert(t("cart_clear_q"), t("cart_clear_text"), [
+            { text: t("cancel") },
+            { text: t("cart_clear"), style: "destructive", onPress: clearCart },
           ]);
         }}>
           <Ionicons name="trash-outline" size={22} color={colors.destructive} />
@@ -112,7 +114,7 @@ export default function CartScreen() {
         showsVerticalScrollIndicator={false}
       >
         {/* Restaurant name */}
-        <Text style={[styles.fromText, { color: colors.mutedForeground }]}>From {restaurantName}</Text>
+        <Text style={[styles.fromText, { color: colors.mutedForeground }]}>{t("cart_from", { name: restaurantName ?? "" })}</Text>
 
         {/* Items */}
         <View style={[styles.section, { backgroundColor: colors.card, borderColor: colors.border }]}>
@@ -121,7 +123,7 @@ export default function CartScreen() {
               <View style={styles.cartItem}>
                 <View style={styles.cartItemInfo}>
                   <Text style={[styles.cartItemName, { color: colors.foreground }]}>{item.name}</Text>
-                  <Text style={[styles.cartItemPrice, { color: colors.primary }]}>{item.price.toFixed(0)} MAD each</Text>
+                  <Text style={[styles.cartItemPrice, { color: colors.primary }]}>{t("cart_each", { price: item.price.toFixed(0) })}</Text>
                 </View>
                 <View style={styles.qtyRow}>
                   <TouchableOpacity
@@ -152,7 +154,7 @@ export default function CartScreen() {
         </View>
 
         {/* Delivery address — tap to choose from saved addresses */}
-        <Text style={[styles.sectionLabel, { color: colors.foreground }]}>Adresse de livraison</Text>
+        <Text style={[styles.sectionLabel, { color: colors.foreground }]}>{t("cart_delivery_address")}</Text>
         <TouchableOpacity
           activeOpacity={0.7}
           onPress={() => router.push("/profile/addresses?select=1")}
@@ -162,21 +164,21 @@ export default function CartScreen() {
             <Ionicons name="location" size={20} color={colors.primary} />
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={[styles.addressTitle, { color: colors.foreground }]}>{address ? "Livraison à" : "Choisir une adresse"}</Text>
-            <Text style={[styles.addressValue, { color: address ? colors.foreground : colors.mutedForeground }]} numberOfLines={2}>
-              {address || "Sélectionnez une adresse enregistrée ou ajoutez-en une nouvelle"}
+            <Text style={[styles.addressTitle, { color: colors.foreground }]}>{address ? t("cart_deliver_to") : t("cart_choose_address")}</Text>
+            <Text style={[styles.addressValue, { color: address ? colors.foreground : colors.mutedForeground }]} numberOfLines={3}>
+              {address || t("cart_choose_address_hint")}
             </Text>
           </View>
           <Ionicons name="chevron-forward" size={20} color={colors.mutedForeground} />
         </TouchableOpacity>
 
         {/* Notes */}
-        <Text style={[styles.sectionLabel, { color: colors.foreground }]}>Notes (optional)</Text>
+        <Text style={[styles.sectionLabel, { color: colors.foreground }]}>{t("cart_notes")}</Text>
         <View style={[styles.inputWrap, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <Ionicons name="chatbubble-outline" size={18} color={colors.mutedForeground} />
           <TextInput
             style={[styles.notesInput, { color: colors.foreground }]}
-            placeholder="Any special requests..."
+            placeholder={t("cart_notes_placeholder")}
             placeholderTextColor={colors.mutedForeground}
             value={notes}
             onChangeText={setNotes}
@@ -186,18 +188,18 @@ export default function CartScreen() {
 
         {/* Summary */}
         <View style={[styles.summary, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <Text style={[styles.summaryTitle, { color: colors.foreground }]}>Order Summary</Text>
+          <Text style={[styles.summaryTitle, { color: colors.foreground }]}>{t("cart_summary")}</Text>
           <View style={styles.summaryRow}>
-            <Text style={[styles.summaryLabel, { color: colors.mutedForeground }]}>Subtotal</Text>
+            <Text style={[styles.summaryLabel, { color: colors.mutedForeground }]}>{t("cart_subtotal")}</Text>
             <Text style={[styles.summaryValue, { color: colors.foreground }]}>{subtotal.toFixed(0)} MAD</Text>
           </View>
           <View style={styles.summaryRow}>
-            <Text style={[styles.summaryLabel, { color: colors.mutedForeground }]}>Delivery fee</Text>
+            <Text style={[styles.summaryLabel, { color: colors.mutedForeground }]}>{t("cart_delivery_fee")}</Text>
             <Text style={[styles.summaryValue, { color: colors.foreground }]}>{DELIVERY_FEE} MAD</Text>
           </View>
           <View style={[styles.divider, { backgroundColor: colors.border }]} />
           <View style={styles.summaryRow}>
-            <Text style={[styles.totalLabel, { color: colors.foreground }]}>Total</Text>
+            <Text style={[styles.totalLabel, { color: colors.foreground }]}>{t("cart_total")}</Text>
             <Text style={[styles.totalValue, { color: colors.primary }]}>{(subtotal + DELIVERY_FEE).toFixed(0)} MAD</Text>
           </View>
         </View>
@@ -208,7 +210,7 @@ export default function CartScreen() {
         {!!address && !selectedAddressInZone && (
           <View style={styles.zoneBlocker}>
             <Ionicons name="warning" size={14} color="#DC2626" />
-            <Text style={styles.zoneBlockerText}>Adresse hors de notre zone de livraison</Text>
+            <Text style={styles.zoneBlockerText}>{t("cart_address_out_of_zone_short")}</Text>
           </View>
         )}
         <TouchableOpacity
@@ -228,7 +230,7 @@ export default function CartScreen() {
           ) : (
             <>
               <Text style={[styles.orderBtnText, { color: orderDisabled ? colors.mutedForeground : "#fff" }]}>
-                {!!address && !selectedAddressInZone ? "Adresse hors zone" : "Commander"}
+                {!!address && !selectedAddressInZone ? t("cart_address_out_zone_btn") : t("cart_place_order")}
               </Text>
               {!orderDisabled && (
                 <Text style={[styles.orderBtnPrice, { backgroundColor: "rgba(255,255,255,0.25)" }]}>

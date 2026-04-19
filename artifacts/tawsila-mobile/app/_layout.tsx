@@ -17,6 +17,7 @@ import { setBaseUrl } from "@workspace/api-client-react";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { CartProvider } from "@/contexts/CartContext";
+import { LanguageProvider } from "@/contexts/LanguageContext";
 import CookieConsentBanner from "@/components/CookieConsentBanner";
 
 // Configure the API base URL
@@ -61,14 +62,16 @@ export default function RootLayout() {
       <ErrorBoundary>
         <QueryClientProvider client={queryClient}>
           <AuthProvider>
-            <CartProvider>
-              <GestureHandlerRootView>
-                <KeyboardProvider>
-                  <RootLayoutNav />
-                  <CookieConsentBanner />
-                </KeyboardProvider>
-              </GestureHandlerRootView>
-            </CartProvider>
+            <LanguageProvider>
+              <CartProvider>
+                <GestureHandlerRootView>
+                  <KeyboardProvider>
+                    <RootLayoutNav />
+                    <CookieConsentBanner />
+                  </KeyboardProvider>
+                </GestureHandlerRootView>
+              </CartProvider>
+            </LanguageProvider>
           </AuthProvider>
         </QueryClientProvider>
       </ErrorBoundary>
