@@ -31,26 +31,41 @@ function normalizePhone(phone: string): string {
   return p;
 }
 
+/**
+ * Build a Twilio client, preferring API Key auth (more secure) over Auth Token.
+ * Priority: TWILIO_API_KEY_2 + TWILIO_API_KEY_SECRET → TWILIO_API_TOKEN
+ */
+async function getTwilioClient() {
+  const twilio = (await import("twilio")).default;
+  const accountSid = process.env.TWILIO_ACCOUNT_SID!;
+  const apiKeySid = process.env.TWILIO_API_KEY_2;
+  const apiKeySecret = process.env.TWILIO_API_KEY_SECRET;
+
+  if (apiKeySid && apiKeySecret) {
+    // API Key auth — recommended for production
+    return twilio(apiKeySid, apiKeySecret, { accountSid });
+  }
+  // Fallback: Auth Token
+  const authToken = process.env.TWILIO_API_TOKEN!;
+  return twilio(accountSid, authToken);
+}
+
 async function sendSms(to: string, body: string): Promise<void> {
   const accountSid = process.env.TWILIO_ACCOUNT_SID;
-  const authToken = process.env.TWILIO_API_TOKEN;
   const from = process.env.TWILIO_FROM_NUMBER;
-  if (!accountSid || !authToken || !from) return;
-  const twilio = (await import("twilio")).default;
-  const client = twilio(accountSid, authToken);
+  if (!accountSid || !from) return;
+  const client = await getTwilioClient();
   await client.messages.create({ body, from, to });
 }
 
 async function sendWhatsApp(to: string, body: string): Promise<void> {
   const accountSid = process.env.TWILIO_ACCOUNT_SID;
-  const authToken = process.env.TWILIO_API_TOKEN;
   // Use TWILIO_WHATSAPP_FROM if set; otherwise fall back to TWILIO_FROM_NUMBER with whatsapp: prefix
   const rawFrom = process.env.TWILIO_WHATSAPP_FROM || process.env.TWILIO_FROM_NUMBER;
-  if (!accountSid || !authToken || !rawFrom) return;
+  if (!accountSid || !rawFrom) return;
   const from = rawFrom.startsWith("whatsapp:") ? rawFrom : `whatsapp:${rawFrom}`;
   const toWa = to.startsWith("whatsapp:") ? to : `whatsapp:${to}`;
-  const twilio = (await import("twilio")).default;
-  const client = twilio(accountSid, authToken);
+  const client = await getTwilioClient();
   await client.messages.create({ body, from, to: toWa });
 }
 
