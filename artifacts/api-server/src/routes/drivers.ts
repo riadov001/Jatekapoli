@@ -2,6 +2,7 @@ import { Router, type IRouter } from "express";
 import { db, driversTable, ordersTable } from "@workspace/db";
 import { eq, and, sum, count } from "drizzle-orm";
 import { publish } from "../lib/sse";
+import { requireAuth, type AuthedRequest } from "../middlewares/auth";
 import {
   UpdateDriverBody,
   UpdateDriverParams,
@@ -44,7 +45,7 @@ router.get("/drivers/:id", async (req, res): Promise<void> => {
   res.json(driver);
 });
 
-router.patch("/drivers/:id", async (req, res): Promise<void> => {
+router.patch("/drivers/:id", requireAuth, async (req: AuthedRequest, res): Promise<void> => {
   const params = UpdateDriverParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
@@ -57,16 +58,18 @@ router.patch("/drivers/:id", async (req, res): Promise<void> => {
     return;
   }
 
+  const [existing] = await db.select().from(driversTable).where(eq(driversTable.id, params.data.id)).limit(1);
+  if (!existing) { res.status(404).json({ error: "Driver not found" }); return; }
+  if (req.userRole !== "admin" && existing.userId !== req.userId) {
+    res.status(403).json({ error: "Forbidden" });
+    return;
+  }
+
   const [driver] = await db
     .update(driversTable)
     .set(parsed.data)
     .where(eq(driversTable.id, params.data.id))
     .returning();
-
-  if (!driver) {
-    res.status(404).json({ error: "Driver not found" });
-    return;
-  }
 
   res.json(driver);
 });
@@ -75,7 +78,7 @@ router.patch("/drivers/:id", async (req, res): Promise<void> => {
  * Complete the driver's mandatory profile (vehicle plate + national ID).
  * Sets `profileCompletedAt`, which gates the ability to accept deliveries.
  */
-router.post("/drivers/:id/complete-profile", async (req: any, res): Promise<void> => {
+router.post("/drivers/:id/complete-profile", requireAuth, async (req: any, res): Promise<void> => {
   const id = parseInt(req.params.id ?? "", 10);
   if (Number.isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
 
@@ -112,13 +115,20 @@ router.post("/drivers/:id/complete-profile", async (req: any, res): Promise<void
   res.json(updated);
 });
 
-router.patch("/drivers/:id/location", async (req, res): Promise<void> => {
+router.patch("/drivers/:id/location", requireAuth, async (req: AuthedRequest, res): Promise<void> => {
   const id = parseInt(req.params.id, 10);
   if (isNaN(id)) { res.status(400).json({ error: "Invalid driver id" }); return; }
 
   const { latitude, longitude } = req.body;
   if (typeof latitude !== "number" || typeof longitude !== "number") {
     res.status(400).json({ error: "latitude and longitude (numbers) required" });
+    return;
+  }
+
+  const [existingDriver] = await db.select().from(driversTable).where(eq(driversTable.id, id)).limit(1);
+  if (!existingDriver) { res.status(404).json({ error: "Driver not found" }); return; }
+  if (req.userRole !== "admin" && existingDriver.userId !== req.userId) {
+    res.status(403).json({ error: "Forbidden" });
     return;
   }
 

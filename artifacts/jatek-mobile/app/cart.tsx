@@ -13,14 +13,13 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useT } from "@/contexts/LanguageContext";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
-const DELIVERY_FEE = 15;
-const FREE_DELIVERY_THRESHOLD = 150;
 
 export default function CartScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const t = useT();
-  const { items, restaurantId, restaurantName, updateQuantity, removeItem, clearCart, subtotal, itemCount, selectedAddress, selectedAddressInZone } = useCart();
+  const { items, restaurantId, restaurantName, updateQuantity, removeItem, clearCart, subtotal, itemCount, selectedAddress, selectedAddressInZone, deliveryFee, freeDeliveryThreshold } = useCart();
+  const effectiveDeliveryFee = subtotal >= freeDeliveryThreshold ? 0 : deliveryFee;
   const { token } = useAuth();
   const createOrder = useCreateOrder();
   const address = selectedAddress;
@@ -197,9 +196,9 @@ export default function CartScreen() {
 
         {/* Free-delivery threshold */}
         {(() => {
-          const remaining = FREE_DELIVERY_THRESHOLD - subtotal;
+          const remaining = freeDeliveryThreshold - subtotal;
           const reached = remaining <= 0;
-          const progress = Math.min(1, subtotal / FREE_DELIVERY_THRESHOLD);
+          const progress = Math.min(1, subtotal / freeDeliveryThreshold);
           return (
             <View style={[styles.freeDelivery, { backgroundColor: colors.turquoiseSoft }]}>
               <View style={styles.freeDeliveryRow}>
@@ -226,12 +225,14 @@ export default function CartScreen() {
           </View>
           <View style={styles.summaryRow}>
             <Text style={[styles.summaryLabel, { color: colors.mutedForeground }]}>{t("cart_delivery_fee")}</Text>
-            <Text style={[styles.summaryValue, { color: colors.turquoise, fontFamily: "Inter_700Bold" }]}>{DELIVERY_FEE} MAD</Text>
+            <Text style={[styles.summaryValue, { color: colors.turquoise, fontFamily: "Inter_700Bold" }]}>
+              {effectiveDeliveryFee === 0 ? "Offerte" : `${effectiveDeliveryFee} MAD`}
+            </Text>
           </View>
           <View style={[styles.divider, { backgroundColor: colors.border }]} />
           <View style={styles.summaryRow}>
             <Text style={[styles.totalLabel, { color: colors.foreground }]}>{t("cart_total")}</Text>
-            <Text style={[styles.totalValue, { color: colors.primary }]}>{(subtotal + DELIVERY_FEE).toFixed(0)} MAD</Text>
+            <Text style={[styles.totalValue, { color: colors.primary }]}>{(subtotal + effectiveDeliveryFee).toFixed(0)} MAD</Text>
           </View>
         </View>
       </KeyboardAwareScrollView>
@@ -265,7 +266,7 @@ export default function CartScreen() {
               </Text>
               {!orderDisabled && (
                 <Text style={[styles.orderBtnPrice, { backgroundColor: "rgba(255,255,255,0.25)" }]}>
-                  {(subtotal + DELIVERY_FEE).toFixed(0)} MAD
+                  {(subtotal + effectiveDeliveryFee).toFixed(0)} MAD
                 </Text>
               )}
             </>

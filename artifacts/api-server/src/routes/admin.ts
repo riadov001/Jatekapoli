@@ -1,11 +1,12 @@
 import { Router, type IRouter } from "express";
 import { db, usersTable, restaurantsTable, ordersTable, driversTable } from "@workspace/db";
-import { eq, inArray, count, sum } from "drizzle-orm";
+import { eq, inArray, count, sum, gte } from "drizzle-orm";
 import { orderItemsTable } from "@workspace/db";
+import { requireRole } from "../middlewares/auth";
 
 const router: IRouter = Router();
 
-router.get("/admin/stats", async (_req, res): Promise<void> => {
+router.get("/admin/stats", requireRole("admin"), async (_req, res): Promise<void> => {
   const [userCount] = await db.select({ count: count() }).from(usersTable);
   const [restaurantCount] = await db.select({ count: count() }).from(restaurantsTable);
   const [orderCount] = await db.select({ count: count() }).from(ordersTable);
@@ -17,7 +18,8 @@ router.get("/admin/stats", async (_req, res): Promise<void> => {
 
   const now = new Date();
   const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const todayOrders = await db.select({ count: count() }).from(ordersTable);
+  const [todayOrders] = await db.select({ count: count() }).from(ordersTable).where(gte(ordersTable.createdAt, startOfDay));
+  const [todayUsers] = await db.select({ count: count() }).from(usersTable).where(gte(usersTable.createdAt, startOfDay));
 
   res.json({
     totalUsers: Number(userCount?.count || 0),
@@ -26,12 +28,12 @@ router.get("/admin/stats", async (_req, res): Promise<void> => {
     totalDrivers: Number(driverCount?.count || 0),
     activeOrders: Number(activeOrderCount?.count || 0),
     revenue: Number(revenueResult?.total || 0),
-    ordersToday: Number(todayOrders[0]?.count || 0),
-    newUsersToday: 0,
+    ordersToday: Number(todayOrders?.count || 0),
+    newUsersToday: Number(todayUsers?.count || 0),
   });
 });
 
-router.get("/admin/recent-orders", async (_req, res): Promise<void> => {
+router.get("/admin/recent-orders", requireRole("admin"), async (_req, res): Promise<void> => {
   const orders = await db
     .select()
     .from(ordersTable)

@@ -55,7 +55,9 @@ export function AddressQuickPicker({ visible, onClose }: Props) {
       const zone = checkDeliveryZone(loc.coords.latitude, loc.coords.longitude);
       setSelectedAddress(address, zone.inZone);
       onClose();
-    } catch {}
+    } catch (err) {
+      console.warn("[AddressQuickPicker] geolocation lookup failed:", err);
+    }
     finally { setLocating(false); }
   };
 

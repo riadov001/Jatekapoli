@@ -14,13 +14,27 @@ import { requireRole, type AuthedRequest } from "../middlewares/auth";
 
 const router: IRouter = Router();
 
+// Defaults applied when a restaurant row has no explicit value yet.
+// Threshold is global for now (no DB column) — the restaurant payload always
+// returns it so the apps can stop hard-coding it on their side.
+const DEFAULT_DELIVERY_FEE = 15;
+const DEFAULT_FREE_DELIVERY_THRESHOLD = 150;
+
+function withDeliveryDefaults<T extends { deliveryFee?: number | null }>(r: T) {
+  return {
+    ...r,
+    deliveryFee: typeof r.deliveryFee === "number" ? r.deliveryFee : DEFAULT_DELIVERY_FEE,
+    freeDeliveryThreshold: DEFAULT_FREE_DELIVERY_THRESHOLD,
+  };
+}
+
 router.get("/restaurants/featured", async (_req, res): Promise<void> => {
   const restaurants = await db
     .select()
     .from(restaurantsTable)
     .where(and(eq(restaurantsTable.isVerified, true), eq(restaurantsTable.isOpen, true)))
     .limit(6);
-  res.json(restaurants);
+  res.json(restaurants.map(withDeliveryDefaults));
 });
 
 router.get("/restaurants", async (req, res): Promise<void> => {
@@ -52,7 +66,7 @@ router.get("/restaurants", async (req, res): Promise<void> => {
     ? await db.select().from(restaurantsTable).where(and(...conditions))
     : await db.select().from(restaurantsTable);
 
-  res.json(restaurants);
+  res.json(restaurants.map(withDeliveryDefaults));
 });
 
 router.post("/restaurants", requireRole("admin"), async (req: AuthedRequest, res): Promise<void> => {
@@ -94,7 +108,7 @@ router.get("/restaurants/:id", async (req, res): Promise<void> => {
     return;
   }
 
-  res.json(restaurant);
+  res.json(withDeliveryDefaults(restaurant));
 });
 
 router.patch("/restaurants/:id", requireRole("admin", "restaurant_owner"), async (req: AuthedRequest, res): Promise<void> => {

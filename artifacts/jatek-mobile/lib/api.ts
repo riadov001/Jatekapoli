@@ -34,7 +34,9 @@ async function jsonFetch<T = any>(path: string, init?: RequestInit): Promise<T> 
     try {
       const err = await res.json();
       msg = err?.error || msg;
-    } catch {}
+    } catch (parseErr) {
+      console.warn(`[api] could not parse error body for ${res.status}:`, parseErr);
+    }
     throw new Error(msg);
   }
   if (res.status === 204) return undefined as T;
@@ -100,7 +102,9 @@ export async function geocodeAddress(address: string): Promise<{ lat: number; ln
     const res = await fetch(url, { headers: { "Accept-Language": "en", "User-Agent": "Jatek/1.0" } });
     const data = await res.json();
     if (data?.[0]) return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
-  } catch {}
+  } catch (err) {
+    console.warn("[geocode] Nominatim lookup failed:", err);
+  }
   return null;
 }
 

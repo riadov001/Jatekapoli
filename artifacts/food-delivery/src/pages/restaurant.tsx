@@ -63,6 +63,9 @@ export default function RestaurantPage() {
       price: item.price,
       quantity: 1,
       imageUrl: item.imageUrl,
+    }, {
+      deliveryFee: (restaurant as any).deliveryFee,
+      freeDeliveryThreshold: (restaurant as any).freeDeliveryThreshold,
     });
     toast({ title: `${item.name} added to cart` });
   };

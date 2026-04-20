@@ -133,31 +133,38 @@ router.post("/auth/send-otp", async (req, res): Promise<void> => {
 
   const providerReady = await anyOtpProviderConfigured();
   const isDev = process.env.NODE_ENV !== "production";
+  // Only expose the OTP in plaintext when running locally for development AND
+  // no real provider is wired up. Never expose it in staging/preview/production
+  // even if delivery fails — surface a 502 instead so the client can retry.
+  const canExposeDemoOtp = isDev && !providerReady;
 
   let actualChannel: string = "none";
   let smsSent = false;
+  let deliveryFailed = false;
 
   try {
     const result = await sendOtpMessage(normalizedPhone, messageBody);
     actualChannel = result.channel;
     smsSent = true;
   } catch (err: any) {
+    deliveryFailed = true;
     console.error(`[OTP] all providers failed for ${normalizedPhone}:`, err?.message ?? err);
-    if (!isDev && providerReady) {
-      // In production, surface a hard error so the client can prompt a retry.
+    if (!canExposeDemoOtp) {
+      // No safe way to deliver the code — return a hard error.
       res.status(502).json({ error: "Impossible d'envoyer le code. Réessayez dans un instant." });
       return;
     }
-    // In dev (or with no providers), fall through and rely on demoOtp.
+    // Local dev with no providers configured — fall through and expose demoOtp.
   }
 
   res.json({
     success: true,
     channel: actualChannel,
-    message: `Code envoyé via ${actualChannel} à ${normalizedPhone}`,
+    message: deliveryFailed
+      ? `Code de démo (aucun provider configuré) pour ${normalizedPhone}`
+      : `Code envoyé via ${actualChannel} à ${normalizedPhone}`,
     smsSent,
-    // Expose OTP in dev mode OR when no provider is configured (for testing).
-    demoOtp: (isDev || !providerReady) ? code : undefined,
+    demoOtp: canExposeDemoOtp ? code : undefined,
   });
 });
 

@@ -29,7 +29,7 @@ async function reverseGeocode(lat: number, lng: number): Promise<string> {
 
 export default function CartPage() {
   const [_, setLocation] = useLocation();
-  const { items, restaurantId, restaurantName, removeItem, updateQuantity, clearCart, subtotal, total } = useCart();
+  const { items, restaurantId, restaurantName, removeItem, updateQuantity, clearCart, subtotal, total, deliveryFee, freeDeliveryThreshold } = useCart();
   const { user } = useAuth();
   const { toast } = useToast();
   const { t } = useTranslation();
@@ -37,7 +37,7 @@ export default function CartPage() {
   const [deliveryAddress, setDeliveryAddress] = useState((user as any)?.address || "");
   const [notes, setNotes] = useState("");
   const [locating, setLocating] = useState(false);
-  const DELIVERY_FEE = 15;
+  const effectiveDeliveryFee = subtotal >= freeDeliveryThreshold ? 0 : deliveryFee;
 
   const handleDetectLocation = () => {
     if (!("geolocation" in navigator)) {
@@ -233,12 +233,14 @@ export default function CartPage() {
         </div>
         <div className="flex justify-between text-sm">
           <span className="text-muted-foreground">{t("cart.deliveryFee")}</span>
-          <span className="text-brand-turquoise font-semibold">{DELIVERY_FEE} MAD</span>
+          <span className="text-brand-turquoise font-semibold">
+            {effectiveDeliveryFee === 0 ? "Offerte" : `${effectiveDeliveryFee} MAD`}
+          </span>
         </div>
         <Separator />
         <div className="flex justify-between font-bold text-base">
           <span>{t("cart.total")}</span>
-          <span className="text-primary" data-testid="text-order-total">{(total + DELIVERY_FEE).toFixed(0)} MAD</span>
+          <span className="text-primary" data-testid="text-order-total">{total.toFixed(0)} MAD</span>
         </div>
       </div>
 

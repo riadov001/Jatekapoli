@@ -178,7 +178,7 @@ export default function RestaurantScreen() {
             <MenuItemCard
               item={item}
               quantity={getQty(item.id)}
-              onAdd={() => addItem(restaurantId, restaurant.name, { menuItemId: item.id, name: item.name, price: item.price, imageUrl: item.imageUrl })}
+              onAdd={() => addItem(restaurantId, restaurant.name, { menuItemId: item.id, name: item.name, price: item.price, imageUrl: item.imageUrl }, { deliveryFee: (restaurant as any).deliveryFee, freeDeliveryThreshold: (restaurant as any).freeDeliveryThreshold })}
               onRemove={() => updateQuantity(item.id, getQty(item.id) - 1)}
             />
           </TouchableOpacity>
@@ -231,7 +231,7 @@ export default function RestaurantScreen() {
               name: selectedItem.name,
               price: selectedItem.price,
               imageUrl: selectedItem.imageUrl,
-            });
+            }, { deliveryFee: (restaurant as any).deliveryFee, freeDeliveryThreshold: (restaurant as any).freeDeliveryThreshold });
           }
         }}
       />

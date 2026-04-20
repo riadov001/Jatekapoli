@@ -60,7 +60,9 @@ export function useSSE({ url, events, enabled = true }: SSEOptions) {
                 if (events[currentEvent]) {
                   events[currentEvent](parsed);
                 }
-              } catch {}
+              } catch (err) {
+                console.warn("[SSE] failed to parse event payload:", err);
+              }
               currentEvent = "message"; // reset
             }
           }
