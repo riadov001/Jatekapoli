@@ -4,6 +4,7 @@ import jwt from "jsonwebtoken";
 import { db, usersTable, driversTable, otpCodesTable } from "@workspace/db";
 import { eq, and, gt, desc } from "drizzle-orm";
 import { RegisterBody, LoginBody } from "@workspace/api-zod";
+import { sendOtpMessage, anyOtpProviderConfigured } from "../lib/otpMessaging.js";
 
 const router: IRouter = Router();
 
@@ -31,79 +32,8 @@ function normalizePhone(phone: string): string {
   return p;
 }
 
-// ─── SMS / WhatsApp via Infobip ───────────────────────────────────────────────
-//
-// Required env vars:
-//   INFOBIP_API_KEY   — API key from Infobip dashboard (API Keys section)
-//   INFOBIP_BASE_URL  — Your personal base URL, e.g. "abc123.api.infobip.com"
-//
-// Optional:
-//   INFOBIP_SENDER    — Alphanumeric sender ID (default: "Jatek")
-//                       Morocco supports alphanumeric senders — no +15... number needed.
-//   INFOBIP_WA_SENDER — WhatsApp Business number registered in Infobip (e.g. "+212...") 
-
-function infobipConfigured(): boolean {
-  return !!(process.env.INFOBIP_API_KEY && process.env.INFOBIP_BASE_URL);
-}
-
-async function sendSms(to: string, body: string): Promise<void> {
-  const apiKey = process.env.INFOBIP_API_KEY;
-  const baseUrl = process.env.INFOBIP_BASE_URL;
-  if (!apiKey || !baseUrl) return;
-
-  const sender = process.env.INFOBIP_SENDER || "Jatek";
-  const url = `https://${baseUrl}/sms/2/text/advanced`;
-
-  const payload = {
-    messages: [{ from: sender, destinations: [{ to }], text: body }],
-  };
-
-  const res = await fetch(url, {
-    method: "POST",
-    headers: {
-      Authorization: `App ${apiKey}`,
-      "Content-Type": "application/json",
-      Accept: "application/json",
-    },
-    body: JSON.stringify(payload),
-  });
-
-  if (!res.ok) {
-    const err = await res.text();
-    throw new Error(`Infobip SMS error ${res.status}: ${err}`);
-  }
-}
-
-async function sendWhatsApp(to: string, body: string): Promise<void> {
-  const apiKey = process.env.INFOBIP_API_KEY;
-  const baseUrl = process.env.INFOBIP_BASE_URL;
-  const from = process.env.INFOBIP_WA_SENDER;
-  if (!apiKey || !baseUrl || !from) {
-    // WhatsApp not configured — fall back to SMS silently
-    await sendSms(to, body);
-    return;
-  }
-
-  const url = `https://${baseUrl}/whatsapp/1/message/text`;
-  const payload = { from, to, content: { text: body } };
-
-  const res = await fetch(url, {
-    method: "POST",
-    headers: {
-      Authorization: `App ${apiKey}`,
-      "Content-Type": "application/json",
-      Accept: "application/json",
-    },
-    body: JSON.stringify(payload),
-  });
-
-  if (!res.ok) {
-    const err = await res.text();
-    // Log and fall back to SMS
-    console.warn(`[OTP] Infobip WhatsApp error ${res.status}, falling back to SMS: ${err}`);
-    await sendSms(to, body);
-  }
-}
+// OTP messaging is delegated to lib/otpMessaging.ts which implements the
+// Infobip-WhatsApp → Infobip-SMS → Twilio-WhatsApp → Twilio-SMS fallback chain.
 
 // ─── Register (email/password, for admin/driver panel) ──────────────────────
 router.post("/auth/register", async (req, res): Promise<void> => {
@@ -164,10 +94,12 @@ router.post("/auth/login", async (req, res): Promise<void> => {
   res.json({ token, user: safeUser });
 });
 
-// ─── Send OTP (SMS or WhatsApp) ───────────────────────────────────────────────
+// ─── Send OTP (multi-provider fallback chain) ─────────────────────────────────
+// Always walks Infobip-WhatsApp → Infobip-SMS → Twilio-WhatsApp → Twilio-SMS,
+// stopping on the first success. The `channel` request field is accepted for
+// backwards compat but no longer changes the order — that's by design.
 router.post("/auth/send-otp", async (req, res): Promise<void> => {
-  const { phone, channel } = req.body;
-  const deliveryChannel: "sms" | "whatsapp" = channel === "whatsapp" ? "whatsapp" : "sms";
+  const { phone } = req.body;
 
   if (!phone || typeof phone !== "string" || phone.trim().length < 7) {
     res.status(400).json({ error: "Valid phone number required" });
@@ -199,32 +131,24 @@ router.post("/auth/send-otp", async (req, res): Promise<void> => {
 
   const messageBody = `Votre code Jatek : ${code}\nValable ${OTP_EXPIRY_MINUTES} minutes. Ne le communiquez à personne.`;
 
-  const smsProviderReady = infobipConfigured();
+  const providerReady = anyOtpProviderConfigured();
   const isDev = process.env.NODE_ENV !== "production";
 
+  let actualChannel: string = "none";
   let smsSent = false;
-  let actualChannel = deliveryChannel;
 
   try {
-    if (deliveryChannel === "whatsapp") {
-      // sendWhatsApp already falls back to SMS if WA sender not configured
-      await sendWhatsApp(normalizedPhone, messageBody);
-    } else {
-      await sendSms(normalizedPhone, messageBody);
-    }
-    smsSent = smsProviderReady;
+    const result = await sendOtpMessage(normalizedPhone, messageBody);
+    actualChannel = result.channel;
+    smsSent = true;
   } catch (err: any) {
-    console.error(`[OTP] ${actualChannel} send failed:`, err?.message ?? err);
-    // If WhatsApp fails hard (not already handled inside sendWhatsApp), retry via SMS
-    if (deliveryChannel === "whatsapp") {
-      try {
-        await sendSms(normalizedPhone, messageBody);
-        smsSent = smsProviderReady;
-        actualChannel = "sms";
-      } catch (smsErr: any) {
-        console.error("[OTP] SMS fallback also failed:", smsErr?.message ?? smsErr);
-      }
+    console.error(`[OTP] all providers failed for ${normalizedPhone}:`, err?.message ?? err);
+    if (!isDev && providerReady) {
+      // In production, surface a hard error so the client can prompt a retry.
+      res.status(502).json({ error: "Impossible d'envoyer le code. Réessayez dans un instant." });
+      return;
     }
+    // In dev (or with no providers), fall through and rely on demoOtp.
   }
 
   res.json({
@@ -232,8 +156,8 @@ router.post("/auth/send-otp", async (req, res): Promise<void> => {
     channel: actualChannel,
     message: `Code envoyé via ${actualChannel} à ${normalizedPhone}`,
     smsSent,
-    // Always expose OTP in dev mode OR when no SMS provider is configured (for testing)
-    demoOtp: (isDev || !smsProviderReady) ? code : undefined,
+    // Expose OTP in dev mode OR when no provider is configured (for testing).
+    demoOtp: (isDev || !providerReady) ? code : undefined,
   });
 });
 
