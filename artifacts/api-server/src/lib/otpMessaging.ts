@@ -118,15 +118,18 @@ async function getTwilioCredentials() {
 
   return {
     accountSid: conn.settings.account_sid as string,
-    apiKey: conn.settings.api_key as string,
-    apiKeySecret: conn.settings.api_key_secret as string,
+    // NOTE: the Replit "twilio" connector exposes Account SID + Auth Token
+    // pairs under the field names `api_key` / `api_key_secret`. Despite the
+    // names, `api_key` is the Auth Token (32 hex chars). We use basic auth:
+    // twilio(accountSid, authToken) — NOT the API Key auth pattern.
+    authToken: conn.settings.api_key as string,
     phoneNumber: conn.settings.phone_number as string | undefined,
   };
 }
 
 async function getTwilioClient() {
-  const { accountSid, apiKey, apiKeySecret } = await getTwilioCredentials();
-  return twilio(apiKey, apiKeySecret, { accountSid });
+  const { accountSid, authToken } = await getTwilioCredentials();
+  return twilio(accountSid, authToken);
 }
 
 async function twilioConfigured(): Promise<boolean> {
