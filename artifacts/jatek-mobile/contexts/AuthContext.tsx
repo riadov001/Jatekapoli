@@ -52,15 +52,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Wire up auth token getter for API client
     setAuthTokenGetter(() => secureGet(TOKEN_KEY));
 
-    // Load persisted auth on startup
-    Promise.all([secureGet(TOKEN_KEY), secureGet(USER_KEY)]).then(([t, u]) => {
-      if (t) setToken(t);
-      if (u) {
-        try { setUser(JSON.parse(u)); }
-        catch (err) { console.warn("[Auth] failed to parse persisted user:", err); }
-      }
-      setIsLoading(false);
-    });
+    // Load persisted auth on startup. SecureStore can throw on Android Expo
+    // Go in some environments — never let it block the app from rendering.
+    Promise.all([secureGet(TOKEN_KEY), secureGet(USER_KEY)])
+      .then(([t, u]) => {
+        if (t) setToken(t);
+        if (u) {
+          try { setUser(JSON.parse(u)); }
+          catch (err) { console.warn("[Auth] failed to parse persisted user:", err); }
+        }
+      })
+      .catch((err) => {
+        console.warn("[Auth] secure storage unavailable:", err);
+      })
+      .finally(() => setIsLoading(false));
   }, []);
 
   const login = async (newToken: string, newUser: AuthUser) => {

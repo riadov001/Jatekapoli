@@ -49,28 +49,35 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    Promise.all([AsyncStorage.getItem(CART_KEY), AsyncStorage.getItem(ADDR_KEY)]).then(([raw, addr]) => {
-      if (raw) {
-        try {
-          const s = JSON.parse(raw);
-          setItems(s.items ?? []);
-          setRestaurantId(s.restaurantId ?? null);
-          setRestaurantName(s.restaurantName ?? "");
-          if (typeof s.deliveryFee === "number") setDeliveryFee(s.deliveryFee);
-          if (typeof s.freeDeliveryThreshold === "number") setFreeDeliveryThreshold(s.freeDeliveryThreshold);
-        } catch (err) {
-          console.warn("[Cart] failed to parse persisted cart:", err);
+    // Always set ready=true — even if AsyncStorage is unavailable (rare on
+    // older Android Expo Go builds) we still want the app to render with
+    // empty defaults instead of being stuck.
+    Promise.all([AsyncStorage.getItem(CART_KEY), AsyncStorage.getItem(ADDR_KEY)])
+      .then(([raw, addr]) => {
+        if (raw) {
+          try {
+            const s = JSON.parse(raw);
+            setItems(s.items ?? []);
+            setRestaurantId(s.restaurantId ?? null);
+            setRestaurantName(s.restaurantName ?? "");
+            if (typeof s.deliveryFee === "number") setDeliveryFee(s.deliveryFee);
+            if (typeof s.freeDeliveryThreshold === "number") setFreeDeliveryThreshold(s.freeDeliveryThreshold);
+          } catch (err) {
+            console.warn("[Cart] failed to parse persisted cart:", err);
+          }
         }
-      }
-      if (addr) {
-        try {
-          const parsed = JSON.parse(addr);
-          if (typeof parsed === "string") { setSelectedAddressState(parsed); setSelectedAddressInZone(true); }
-          else { setSelectedAddressState(parsed.address ?? ""); setSelectedAddressInZone(parsed.inZone !== false); }
-        } catch { setSelectedAddressState(addr); }
-      }
-      setReady(true);
-    });
+        if (addr) {
+          try {
+            const parsed = JSON.parse(addr);
+            if (typeof parsed === "string") { setSelectedAddressState(parsed); setSelectedAddressInZone(true); }
+            else { setSelectedAddressState(parsed.address ?? ""); setSelectedAddressInZone(parsed.inZone !== false); }
+          } catch { setSelectedAddressState(addr); }
+        }
+      })
+      .catch((err) => {
+        console.warn("[Cart] AsyncStorage unavailable:", err);
+      })
+      .finally(() => setReady(true));
   }, []);
 
   useEffect(() => {

@@ -20,11 +20,22 @@ import { CartProvider } from "@/contexts/CartContext";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import CookieConsentBanner from "@/components/CookieConsentBanner";
 
-// Configure the API base URL
-setBaseUrl(`https://${process.env.EXPO_PUBLIC_DOMAIN}`);
+// Configure the API base URL — fail loud if the deployment forgot to inject
+// EXPO_PUBLIC_DOMAIN, otherwise the entire app would silently 404 every call.
+const apiDomain = process.env.EXPO_PUBLIC_DOMAIN;
+if (!apiDomain) {
+  console.warn(
+    "[Boot] EXPO_PUBLIC_DOMAIN is not set — API calls will fail. " +
+    "Check the deployment env vars.",
+  );
+}
+setBaseUrl(`https://${apiDomain ?? "missing-domain"}`);
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
-SplashScreen.preventAutoHideAsync();
+// Wrap in try/catch — on web (and some Expo Go reloads) preventAutoHideAsync
+// can reject with "Splash screen module is not available", which would crash
+// the JS bundle before any UI ever renders → infinite blue splash.
+SplashScreen.preventAutoHideAsync().catch(() => {});
 
 const queryClient = new QueryClient();
 
@@ -48,14 +59,35 @@ export default function RootLayout() {
     Inter_600SemiBold,
     Inter_700Bold,
   });
+  const [splashHidden, setSplashHidden] = React.useState(false);
 
+  // Hide the splash as soon as fonts are ready OR a 1.5 s safety timeout
+  // elapses — whichever comes first. Without this fallback, a slow / blocked
+  // Google Fonts CDN response would leave the splash visible forever
+  // (the "écran bleu" production crash on Expo Go).
   useEffect(() => {
+    let cancelled = false;
+    const hide = () => {
+      if (cancelled) return;
+      cancelled = true;
+      setSplashHidden(true);
+      SplashScreen.hideAsync().catch(() => {});
+    };
     if (fontsLoaded || fontError) {
-      SplashScreen.hideAsync();
+      hide();
+      return;
     }
+    const timer = setTimeout(hide, 1500);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
   }, [fontsLoaded, fontError]);
 
-  if (!fontsLoaded && !fontError) return null;
+  // Render the tree even if fonts aren't ready yet — system fonts will be
+  // used as a fallback, and Inter swaps in once it loads. Returning null
+  // here was the root cause of the splash hang in production.
+  if (!splashHidden && !fontsLoaded && !fontError) return null;
 
   return (
     <SafeAreaProvider>

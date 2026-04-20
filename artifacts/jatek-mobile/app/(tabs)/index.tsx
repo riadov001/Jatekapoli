@@ -13,6 +13,7 @@ import {
 } from "react-native";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 import {
   useListRestaurants,
   useListOrders,
@@ -27,27 +28,33 @@ import { useCart } from "@/contexts/CartContext";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { AddressQuickPicker } from "@/components/AddressQuickPicker";
 import { useT } from "@/contexts/LanguageContext";
+import { TornEdge } from "@/components/TornEdge";
 
-// Talabat-inspired palette (UI only, no theme changes)
-const BG = "#F8F9FA";
+// Talabat-inspired palette
+const BG = "#FFF5F8";
 const CARD_BG = "#FFFFFF";
 const PINK = "#FF4593";
+const PINK_DEEP = "#E91E63";
+const PINK_SOFT = "#FFE0EC";
 const TURQUOISE = "#00BFA6";
 const TURQUOISE_SOFT = "#E0F7F4";
 const TEXT_DARK = "#0A1B3D";
 const TEXT_MUTED = "#6B7280";
-const BORDER = "#EFEFEF";
+const BORDER = "#F1E0E8";
 const STAR_YELLOW = "#FFC107";
 
+// Each category gets an emoji (more "réaliste") and its own pastel background.
 const CATEGORIES = [
-  { id: "all",        label: "Tous",       icon: "restaurant" as const },
-  { id: "Pizza",      label: "Pizza",      icon: "pizza" as const },
-  { id: "Burger",     label: "Burger",     icon: "fast-food" as const },
-  { id: "Sushi",      label: "Sushi",      icon: "fish" as const },
-  { id: "Marocain",   label: "Marocain",   icon: "leaf" as const },
-  { id: "Sandwichs",  label: "Sandwichs",  icon: "cafe" as const },
-  { id: "Poulet",     label: "Poulet",     icon: "nutrition" as const },
-  { id: "Healthy",    label: "Healthy",    icon: "heart" as const },
+  { id: "all",        label: "Tous",       emoji: "🍽️",  bg: "#FFE7DC" },
+  { id: "Pizza",      label: "Pizza",      emoji: "🍕",  bg: "#FFE0E0" },
+  { id: "Burger",     label: "Burger",     emoji: "🍔",  bg: "#FFF1D6" },
+  { id: "Sushi",      label: "Sushi",      emoji: "🍣",  bg: "#DCEFFF" },
+  { id: "Marocain",   label: "Marocain",   emoji: "🫖",  bg: "#FFE4D1" },
+  { id: "Sandwichs",  label: "Sandwichs",  emoji: "🥪",  bg: "#E5F5DC" },
+  { id: "Poulet",     label: "Poulet",     emoji: "🍗",  bg: "#FFEFD0" },
+  { id: "Healthy",    label: "Healthy",    emoji: "🥗",  bg: "#DDF5E2" },
+  { id: "Boissons",   label: "Boissons",   emoji: "🥤",  bg: "#E2DEFF" },
+  { id: "Dessert",    label: "Dessert",    emoji: "🍰",  bg: "#FFE0F4" },
 ];
 
 function RestaurantRow({
@@ -65,11 +72,7 @@ function RestaurantRow({
     >
       <View style={styles.rImageWrap}>
         {restaurant.imageUrl ? (
-          <Image
-            source={{ uri: restaurant.imageUrl }}
-            style={styles.rImage}
-            resizeMode="cover"
-          />
+          <Image source={{ uri: restaurant.imageUrl }} style={styles.rImage} resizeMode="cover" />
         ) : (
           <View style={[styles.rImage, styles.rImagePlaceholder]}>
             <Ionicons name="restaurant" size={28} color={TEXT_MUTED} />
@@ -78,9 +81,7 @@ function RestaurantRow({
         {restaurant.deliveryTime != null && (
           <View style={styles.deliveryBadge}>
             <Ionicons name="time-outline" size={11} color="#fff" />
-            <Text style={styles.deliveryBadgeText}>
-              {restaurant.deliveryTime} min
-            </Text>
+            <Text style={styles.deliveryBadgeText}>{restaurant.deliveryTime} min</Text>
           </View>
         )}
         {restaurant.isOpen === false && (
@@ -92,23 +93,17 @@ function RestaurantRow({
 
       <View style={styles.rBody}>
         <View style={styles.rTitleRow}>
-          <Text style={styles.rTitle} numberOfLines={1}>
-            {restaurant.name}
-          </Text>
+          <Text style={styles.rTitle} numberOfLines={1}>{restaurant.name}</Text>
           {restaurant.rating != null && (
             <View style={styles.ratingPill}>
               <Ionicons name="star" size={12} color={STAR_YELLOW} />
-              <Text style={styles.ratingText}>
-                {restaurant.rating.toFixed(1)}
-              </Text>
+              <Text style={styles.ratingText}>{restaurant.rating.toFixed(1)}</Text>
             </View>
           )}
         </View>
 
         {restaurant.category ? (
-          <Text style={styles.rCategory} numberOfLines={1}>
-            {restaurant.category}
-          </Text>
+          <Text style={styles.rCategory} numberOfLines={1}>{restaurant.category}</Text>
         ) : null}
 
         <View style={styles.rMetaRow}>
@@ -121,9 +116,7 @@ function RestaurantRow({
           {restaurant.minimumOrder != null && restaurant.minimumOrder > 0 ? (
             <View style={styles.rMetaItem}>
               <Ionicons name="wallet-outline" size={13} color={TEXT_MUTED} />
-              <Text style={styles.rMetaText}>
-                Min {restaurant.minimumOrder} MAD
-              </Text>
+              <Text style={styles.rMetaText}>Min {restaurant.minimumOrder} MAD</Text>
             </View>
           ) : null}
           {restaurant.deliveryFee != null && restaurant.deliveryFee === 0 ? (
@@ -132,9 +125,7 @@ function RestaurantRow({
             </View>
           ) : restaurant.deliveryFee != null ? (
             <View style={styles.rMetaItem}>
-              <Text style={styles.rMetaText}>
-                {restaurant.deliveryFee} MAD livraison
-              </Text>
+              <Text style={styles.rMetaText}>{restaurant.deliveryFee} MAD livraison</Text>
             </View>
           ) : null}
         </View>
@@ -143,8 +134,82 @@ function RestaurantRow({
   );
 }
 
+function PromoCard({ restaurant, onPress }: { restaurant: Restaurant; onPress: () => void }) {
+  return (
+    <TouchableOpacity activeOpacity={0.9} onPress={onPress} style={styles.promoCard}>
+      {restaurant.imageUrl ? (
+        <Image source={{ uri: restaurant.imageUrl }} style={styles.promoImg} resizeMode="cover" />
+      ) : (
+        <View style={[styles.promoImg, styles.rImagePlaceholder]}>
+          <Ionicons name="restaurant" size={28} color={TEXT_MUTED} />
+        </View>
+      )}
+      <LinearGradient
+        colors={["transparent", "rgba(0,0,0,0.0)", "rgba(0,0,0,0.85)"]}
+        locations={[0, 0.5, 1]}
+        style={StyleSheet.absoluteFill}
+      />
+      <View style={styles.promoBadge}>
+        <Text style={styles.promoBadgeText}>PROMO</Text>
+      </View>
+      <View style={styles.promoBody}>
+        <Text style={styles.promoTitle} numberOfLines={1}>{restaurant.name}</Text>
+        <View style={styles.promoMeta}>
+          {restaurant.rating != null && (
+            <View style={styles.promoMetaItem}>
+              <Ionicons name="star" size={12} color={STAR_YELLOW} />
+              <Text style={styles.promoMetaText}>{restaurant.rating.toFixed(1)}</Text>
+            </View>
+          )}
+          {restaurant.deliveryTime != null && (
+            <View style={styles.promoMetaItem}>
+              <Ionicons name="time-outline" size={12} color="#fff" />
+              <Text style={styles.promoMetaText}>{restaurant.deliveryTime} min</Text>
+            </View>
+          )}
+          <View style={styles.promoCta}>
+            <Text style={styles.promoCtaText}>Voir</Text>
+            <Ionicons name="arrow-forward" size={12} color={PINK} />
+          </View>
+        </View>
+      </View>
+    </TouchableOpacity>
+  );
+}
+
+function ShortCard({ restaurant, onPress }: { restaurant: Restaurant; onPress: () => void }) {
+  return (
+    <TouchableOpacity activeOpacity={0.9} onPress={onPress} style={styles.shortCard}>
+      {restaurant.imageUrl ? (
+        <Image source={{ uri: restaurant.imageUrl }} style={styles.shortImg} resizeMode="cover" />
+      ) : (
+        <View style={[styles.shortImg, styles.rImagePlaceholder]}>
+          <Ionicons name="videocam" size={24} color={TEXT_MUTED} />
+        </View>
+      )}
+      <LinearGradient
+        colors={["rgba(0,0,0,0.4)", "transparent", "rgba(0,0,0,0.85)"]}
+        locations={[0, 0.4, 1]}
+        style={StyleSheet.absoluteFill}
+      />
+      <View style={styles.shortPlay}>
+        <Ionicons name="play" size={20} color="#fff" />
+      </View>
+      <View style={styles.shortBody}>
+        <Text style={styles.shortTitle} numberOfLines={2}>{restaurant.name}</Text>
+        <View style={styles.shortMetaRow}>
+          <Ionicons name="heart" size={11} color={PINK} />
+          <Text style={styles.shortMetaText}>
+            {Math.floor(((restaurant.rating ?? 4.2) - 3) * 280 + 120)}
+          </Text>
+        </View>
+      </View>
+    </TouchableOpacity>
+  );
+}
+
 export default function HomeScreen() {
-  const colors = useColors();
+  useColors();
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
   const { selectedAddress } = useCart();
@@ -154,7 +219,6 @@ export default function HomeScreen() {
   const [showAddrPicker, setShowAddrPicker] = useState(false);
   const webTopPad = Platform.OS === "web" ? 67 : 0;
 
-  // Restaurants — preserve existing API call shape
   const params = useMemo<ListRestaurantsParams>(() => {
     const p: ListRestaurantsParams = { businessType: "restaurant" };
     if (activeCat !== "all") p.category = activeCat;
@@ -164,15 +228,12 @@ export default function HomeScreen() {
 
   const { data: restaurants, isLoading, refetch } = useListRestaurants(params);
 
-  // Unfiltered restaurants list — used to look up reorder items independently
-  // of the current category/search filter.
   const allRestaurantsParams: ListRestaurantsParams = useMemo(
     () => ({ businessType: "restaurant" }),
     [],
   );
   const { data: allRestaurants } = useListRestaurants(allRestaurantsParams);
 
-  // Past orders for the Reorder section (fully typed query options)
   const ordersParams = user ? { userId: user.id } : undefined;
   const { data: pastOrders } = useListOrders(ordersParams, {
     query: {
@@ -181,32 +242,46 @@ export default function HomeScreen() {
     },
   });
 
-  // Build "reorder" list: latest unique restaurants from past orders.
-  // Looked up against the *unfiltered* list so changing category/search does
-  // not hide the user's history.
   const reorderRestaurants = useMemo<Restaurant[]>(() => {
     if (!pastOrders || !allRestaurants) return [];
     const byId = new Map<number, Restaurant>();
     for (const r of allRestaurants) byId.set(r.id, r);
-
     const seen = new Set<number>();
     const list: Restaurant[] = [];
     for (const o of pastOrders as Order[]) {
       const rid = o.restaurantId;
       if (!rid || seen.has(rid)) continue;
       const r = byId.get(rid);
-      if (r) {
-        list.push(r);
-        seen.add(rid);
-      }
+      if (r) { list.push(r); seen.add(rid); }
       if (list.length >= 6) break;
     }
     return list;
   }, [pastOrders, allRestaurants]);
 
+  // Promotions = top-rated restaurants with images.
+  const promoRestaurants = useMemo<Restaurant[]>(() => {
+    if (!allRestaurants) return [];
+    return [...allRestaurants]
+      .filter((r) => !!r.imageUrl)
+      .sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0))
+      .slice(0, 6);
+  }, [allRestaurants]);
+
+  // "Shorts" = restaurants shuffled deterministically by id, with images.
+  const shortsRestaurants = useMemo<Restaurant[]>(() => {
+    if (!allRestaurants) return [];
+    return [...allRestaurants]
+      .filter((r) => !!r.imageUrl)
+      .sort((a, b) => ((a.id * 7919) % 100) - ((b.id * 7919) % 100))
+      .slice(0, 8);
+  }, [allRestaurants]);
+
+  const goRestaurant = (id: number) =>
+    router.push({ pathname: "/restaurant/[id]", params: { id: String(id) } });
+
   const ListHeader = (
     <View>
-      {/* Categories — horizontal scroll, small cards */}
+      {/* Catégories */}
       <View style={styles.sectionHeaderRow}>
         <Text style={styles.sectionTitle}>Catégories</Text>
       </View>
@@ -224,30 +299,14 @@ export default function HomeScreen() {
               onPress={() => setActiveCat(c.id)}
               style={[
                 styles.catCard,
-                { backgroundColor: active ? PINK : CARD_BG },
+                active && styles.catCardActive,
               ]}
             >
-              <View
-                style={[
-                  styles.catIconWrap,
-                  {
-                    backgroundColor: active
-                      ? "rgba(255,255,255,0.18)"
-                      : TURQUOISE_SOFT,
-                  },
-                ]}
-              >
-                <Ionicons
-                  name={c.icon}
-                  size={20}
-                  color={active ? "#fff" : TURQUOISE}
-                />
+              <View style={[styles.catIconWrap, { backgroundColor: active ? "rgba(255,255,255,0.22)" : c.bg }]}>
+                <Text style={styles.catEmoji}>{c.emoji}</Text>
               </View>
               <Text
-                style={[
-                  styles.catLabel,
-                  { color: active ? "#fff" : TEXT_DARK },
-                ]}
+                style={[styles.catLabel, { color: active ? "#fff" : TEXT_DARK }]}
                 numberOfLines={1}
               >
                 {c.label}
@@ -257,11 +316,54 @@ export default function HomeScreen() {
         })}
       </ScrollView>
 
-      {/* Reorder — quick history */}
+      {/* Promotions — défilement horizontal */}
+      {promoRestaurants.length > 0 ? (
+        <View style={{ marginTop: 18 }}>
+          <View style={styles.sectionHeaderRow}>
+            <Text style={styles.sectionTitle}>🔥 Promotions</Text>
+            <Text style={styles.sectionLink}>Tout voir</Text>
+          </View>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.promoRow}
+            decelerationRate="fast"
+            snapToInterval={296}
+          >
+            {promoRestaurants.map((r) => (
+              <PromoCard key={r.id} restaurant={r} onPress={() => goRestaurant(r.id)} />
+            ))}
+          </ScrollView>
+        </View>
+      ) : null}
+
+      {/* Shorts / Reels */}
+      {shortsRestaurants.length > 0 ? (
+        <View style={{ marginTop: 18 }}>
+          <View style={styles.sectionHeaderRow}>
+            <View style={styles.shortsTitleRow}>
+              <Ionicons name="play-circle" size={20} color={PINK} />
+              <Text style={styles.sectionTitle}>Shorts gourmands</Text>
+            </View>
+            <Text style={styles.sectionLink}>Voir tout</Text>
+          </View>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.shortsRow}
+          >
+            {shortsRestaurants.map((r) => (
+              <ShortCard key={r.id} restaurant={r} onPress={() => goRestaurant(r.id)} />
+            ))}
+          </ScrollView>
+        </View>
+      ) : null}
+
+      {/* Reorder */}
       {reorderRestaurants.length > 0 ? (
         <View style={styles.reorderSection}>
           <View style={styles.sectionHeaderRow}>
-            <Text style={styles.sectionTitle}>Recommandés</Text>
+            <Text style={styles.sectionTitle}>Recommandés pour vous</Text>
             <Ionicons name="refresh" size={16} color={TURQUOISE} />
           </View>
           <ScrollView
@@ -273,30 +375,19 @@ export default function HomeScreen() {
               <TouchableOpacity
                 key={r.id}
                 activeOpacity={0.85}
-                onPress={() =>
-                  router.push({
-                    pathname: "/restaurant/[id]",
-                    params: { id: String(r.id) },
-                  })
-                }
+                onPress={() => goRestaurant(r.id)}
                 style={styles.reorderCard}
               >
                 <View style={styles.reorderImgWrap}>
                   {r.imageUrl ? (
-                    <Image
-                      source={{ uri: r.imageUrl }}
-                      style={styles.reorderImg}
-                      resizeMode="cover"
-                    />
+                    <Image source={{ uri: r.imageUrl }} style={styles.reorderImg} resizeMode="cover" />
                   ) : (
                     <View style={[styles.reorderImg, styles.rImagePlaceholder]}>
                       <Ionicons name="restaurant" size={22} color={TEXT_MUTED} />
                     </View>
                   )}
                 </View>
-                <Text style={styles.reorderName} numberOfLines={1}>
-                  {r.name}
-                </Text>
+                <Text style={styles.reorderName} numberOfLines={1}>{r.name}</Text>
                 <View style={styles.reorderBtn}>
                   <Ionicons name="repeat" size={12} color="#fff" />
                   <Text style={styles.reorderBtnText}>Recommander</Text>
@@ -307,9 +398,9 @@ export default function HomeScreen() {
         </View>
       ) : null}
 
-      <View style={styles.sectionHeaderRow}>
+      <View style={[styles.sectionHeaderRow, { marginTop: 22 }]}>
         <Text style={styles.sectionTitle}>
-          {activeCat === "all" ? "Restaurants" : activeCat}
+          {activeCat === "all" ? "Tous les restaurants" : activeCat}
         </Text>
         {restaurants ? (
           <Text style={styles.sectionCount}>
@@ -322,45 +413,71 @@ export default function HomeScreen() {
 
   return (
     <View style={[styles.flex, { backgroundColor: BG }]}>
-      {/* Minimal header — location only */}
-      <View
-        style={[
-          styles.header,
-          { paddingTop: insets.top + 10 + webTopPad },
-        ]}
-      >
-        <Text style={styles.deliverToLabel}>Livrer à</Text>
-        <TouchableOpacity
-          activeOpacity={0.7}
-          onPress={() => setShowAddrPicker(true)}
-          style={styles.addressRow}
+      {/* En-tête rose avec bord papier déchiré */}
+      <View style={styles.headerWrap}>
+        <LinearGradient
+          colors={[PINK, PINK_DEEP]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={[styles.headerBg, { paddingTop: insets.top + 12 + webTopPad }]}
         >
-          <Ionicons name="location" size={16} color={PINK} />
-          <Text style={styles.addressText} numberOfLines={1}>
-            {selectedAddress || t("home_choose_address")}
-          </Text>
-          <Ionicons name="chevron-down" size={16} color={TEXT_DARK} />
-        </TouchableOpacity>
-      </View>
+          <View style={styles.headerTopRow}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.deliverToLabel}>Livrer à</Text>
+              <TouchableOpacity
+                activeOpacity={0.7}
+                onPress={() => setShowAddrPicker(true)}
+                style={styles.addressRow}
+              >
+                <Ionicons name="location" size={16} color="#fff" />
+                <Text style={styles.addressText} numberOfLines={1}>
+                  {selectedAddress || t("home_choose_address")}
+                </Text>
+                <Ionicons name="chevron-down" size={16} color="#fff" />
+              </TouchableOpacity>
+            </View>
+            {user ? (
+              <TouchableOpacity
+                onPress={() => router.push("/(tabs)/profile" as any)}
+                style={styles.avatarBtn}
+                activeOpacity={0.8}
+              >
+                {user.avatarUrl ? (
+                  <Image source={{ uri: user.avatarUrl }} style={styles.avatarImg} />
+                ) : (
+                  <Text style={styles.avatarLetter}>
+                    {(user.name ?? "J").charAt(0).toUpperCase()}
+                  </Text>
+                )}
+              </TouchableOpacity>
+            ) : null}
+          </View>
 
-      {/* Search bar — rounded, white */}
-      <View style={styles.searchWrap}>
-        <View style={styles.searchBox}>
-          <Ionicons name="search" size={18} color={TEXT_MUTED} />
-          <TextInput
-            style={styles.searchInput}
-            placeholder={t("home_search_ph")}
-            placeholderTextColor={TEXT_MUTED}
-            value={search}
-            onChangeText={setSearch}
-            returnKeyType="search"
-          />
-          {search ? (
-            <TouchableOpacity onPress={() => setSearch("")}>
-              <Ionicons name="close-circle" size={18} color={TEXT_MUTED} />
-            </TouchableOpacity>
-          ) : null}
-        </View>
+          {/* Greeting */}
+          <Text style={styles.greeting}>
+            {user ? `Salut ${user.name?.split(" ")[0] ?? ""} 👋` : "Bienvenue chez Jatek 👋"}
+          </Text>
+          <Text style={styles.greetingSub}>Que mangerez-vous aujourd'hui ?</Text>
+
+          {/* Search bar */}
+          <View style={styles.searchBox}>
+            <Ionicons name="search" size={18} color={TEXT_MUTED} />
+            <TextInput
+              style={styles.searchInput}
+              placeholder={t("home_search_ph")}
+              placeholderTextColor={TEXT_MUTED}
+              value={search}
+              onChangeText={setSearch}
+              returnKeyType="search"
+            />
+            {search ? (
+              <TouchableOpacity onPress={() => setSearch("")}>
+                <Ionicons name="close-circle" size={18} color={TEXT_MUTED} />
+              </TouchableOpacity>
+            ) : null}
+          </View>
+        </LinearGradient>
+        <TornEdge color={PINK_DEEP} position="bottom" height={20} />
       </View>
 
       {isLoading ? (
@@ -373,10 +490,7 @@ export default function HomeScreen() {
           keyExtractor={(r) => String(r.id)}
           contentContainerStyle={[
             styles.list,
-            {
-              paddingBottom:
-                insets.bottom + (Platform.OS === "web" ? 34 : 90),
-            },
+            { paddingTop: 22, paddingBottom: insets.bottom + (Platform.OS === "web" ? 34 : 90) },
           ]}
           showsVerticalScrollIndicator={false}
           onRefresh={refetch}
@@ -384,35 +498,18 @@ export default function HomeScreen() {
           ListHeaderComponent={ListHeader}
           ListEmptyComponent={
             <View style={styles.empty}>
-              <Ionicons
-                name="restaurant-outline"
-                size={48}
-                color={TEXT_MUTED}
-              />
+              <Ionicons name="restaurant-outline" size={48} color={TEXT_MUTED} />
               <Text style={styles.emptyTitle}>Aucun résultat</Text>
-              <Text style={styles.emptyText}>
-                Essayez une autre recherche ou catégorie
-              </Text>
+              <Text style={styles.emptyText}>Essayez une autre recherche ou catégorie</Text>
             </View>
           }
           renderItem={({ item }) => (
-            <RestaurantRow
-              restaurant={item}
-              onPress={() =>
-                router.push({
-                  pathname: "/restaurant/[id]",
-                  params: { id: String(item.id) },
-                })
-              }
-            />
+            <RestaurantRow restaurant={item} onPress={() => goRestaurant(item.id)} />
           )}
         />
       )}
 
-      <AddressQuickPicker
-        visible={showAddrPicker}
-        onClose={() => setShowAddrPicker(false)}
-      />
+      <AddressQuickPicker visible={showAddrPicker} onClose={() => setShowAddrPicker(false)} />
     </View>
   );
 }
@@ -421,16 +518,26 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
 
   // Header
-  header: {
-    backgroundColor: BG,
+  headerWrap: {
+    position: "relative",
+  },
+  headerBg: {
     paddingHorizontal: 16,
-    paddingBottom: 8,
+    paddingBottom: 18,
+  },
+  headerTopRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    marginBottom: 14,
   },
   deliverToLabel: {
     fontSize: 11,
-    fontFamily: "Inter_400Regular",
-    color: TEXT_MUTED,
+    fontFamily: "Inter_500Medium",
+    color: "rgba(255,255,255,0.85)",
     marginBottom: 2,
+    letterSpacing: 0.4,
+    textTransform: "uppercase",
   },
   addressRow: {
     flexDirection: "row",
@@ -441,26 +548,52 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 15,
     fontFamily: "Inter_700Bold",
-    color: TEXT_DARK,
+    color: "#fff",
     letterSpacing: -0.2,
+  },
+  avatarBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "rgba(255,255,255,0.2)",
+    borderWidth: 2,
+    borderColor: "rgba(255,255,255,0.6)",
+    alignItems: "center",
+    justifyContent: "center",
+    overflow: "hidden",
+  },
+  avatarImg: { width: "100%", height: "100%" },
+  avatarLetter: { color: "#fff", fontFamily: "Inter_700Bold", fontSize: 16 },
+
+  greeting: {
+    fontSize: 22,
+    fontFamily: "Inter_700Bold",
+    color: "#fff",
+    letterSpacing: -0.5,
+    marginTop: 4,
+  },
+  greetingSub: {
+    fontSize: 13,
+    fontFamily: "Inter_400Regular",
+    color: "rgba(255,255,255,0.9)",
+    marginTop: 2,
+    marginBottom: 14,
   },
 
   // Search
-  searchWrap: {
-    paddingHorizontal: 16,
-    paddingTop: 10,
-    paddingBottom: 8,
-  },
   searchBox: {
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
     height: 48,
-    borderRadius: 999,
-    backgroundColor: CARD_BG,
+    borderRadius: 16,
+    backgroundColor: "#fff",
     paddingHorizontal: 16,
-    borderWidth: 1,
-    borderColor: BORDER,
+    shadowColor: "#000",
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 3,
   },
   searchInput: {
     flex: 1,
@@ -469,7 +602,7 @@ const styles = StyleSheet.create({
     color: TEXT_DARK,
   },
 
-  // Generic section header
+  // Section titles
   sectionHeaderRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -484,10 +617,20 @@ const styles = StyleSheet.create({
     color: TEXT_DARK,
     letterSpacing: -0.3,
   },
+  sectionLink: {
+    fontSize: 12,
+    fontFamily: "Inter_600SemiBold",
+    color: PINK,
+  },
   sectionCount: {
     fontSize: 12,
     fontFamily: "Inter_400Regular",
     color: TEXT_MUTED,
+  },
+  shortsTitleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
   },
 
   // Categories
@@ -497,34 +640,183 @@ const styles = StyleSheet.create({
     paddingBottom: 4,
   },
   catCard: {
-    width: 88,
+    width: 82,
     paddingVertical: 12,
-    paddingHorizontal: 8,
-    borderRadius: 16,
+    paddingHorizontal: 6,
+    borderRadius: 18,
     alignItems: "center",
     gap: 8,
+    backgroundColor: CARD_BG,
     borderWidth: 1,
     borderColor: BORDER,
+    shadowColor: "#FF4593",
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
+  },
+  catCardActive: {
+    backgroundColor: PINK,
+    borderColor: PINK,
+    shadowOpacity: 0.25,
+    shadowRadius: 14,
+    elevation: 6,
   },
   catIconWrap: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     alignItems: "center",
     justifyContent: "center",
   },
+  catEmoji: { fontSize: 26 },
   catLabel: {
     fontSize: 12,
     fontFamily: "Inter_600SemiBold",
   },
 
-  // Reorder section
-  reorderSection: {
+  // Promo banners
+  promoRow: {
+    paddingHorizontal: 16,
+    gap: 12,
+    paddingBottom: 4,
+  },
+  promoCard: {
+    width: 284,
+    height: 156,
+    borderRadius: 20,
+    overflow: "hidden",
+    backgroundColor: "#222",
+    shadowColor: "#000",
+    shadowOpacity: 0.18,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 5,
+  },
+  promoImg: { width: "100%", height: "100%" },
+  promoBadge: {
+    position: "absolute",
+    top: 12,
+    left: 12,
+    backgroundColor: PINK,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 999,
+  },
+  promoBadgeText: {
+    color: "#fff",
+    fontSize: 10,
+    fontFamily: "Inter_700Bold",
+    letterSpacing: 0.6,
+  },
+  promoBody: {
+    position: "absolute",
+    left: 14,
+    right: 14,
+    bottom: 12,
+  },
+  promoTitle: {
+    color: "#fff",
+    fontSize: 16,
+    fontFamily: "Inter_700Bold",
+    letterSpacing: -0.2,
+  },
+  promoMeta: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    marginTop: 6,
+  },
+  promoMetaItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 3,
+  },
+  promoMetaText: {
+    color: "#fff",
+    fontSize: 11,
+    fontFamily: "Inter_600SemiBold",
+  },
+  promoCta: {
+    marginLeft: "auto",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    backgroundColor: "#fff",
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 999,
+  },
+  promoCtaText: {
+    color: PINK,
+    fontSize: 11,
+    fontFamily: "Inter_700Bold",
+  },
+
+  // Shorts
+  shortsRow: {
+    paddingHorizontal: 16,
+    gap: 10,
+    paddingBottom: 4,
+  },
+  shortCard: {
+    width: 120,
+    height: 200,
+    borderRadius: 16,
+    overflow: "hidden",
+    backgroundColor: "#222",
+    shadowColor: "#000",
+    shadowOpacity: 0.15,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 4,
+  },
+  shortImg: { width: "100%", height: "100%" },
+  shortPlay: {
+    position: "absolute",
+    top: "50%",
+    left: "50%",
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    marginTop: -20,
+    marginLeft: -20,
+    backgroundColor: "rgba(0,0,0,0.55)",
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1.5,
+    borderColor: "rgba(255,255,255,0.6)",
+  },
+  shortBody: {
+    position: "absolute",
+    left: 8,
+    right: 8,
+    bottom: 8,
+  },
+  shortTitle: {
+    color: "#fff",
+    fontSize: 12,
+    fontFamily: "Inter_700Bold",
+    letterSpacing: -0.1,
+  },
+  shortMetaRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
     marginTop: 4,
   },
+  shortMetaText: {
+    color: "#fff",
+    fontSize: 10,
+    fontFamily: "Inter_600SemiBold",
+  },
+
+  // Reorder
+  reorderSection: { marginTop: 18 },
   reorderRow: {
     paddingHorizontal: 16,
     gap: 12,
+    paddingBottom: 4,
   },
   reorderCard: {
     width: 140,
@@ -543,10 +835,7 @@ const styles = StyleSheet.create({
     overflow: "hidden",
     backgroundColor: BG,
   },
-  reorderImg: {
-    width: "100%",
-    height: "100%",
-  },
+  reorderImg: { width: "100%", height: "100%" },
   reorderName: {
     fontSize: 13,
     fontFamily: "Inter_600SemiBold",
@@ -568,19 +857,23 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_700Bold",
   },
 
-  // Restaurant list items
+  // Restaurants list
   list: {
     paddingHorizontal: 16,
-    paddingTop: 4,
     gap: 16,
   },
   rCard: {
     backgroundColor: CARD_BG,
-    borderRadius: 16,
+    borderRadius: 18,
     overflow: "hidden",
     borderWidth: 1,
     borderColor: BORDER,
     marginBottom: 16,
+    shadowColor: "#000",
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 2,
   },
   rImageWrap: {
     width: "100%",
@@ -588,14 +881,11 @@ const styles = StyleSheet.create({
     position: "relative",
     backgroundColor: BG,
   },
-  rImage: {
-    width: "100%",
-    height: "100%",
-  },
+  rImage: { width: "100%", height: "100%" },
   rImagePlaceholder: {
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: BG,
+    backgroundColor: PINK_SOFT,
   },
   deliveryBadge: {
     position: "absolute",
@@ -628,10 +918,7 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontFamily: "Inter_700Bold",
   },
-  rBody: {
-    padding: 16,
-    gap: 6,
-  },
+  rBody: { padding: 16, gap: 6 },
   rTitleRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -649,7 +936,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 3,
-    backgroundColor: BG,
+    backgroundColor: PINK_SOFT,
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 8,
