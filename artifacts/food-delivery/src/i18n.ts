@@ -20,7 +20,7 @@ i18n
     detection: {
       order: ["localStorage", "navigator"],
       caches: ["localStorage"],
-      lookupLocalStorage: "tawsila_lang",
+      lookupLocalStorage: "jatek_lang",
     },
     interpolation: {
       escapeValue: false,

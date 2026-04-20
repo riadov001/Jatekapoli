@@ -30,15 +30,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const storedToken = localStorage.getItem("tawsila_token");
-    const storedUser = localStorage.getItem("tawsila_user");
+    const storedToken = localStorage.getItem("jatek_token");
+    const storedUser = localStorage.getItem("jatek_user");
     if (storedToken && storedUser) {
       try {
         setToken(storedToken);
         setUser(JSON.parse(storedUser));
       } catch {
-        localStorage.removeItem("tawsila_token");
-        localStorage.removeItem("tawsila_user");
+        localStorage.removeItem("jatek_token");
+        localStorage.removeItem("jatek_user");
       }
     }
     setIsLoading(false);
@@ -47,15 +47,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = (newToken: string, newUser: User) => {
     setToken(newToken);
     setUser(newUser);
-    localStorage.setItem("tawsila_token", newToken);
-    localStorage.setItem("tawsila_user", JSON.stringify(newUser));
+    localStorage.setItem("jatek_token", newToken);
+    localStorage.setItem("jatek_user", JSON.stringify(newUser));
   };
 
   const logout = () => {
     setToken(null);
     setUser(null);
-    localStorage.removeItem("tawsila_token");
-    localStorage.removeItem("tawsila_user");
+    localStorage.removeItem("jatek_token");
+    localStorage.removeItem("jatek_user");
   };
 
   return (

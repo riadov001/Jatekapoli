@@ -16,7 +16,7 @@ import {
 import { useTranslation } from "react-i18next";
 
 async function updateDriverLocation(driverId: number, lat: number, lng: number) {
-  const token = localStorage.getItem("tawsila_token");
+  const token = localStorage.getItem("jatek_token");
   const base = import.meta.env.BASE_URL?.replace(/\/$/, "") || "";
   await fetch(`${base}/api/drivers/${driverId}/location`, {
     method: "PATCH",

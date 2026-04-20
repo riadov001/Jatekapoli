@@ -3,7 +3,7 @@ import jwt from "jsonwebtoken";
 import { db, usersTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 
-const JWT_SECRET = process.env.SESSION_SECRET || "tawsila-secret-2024";
+const JWT_SECRET = process.env.SESSION_SECRET || "jatek-secret-2024";
 if (!process.env.SESSION_SECRET && process.env.NODE_ENV === "production") {
   throw new Error("SESSION_SECRET environment variable is required in production");
 }

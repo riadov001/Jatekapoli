@@ -54,7 +54,7 @@ packages = ["eas-cli"]
 [userenv]
 
 [userenv.shared]
-EXPO_PUBLIC_DOMAIN = "tawsila.straight-path.eu"
+EXPO_PUBLIC_DOMAIN = "jatek.straight-path.eu"
 
 [objectStorage]
 defaultBucketID = "replit-objstore-7529e202-9e2b-4c48-b3d8-20b5dd3ac264"

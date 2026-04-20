@@ -33,7 +33,7 @@ export function Layout({ children }: LayoutProps) {
 
   const changeLanguage = (lng: string) => {
     i18n.changeLanguage(lng);
-    localStorage.setItem("tawsila_lang", lng);
+    localStorage.setItem("jatek_lang", lng);
   };
 
   const BOTTOM_NAV = [

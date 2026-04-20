@@ -5,7 +5,7 @@ import jwt from "jsonwebtoken";
 
 const router: IRouter = Router();
 
-const JWT_SECRET = process.env.SESSION_SECRET || "tawsila-secret-2024";
+const JWT_SECRET = process.env.SESSION_SECRET || "jatek-secret-2024";
 
 function getTier(points: number): string {
   if (points >= 500) return "Gold";

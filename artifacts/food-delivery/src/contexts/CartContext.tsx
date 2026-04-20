@@ -21,7 +21,7 @@ interface CartContextType {
   itemCount: number;
 }
 
-const CART_KEY = "tawsila_cart";
+const CART_KEY = "jatek_cart";
 
 function loadCart() {
   try {

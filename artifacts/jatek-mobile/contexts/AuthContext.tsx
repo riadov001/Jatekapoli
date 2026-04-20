@@ -3,8 +3,8 @@ import * as SecureStore from "expo-secure-store";
 import { Platform } from "react-native";
 import { setAuthTokenGetter } from "@workspace/api-client-react";
 
-const TOKEN_KEY = "tawsila_jwt";
-const USER_KEY = "tawsila_user";
+const TOKEN_KEY = "jatek_jwt";
+const USER_KEY = "jatek_user";
 
 export interface AuthUser {
   id: number;

@@ -4,6 +4,6 @@ import App from "./App";
 import "./i18n";
 import "./index.css";
 
-setAuthTokenGetter(() => localStorage.getItem("tawsila_token"));
+setAuthTokenGetter(() => localStorage.getItem("jatek_token"));
 
 createRoot(document.getElementById("root")!).render(<App />);

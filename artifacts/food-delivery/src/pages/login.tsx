@@ -184,7 +184,7 @@ export default function LoginPage() {
   const handleSaveName = async (data: z.infer<typeof nameSchema>) => {
     setIsSavingName(true);
     try {
-      const token = localStorage.getItem("tawsila_token");
+      const token = localStorage.getItem("jatek_token");
       const apiBase = import.meta.env.BASE_URL?.replace(/\/$/, "") || "";
       const response = await fetch(`${apiBase}/api/auth/update-name`, {
         method: "PATCH",

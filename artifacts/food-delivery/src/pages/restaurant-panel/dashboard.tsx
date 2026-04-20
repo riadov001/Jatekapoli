@@ -43,7 +43,7 @@ type BusinessProfileForm = {
  */
 function openReceiptWindow(orderId: number) {
   const base = import.meta.env.BASE_URL?.replace(/\/$/, "") || "";
-  const token = localStorage.getItem("tawsila_token") || "";
+  const token = localStorage.getItem("jatek_token") || "";
   const url = `${base}/api/orders/${orderId}/receipt?token=${encodeURIComponent(token)}`;
   window.open(url, "_blank", "width=420,height=700");
 }
@@ -229,7 +229,7 @@ export default function RestaurantDashboardPage() {
     setProfileSaving(true);
     try {
       const base = import.meta.env.BASE_URL?.replace(/\/$/, "") || "";
-      const token = localStorage.getItem("tawsila_token");
+      const token = localStorage.getItem("jatek_token");
       const res = await fetch(`${base}/api/restaurants/${myRestaurant.id}/complete-profile`, {
         method: "POST",
         headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },

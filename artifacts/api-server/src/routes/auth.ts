@@ -7,7 +7,7 @@ import { RegisterBody, LoginBody } from "@workspace/api-zod";
 
 const router: IRouter = Router();
 
-const JWT_SECRET = process.env.SESSION_SECRET || "tawsila-secret-2024";
+const JWT_SECRET = process.env.SESSION_SECRET || "jatek-secret-2024";
 const OTP_EXPIRY_MINUTES = 5;
 const OTP_MAX_ATTEMPTS = 3;
 const OTP_RATE_LIMIT_MINUTES = 1;
@@ -301,7 +301,7 @@ router.post("/auth/verify-otp", async (req, res): Promise<void> => {
   if (!user) {
     const userName = name?.trim() || `User ${normalizedPhone.slice(-4)}`;
     const userRole = role || "customer";
-    const placeholderEmail = `sms_${normalizedPhone.replace(/[^0-9]/g, "")}@tawsila.local`;
+    const placeholderEmail = `sms_${normalizedPhone.replace(/[^0-9]/g, "")}@jatek.local`;
     const dummyPassword = await bcrypt.hash(Math.random().toString(36), 10);
 
     const [newUser] = await db.insert(usersTable).values({

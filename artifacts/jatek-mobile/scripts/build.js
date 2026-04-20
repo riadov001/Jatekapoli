@@ -56,7 +56,7 @@ function stripProtocol(domain) {
 
 function getDeploymentDomain() {
   // Explicit override always wins — used for production builds pointing at the
-  // custom domain (e.g. tawsila.straight-path.eu).
+  // custom domain (e.g. jatek.straight-path.eu).
   if (process.env.EXPO_PUBLIC_DOMAIN) {
     return stripProtocol(process.env.EXPO_PUBLIC_DOMAIN);
   }

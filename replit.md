@@ -26,9 +26,9 @@ pnpm workspace monorepo using TypeScript. Each package manages its own dependenc
 
 See the `pnpm-workspace` skill for workspace structure, TypeScript setup, and package details.
 
-## Project: Tawsila Food Delivery Platform
+## Project: Jatek Food Delivery Platform
 
-**Tawsila** is a full-stack food delivery app for Oujda, Morocco. Multi-role platform.
+**Jatek** is a full-stack food delivery app for Oujda, Morocco. Multi-role platform.
 
 ### Architecture
 - `artifacts/api-server` — Express 5 REST API on port 8080, JWT auth (jsonwebtoken/bcryptjs)
@@ -42,10 +42,11 @@ See the `pnpm-workspace` skill for workspace structure, TypeScript setup, and pa
 users, restaurants, menuItems, orders, orderItems, drivers, reviews
 
 ### Test Accounts (all password: `password123`)
-- customer@tawsila.ma (customer)
-- driver@tawsila.ma (driver)
-- admin@tawsila.ma (admin)
-- owner@tawsila.ma (restaurant_owner, owns restaurants 1-6)
+- customer@jatek.ma (customer)
+- driver@jatek.ma (driver)
+- driver2@jatek.ma (driver)
+- admin@jatek.ma (admin)
+- owner@jatek.ma (restaurant_owner, owns restaurants 1-6)
 
 ### Frontend Routes
 - `/` — Home (hero, category filter, Support Local, all restaurants)
@@ -69,18 +70,18 @@ users, restaurants, menuItems, orders, orderItems, drivers, reviews
 - Languages: English (`en`), French (`fr`), Arabic (`ar` — RTL)
 - Translation files: `artifacts/food-delivery/src/locales/{en,fr,ar}.json`
 - Config: `artifacts/food-delivery/src/i18n.ts` (imported in `main.tsx`)
-- Language stored in `localStorage` key `tawsila_lang`
+- Language stored in `localStorage` key `jatek_lang`
 - RTL: `document.documentElement.dir` toggled in `Layout.tsx` via `useEffect`
 - Switcher: Globe icon in header dropdown (🇬🇧 English / 🇫🇷 Français / 🇲🇦 العربية)
 - All pages/components use `useTranslation()` hook
 
 ### Auth Flow
-JWT stored in localStorage (`tawsila_token`). `setAuthTokenGetter` registered in `main.tsx` to inject `Authorization: Bearer` header on all API calls.
+JWT stored in localStorage (`jatek_token`). `setAuthTokenGetter` registered in `main.tsx` to inject `Authorization: Bearer` header on all API calls.
 
 ### Mobile App (Expo)
-- `artifacts/tawsila-mobile` — Expo (React Native) app at preview path `/mobile/`
+- `artifacts/jatek-mobile` — Expo (React Native) app at preview path `/mobile/`
 - Phone OTP auth (Twilio), shares same backend API
 - Screens: Login, OTP verify, Home (restaurants), Restaurant detail + menu, Cart, Orders list, Order tracking, Profile
 - State: AuthContext (expo-secure-store token persistence), CartContext (AsyncStorage)
 - Design tokens synced from web app: primary #F97316, background #F9F6F2, card #FFFFFF
-- Workflow: `artifacts/tawsila-mobile: expo`
+- Workflow: `artifacts/jatek-mobile: expo`

@@ -58,7 +58,7 @@ export default function AdminRestaurantMenuPage() {
   const [form, setForm] = useState<FormState>(emptyForm);
   const { uploadFile, isUploading } = useUpload({
     getRequestHeaders: () => {
-      const token = localStorage.getItem("tawsila_token");
+      const token = localStorage.getItem("jatek_token");
       const headers: Record<string, string> = {};
       if (token) headers.Authorization = `Bearer ${token}`;
       return headers;

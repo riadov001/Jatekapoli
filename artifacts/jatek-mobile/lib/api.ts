@@ -1,12 +1,12 @@
 /**
  * Lightweight helpers for endpoints not yet in the generated client.
- * All requests authenticate via the token stored in AuthContext (`tawsila_jwt`).
+ * All requests authenticate via the token stored in AuthContext (`jatek_jwt`).
  */
 import * as SecureStore from "expo-secure-store";
 import { Platform } from "react-native";
 
 const API_BASE = `https://${process.env.EXPO_PUBLIC_DOMAIN}`;
-const TOKEN_KEY = "tawsila_jwt";
+const TOKEN_KEY = "jatek_jwt";
 
 async function getToken(): Promise<string | null> {
   if (Platform.OS === "web") return localStorage.getItem(TOKEN_KEY);

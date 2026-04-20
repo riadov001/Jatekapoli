@@ -25,8 +25,8 @@ interface CartContextType {
 }
 
 const CartContext = createContext<CartContextType | null>(null);
-const CART_KEY = "tawsila_cart_v2";
-const ADDR_KEY = "tawsila_selected_address_v1";
+const CART_KEY = "jatek_cart_v2";
+const ADDR_KEY = "jatek_selected_address_v1";
 
 export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);

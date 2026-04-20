@@ -18,17 +18,17 @@ export async function runSeedIfEmpty() {
 async function seedAll() {
   const hashedPassword = await bcrypt.hash("password123", 10);
 
-  const existingAdmin = await db.select().from(usersTable).where(eq(usersTable.email, "admin@tawsila.ma")).limit(1);
+  const existingAdmin = await db.select().from(usersTable).where(eq(usersTable.email, "admin@jatek.ma")).limit(1);
 
   let customerUser: any, ownerUser: any;
 
   if (existingAdmin.length === 0) {
     const users = await db.insert(usersTable).values([
-      { name: "Mohammed Alami", email: "customer@tawsila.ma", password: hashedPassword, role: "customer", phone: "+212661000001", loyaltyPoints: 250, isActive: true },
-      { name: "Youssef Benali", email: "driver@tawsila.ma", password: hashedPassword, role: "driver", phone: "+212661000002", loyaltyPoints: 0, isActive: true },
-      { name: "Fatima Zahra", email: "owner@tawsila.ma", password: hashedPassword, role: "restaurant_owner", phone: "+212661000003", loyaltyPoints: 0, isActive: true },
-      { name: "Admin Tawsila", email: "admin@tawsila.ma", password: hashedPassword, role: "admin", phone: "+212661000004", loyaltyPoints: 0, isActive: true },
-      { name: "Khalid Mansouri", email: "driver2@tawsila.ma", password: hashedPassword, role: "driver", phone: "+212661000005", loyaltyPoints: 0, isActive: true },
+      { name: "Mohammed Alami", email: "customer@jatek.ma", password: hashedPassword, role: "customer", phone: "+212661000001", loyaltyPoints: 250, isActive: true },
+      { name: "Youssef Benali", email: "driver@jatek.ma", password: hashedPassword, role: "driver", phone: "+212661000002", loyaltyPoints: 0, isActive: true },
+      { name: "Fatima Zahra", email: "owner@jatek.ma", password: hashedPassword, role: "restaurant_owner", phone: "+212661000003", loyaltyPoints: 0, isActive: true },
+      { name: "Admin Jatek", email: "admin@jatek.ma", password: hashedPassword, role: "admin", phone: "+212661000004", loyaltyPoints: 0, isActive: true },
+      { name: "Khalid Mansouri", email: "driver2@jatek.ma", password: hashedPassword, role: "driver", phone: "+212661000005", loyaltyPoints: 0, isActive: true },
     ]).returning();
 
     [customerUser, , ownerUser] = users;

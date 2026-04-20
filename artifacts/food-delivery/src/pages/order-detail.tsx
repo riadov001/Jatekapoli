@@ -75,7 +75,7 @@ export default function OrderDetailPage() {
     const fetchLocation = async () => {
       try {
         const base = import.meta.env.BASE_URL?.replace(/\/$/, "") || "";
-        const token = localStorage.getItem("tawsila_token");
+        const token = localStorage.getItem("jatek_token");
         const res = await fetch(`${base}/api/drivers/${order.driverId}/location`, {
           headers: token ? { Authorization: `Bearer ${token}` } : {},
         });

@@ -31,7 +31,7 @@ import WelcomePage from "@/pages/welcome";
 import LegalPage from "@/pages/legal";
 import NotFound from "@/pages/not-found";
 
-setAuthTokenGetter(() => localStorage.getItem("tawsila_token"));
+setAuthTokenGetter(() => localStorage.getItem("jatek_token"));
 
 const queryClient = new QueryClient({
   defaultOptions: {

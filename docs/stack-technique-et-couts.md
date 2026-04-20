@@ -427,7 +427,7 @@
 | **SSL/TLS** | Certificat HTTPS (Let's Encrypt via Cloudflare) | Gratuit | **$0** |
 | **Domaine** (ex. jatek.ma) | Nom de domaine .ma / .com | ~$15/an | **$1.25/mois** |
 
-> Le domaine actuel `tawsila.straight-path.eu` peut être remplacé par `jatek.ma` (~15€/an via registrar marocain).
+> Le domaine actuel `jatek.straight-path.eu` peut être remplacé par `jatek.ma` (~15€/an via registrar marocain).
 
 ---
 
@@ -574,7 +574,7 @@ Coût mensuel total estimé (avec Twilio US)
 
 **Ajouter expo-notifications pour remplacer SSE en background :**
 ```
-pnpm --filter @workspace/tawsila-mobile add expo-notifications
+pnpm --filter @workspace/jatek-mobile add expo-notifications
 ```
 - Coût : $0 (FCM + APNs gratuits)
 - Avantage : notifications même app fermée

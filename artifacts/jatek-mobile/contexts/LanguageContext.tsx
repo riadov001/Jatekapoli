@@ -5,7 +5,7 @@ import { translations, type Lang, type TKey } from "@/lib/translations";
 import { fetchNotifPrefs, updateNotifPrefs } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
 
-const STORAGE_KEY = "tawsila_lang_v1";
+const STORAGE_KEY = "jatek_lang_v1";
 
 interface LangCtx {
   lang: Lang;

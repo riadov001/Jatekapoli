@@ -23,7 +23,7 @@ export default function WelcomePage() {
   const featured = (restaurants ?? []).slice(0, 8);
 
   const visit = (to: string) => {
-    localStorage.setItem("tawsila_visited", "1");
+    localStorage.setItem("jatek_visited", "1");
     setLocation(to);
   };
 
