@@ -111,6 +111,16 @@ export default function RestaurantScreen() {
                 <Text style={[styles.rDesc, { color: colors.mutedForeground }]}>{restaurant.description}</Text>
               )}
               <View style={styles.metaRow}>
+                {(() => {
+                  const isOpen = (restaurant as { isOpen?: boolean | null }).isOpen;
+                  if (isOpen !== true) return null;
+                  return (
+                    <View style={[styles.openBadge, { backgroundColor: colors.turquoiseSoft }]}>
+                      <View style={[styles.openDot, { backgroundColor: colors.turquoise }]} />
+                      <Text style={[styles.openText, { color: colors.turquoise }]}>Ouvert</Text>
+                    </View>
+                  );
+                })()}
                 {restaurant.rating != null && (
                   <View style={styles.metaItem}>
                     <Ionicons name="star" size={14} color={colors.yellow} />
@@ -244,6 +254,9 @@ const styles = StyleSheet.create({
   rDesc: { fontSize: 14, fontFamily: "Inter_400Regular", lineHeight: 20 },
   metaRow: { flexDirection: "row", gap: 16, marginTop: 6, flexWrap: "wrap" },
   metaItem: { flexDirection: "row", alignItems: "center", gap: 5 },
+  openBadge: { flexDirection: "row", alignItems: "center", gap: 5, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 12 },
+  openDot: { width: 6, height: 6, borderRadius: 3 },
+  openText: { fontSize: 11, fontFamily: "Inter_700Bold", textTransform: "uppercase", letterSpacing: 0.4 },
   metaText: { fontSize: 13, fontFamily: "Inter_500Medium" },
   catRow: { paddingHorizontal: 16, paddingVertical: 12, gap: 8 },
   catChip: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, borderWidth: 1 },

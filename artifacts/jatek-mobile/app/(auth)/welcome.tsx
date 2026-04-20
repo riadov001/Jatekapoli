@@ -2,6 +2,7 @@ import React from "react";
 import { StyleSheet, Text, View, TouchableOpacity, Platform, ScrollView, Image } from "react-native";
 import { router } from "expo-router";
 import * as Haptics from "expo-haptics";
+import { LinearGradient } from "expo-linear-gradient";
 import { useColors } from "@/hooks/useColors";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -17,8 +18,14 @@ export default function WelcomeScreen() {
   };
 
   return (
+    <LinearGradient
+      colors={[colors.pinkBg, colors.turquoiseSoft]}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+      style={{ flex: 1 }}
+    >
     <ScrollView
-      style={{ flex: 1, backgroundColor: colors.pinkBg }}
+      style={{ flex: 1 }}
       contentContainerStyle={[
         styles.scroll,
         { paddingTop: insets.top + 24, paddingBottom: insets.bottom + 24 },
@@ -78,6 +85,7 @@ export default function WelcomeScreen() {
         </View>
       </View>
     </ScrollView>
+    </LinearGradient>
   );
 }
 

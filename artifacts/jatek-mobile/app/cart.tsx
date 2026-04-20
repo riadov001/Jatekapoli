@@ -14,6 +14,7 @@ import { useT } from "@/contexts/LanguageContext";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 const DELIVERY_FEE = 15;
+const FREE_DELIVERY_THRESHOLD = 150;
 
 export default function CartScreen() {
   const colors = useColors();
@@ -194,6 +195,28 @@ export default function CartScreen() {
           />
         </View>
 
+        {/* Free-delivery threshold */}
+        {(() => {
+          const remaining = FREE_DELIVERY_THRESHOLD - subtotal;
+          const reached = remaining <= 0;
+          const progress = Math.min(1, subtotal / FREE_DELIVERY_THRESHOLD);
+          return (
+            <View style={[styles.freeDelivery, { backgroundColor: colors.turquoiseSoft }]}>
+              <View style={styles.freeDeliveryRow}>
+                <Ionicons name={reached ? "checkmark-circle" : "bicycle"} size={18} color={colors.turquoise} />
+                <Text style={[styles.freeDeliveryText, { color: colors.turquoise }]} numberOfLines={2}>
+                  {reached
+                    ? "Livraison gratuite débloquée 🎉"
+                    : `Plus que ${remaining.toFixed(0)} MAD pour la livraison gratuite`}
+                </Text>
+              </View>
+              <View style={[styles.freeDeliveryBarTrack, { backgroundColor: "rgba(0,194,199,0.2)" }]}>
+                <View style={[styles.freeDeliveryBarFill, { backgroundColor: colors.turquoise, width: `${progress * 100}%` }]} />
+              </View>
+            </View>
+          );
+        })()}
+
         {/* Summary */}
         <View style={[styles.summary, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <Text style={[styles.summaryTitle, { color: colors.foreground }]}>{t("cart_summary")}</Text>
@@ -320,4 +343,9 @@ const styles = StyleSheet.create({
   },
   promoEmoji: { fontSize: 22 },
   promoText: { flex: 1, fontSize: 13, fontFamily: "Inter_600SemiBold", lineHeight: 18 },
+  freeDelivery: { marginHorizontal: 16, marginBottom: 16, padding: 12, borderRadius: 14, gap: 8 },
+  freeDeliveryRow: { flexDirection: "row", alignItems: "center", gap: 8 },
+  freeDeliveryText: { flex: 1, fontSize: 13, fontFamily: "Inter_600SemiBold" },
+  freeDeliveryBarTrack: { height: 6, borderRadius: 3, overflow: "hidden" },
+  freeDeliveryBarFill: { height: "100%", borderRadius: 3 },
 });

@@ -6,6 +6,7 @@ import {
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
+import { LinearGradient } from "expo-linear-gradient";
 import { useSendOtp } from "@workspace/api-client-react";
 import { useColors } from "@/hooks/useColors";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -59,10 +60,15 @@ export default function LoginScreen() {
         contentContainerStyle={[styles.container, { paddingTop: insets.top + 40, paddingBottom: insets.bottom + 24 }]}
         keyboardShouldPersistTaps="handled"
       >
-        {/* Logo */}
-        <View style={[styles.logoWrap, { backgroundColor: colors.primary }]}>
+        {/* Logo with pink->turquoise gradient hero */}
+        <LinearGradient
+          colors={[colors.primary, colors.turquoise]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.logoWrap}
+        >
           <Ionicons name="bicycle" size={38} color="#fff" />
-        </View>
+        </LinearGradient>
         <Text style={[styles.brand, { color: colors.heading, fontStyle: "italic", letterSpacing: -1 }]}>Jatek.</Text>
         <Text style={[styles.subtitle, { color: colors.mutedForeground }]}>
           {t("login_subtitle")}

@@ -121,13 +121,13 @@ function OrderRow({
         {order.status === "pending" && (
           <View style={styles.actions}>
             <TouchableOpacity
-              style={[styles.actionBtn, { backgroundColor: "#FEF3C7", borderColor: "#FBBF24", flex: 0, paddingHorizontal: 16 }]}
+              style={[styles.actionBtn, { backgroundColor: colors.yellowSoft, borderColor: colors.yellow, flex: 0, paddingHorizontal: 16 }]}
               onPress={() => onAction(order.id, "cancelled")}
               disabled={loading}
               testID={`btn-reject-${order.id}`}
             >
-              <Ionicons name="close" size={14} color="#92400E" />
-              <Text style={{ color: "#92400E", fontSize: 13, fontFamily: "Inter_600SemiBold" }}>Refuser</Text>
+              <Ionicons name="close" size={14} color={colors.yellowForeground} />
+              <Text style={{ color: colors.yellowForeground, fontSize: 13, fontFamily: "Inter_600SemiBold" }}>Refuser</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.actionBtn, { backgroundColor: colors.primary, flex: 1, opacity: profileComplete ? 1 : 0.4 }]}
@@ -318,15 +318,15 @@ export default function ManageScreen() {
             <TouchableOpacity
               activeOpacity={0.85}
               onPress={() => router.push("/restaurant-onboarding")}
-              style={[styles.profileGate, { backgroundColor: "#FEF3C7", borderColor: "#FBBF24" }]}
+              style={[styles.profileGate, { backgroundColor: colors.yellowSoft, borderColor: colors.yellow }]}
               testID="banner-owner-profile"
             >
-              <Ionicons name="warning-outline" size={22} color="#92400E" />
+              <Ionicons name="warning-outline" size={22} color={colors.yellowForeground} />
               <View style={{ flex: 1 }}>
-                <Text style={[styles.gateTitle, { color: "#92400E" }]}>Complétez votre profil professionnel</Text>
-                <Text style={[styles.gateSub, { color: "#78350F" }]}>Nom légal + ICE requis pour accepter les commandes.</Text>
+                <Text style={[styles.gateTitle, { color: colors.yellowForeground }]}>Complétez votre profil professionnel</Text>
+                <Text style={[styles.gateSub, { color: colors.yellowForeground, opacity: 0.75 }]}>Nom légal + ICE requis pour accepter les commandes.</Text>
               </View>
-              <Ionicons name="chevron-forward" size={20} color="#92400E" />
+              <Ionicons name="chevron-forward" size={20} color={colors.yellowForeground} />
             </TouchableOpacity>
           </Animated.View>
         )}
@@ -335,7 +335,7 @@ export default function ManageScreen() {
         {newOrderBanner && (
           <Animated.View entering={FadeInDown.duration(300)}>
             <TouchableOpacity
-              style={[styles.newOrderBanner, { backgroundColor: colors.primary }]}
+              style={[styles.newOrderBanner, { backgroundColor: colors.turquoise }]}
               onPress={() => setNewOrderBanner(null)}
               testID="banner-new-order"
             >

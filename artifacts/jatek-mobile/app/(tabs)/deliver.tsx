@@ -326,15 +326,15 @@ export default function DeliverScreen() {
             <TouchableOpacity
               activeOpacity={0.85}
               onPress={() => router.push("/driver-onboarding")}
-              style={[styles.profileGate, { backgroundColor: "#FEF3C7", borderColor: "#FBBF24" }]}
+              style={[styles.profileGate, { backgroundColor: colors.yellowSoft, borderColor: colors.yellow }]}
               testID="banner-driver-profile"
             >
-              <Ionicons name="warning-outline" size={22} color="#92400E" />
+              <Ionicons name="warning-outline" size={22} color={colors.yellowForeground} />
               <View style={{ flex: 1 }}>
-                <Text style={styles.profileGateTitle}>Complete your driver profile</Text>
-                <Text style={styles.profileGateSub}>Add your vehicle plate and national ID to start accepting deliveries.</Text>
+                <Text style={[styles.profileGateTitle, { color: colors.yellowForeground }]}>Complete your driver profile</Text>
+                <Text style={[styles.profileGateSub, { color: colors.yellowForeground, opacity: 0.75 }]}>Add your vehicle plate and national ID to start accepting deliveries.</Text>
               </View>
-              <Ionicons name="chevron-forward" size={20} color="#92400E" />
+              <Ionicons name="chevron-forward" size={20} color={colors.yellowForeground} />
             </TouchableOpacity>
           </Animated.View>
         )}
@@ -621,8 +621,8 @@ const styles = StyleSheet.create({
     marginHorizontal: 16, marginBottom: 14, padding: 14, borderRadius: 16, borderWidth: 1,
     flexDirection: "row", alignItems: "center", gap: 12,
   },
-  profileGateTitle: { color: "#92400E", fontSize: 13, fontFamily: "Inter_700Bold" },
-  profileGateSub: { color: "#78350F", fontSize: 11, marginTop: 2 },
+  profileGateTitle: { fontSize: 13, fontFamily: "Inter_700Bold" },
+  profileGateSub: { fontSize: 11, marginTop: 2 },
 
   statsRow: { flexDirection: "row", gap: 8, paddingHorizontal: 16, marginTop: 14, marginBottom: 16 },
   statBox: { flex: 1, padding: 12, borderRadius: 14, borderWidth: 1, alignItems: "center" },
