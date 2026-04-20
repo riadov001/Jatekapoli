@@ -10,6 +10,7 @@ import {
   Platform,
   ScrollView,
   Image,
+  Pressable,
 } from "react-native";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -43,7 +44,7 @@ const TEXT_MUTED = "#6B7280";
 const BORDER = "#F1E0E8";
 const STAR_YELLOW = "#FFC107";
 
-// Each category gets an emoji (more "réaliste") and its own pastel background.
+// Each category gets an emoji and its own pastel background.
 const CATEGORIES = [
   { id: "all",        label: "Tous",       emoji: "🍽️",  bg: "#FFE7DC" },
   { id: "Pizza",      label: "Pizza",      emoji: "🍕",  bg: "#FFE0E0" },
@@ -57,7 +58,304 @@ const CATEGORIES = [
   { id: "Dessert",    label: "Dessert",    emoji: "🍰",  bg: "#FFE0F4" },
 ];
 
-function RestaurantRow({
+// Promo card color schemes (rotated by index for variety).
+const PROMO_SCHEMES: Array<[string, string]> = [
+  ["#FF4593", "#FF8AB6"],
+  ["#00BFA6", "#5BD7C4"],
+  ["#FF7A45", "#FFB68A"],
+  ["#7B61FF", "#B5A6FF"],
+  ["#FFC107", "#FFE082"],
+  ["#0EA5E9", "#7DD3FC"],
+];
+
+// ---------- Restaurant card (large, with overlay) ----------
+function RestaurantCard({
+  restaurant,
+  variant = "standard",
+  onPress,
+}: {
+  restaurant: Restaurant;
+  variant?: "standard" | "split";
+  onPress: () => void;
+}) {
+  const hasFreeDelivery = restaurant.deliveryFee === 0;
+  const isTopRated = (restaurant.rating ?? 0) >= 4.6;
+  const showPromo = hasFreeDelivery || isTopRated;
+
+  if (variant === "split") {
+    return (
+      <Pressable
+        onPress={onPress}
+        style={({ pressed }) => [
+          styles.splitCard,
+          pressed && styles.pressedScale,
+        ]}
+      >
+        <View style={styles.splitImageWrap}>
+          {restaurant.imageUrl ? (
+            <Image
+              source={{ uri: restaurant.imageUrl }}
+              style={styles.splitImage}
+              resizeMode="cover"
+            />
+          ) : (
+            <View style={[styles.splitImage, styles.imagePlaceholder]}>
+              <Ionicons name="restaurant" size={28} color={TEXT_MUTED} />
+            </View>
+          )}
+          {showPromo ? (
+            <View style={styles.promoBadgeAbs}>
+              <Ionicons name="flame" size={11} color="#fff" />
+              <Text style={styles.promoBadgeAbsText}>PROMO</Text>
+            </View>
+          ) : null}
+          {restaurant.isOpen === false ? (
+            <View style={styles.closedOverlay}>
+              <Text style={styles.closedText}>Fermé</Text>
+            </View>
+          ) : null}
+        </View>
+
+        <View style={styles.splitBody}>
+          <View style={styles.splitTitleRow}>
+            <Text style={styles.splitTitle} numberOfLines={1}>
+              {restaurant.name}
+            </Text>
+            {restaurant.rating != null ? (
+              <View style={styles.ratingPill}>
+                <Ionicons name="star" size={11} color={STAR_YELLOW} />
+                <Text style={styles.ratingText}>
+                  {restaurant.rating.toFixed(1)}
+                </Text>
+              </View>
+            ) : null}
+          </View>
+          {restaurant.category ? (
+            <Text style={styles.splitCategory} numberOfLines={1}>
+              {restaurant.category}
+            </Text>
+          ) : null}
+          <View style={styles.splitMetaRow}>
+            {restaurant.deliveryTime != null ? (
+              <View style={styles.metaItem}>
+                <Ionicons name="bicycle-outline" size={13} color={TEXT_MUTED} />
+                <Text style={styles.metaText}>{restaurant.deliveryTime} min</Text>
+              </View>
+            ) : null}
+            {restaurant.minimumOrder != null && restaurant.minimumOrder > 0 ? (
+              <View style={styles.metaItem}>
+                <Ionicons name="wallet-outline" size={13} color={TEXT_MUTED} />
+                <Text style={styles.metaText}>Min {restaurant.minimumOrder} MAD</Text>
+              </View>
+            ) : null}
+          </View>
+          {hasFreeDelivery ? (
+            <View style={[styles.freeBadge, { alignSelf: "flex-start", marginTop: 6 }]}>
+              <Ionicons name="rocket-outline" size={11} color={TURQUOISE} />
+              <Text style={styles.freeBadgeText}>Livraison offerte</Text>
+            </View>
+          ) : null}
+        </View>
+      </Pressable>
+    );
+  }
+
+  // Standard: large image with text overlay (Talabat-style hero card).
+  return (
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.bigCard,
+        pressed && styles.pressedScale,
+      ]}
+    >
+      <View style={styles.bigImageWrap}>
+        {restaurant.imageUrl ? (
+          <Image
+            source={{ uri: restaurant.imageUrl }}
+            style={styles.bigImage}
+            resizeMode="cover"
+          />
+        ) : (
+          <View style={[styles.bigImage, styles.imagePlaceholder]}>
+            <Ionicons name="restaurant" size={40} color={TEXT_MUTED} />
+          </View>
+        )}
+
+        <LinearGradient
+          colors={[
+            "rgba(10,27,61,0.0)",
+            "rgba(10,27,61,0.05)",
+            "rgba(10,27,61,0.92)",
+          ]}
+          locations={[0, 0.45, 1]}
+          style={StyleSheet.absoluteFill}
+        />
+
+        {/* Top-row badges */}
+        <View style={styles.bigTopRow}>
+          {showPromo ? (
+            <View style={styles.promoBadgeAbs}>
+              <Ionicons name="flame" size={11} color="#fff" />
+              <Text style={styles.promoBadgeAbsText}>
+                {hasFreeDelivery ? "LIVRAISON OFFERTE" : "TOP NOTÉ"}
+              </Text>
+            </View>
+          ) : (
+            <View />
+          )}
+          {restaurant.deliveryTime != null ? (
+            <View style={styles.deliveryBadgeTop}>
+              <Ionicons name="time-outline" size={11} color={TEXT_DARK} />
+              <Text style={styles.deliveryBadgeTopText}>
+                {restaurant.deliveryTime} min
+              </Text>
+            </View>
+          ) : null}
+        </View>
+
+        {/* Heart (purely decorative, no logic). */}
+        <View style={styles.heartBtn}>
+          <Ionicons name="heart-outline" size={18} color="#fff" />
+        </View>
+
+        {restaurant.isOpen === false ? (
+          <View style={styles.closedOverlayFull}>
+            <Text style={styles.closedTextBig}>Fermé</Text>
+          </View>
+        ) : null}
+
+        {/* Bottom overlay text */}
+        <View style={styles.bigOverlayContent}>
+          <View style={styles.bigTitleRow}>
+            <Text style={styles.bigTitle} numberOfLines={1}>
+              {restaurant.name}
+            </Text>
+            {restaurant.rating != null ? (
+              <View style={styles.ratingPillLight}>
+                <Ionicons name="star" size={12} color={STAR_YELLOW} />
+                <Text style={styles.ratingTextLight}>
+                  {restaurant.rating.toFixed(1)}
+                </Text>
+              </View>
+            ) : null}
+          </View>
+          {restaurant.category ? (
+            <Text style={styles.bigCategory} numberOfLines={1}>
+              {restaurant.category}
+            </Text>
+          ) : null}
+          <View style={styles.bigMetaRow}>
+            {restaurant.minimumOrder != null && restaurant.minimumOrder > 0 ? (
+              <View style={styles.bigMetaItem}>
+                <Ionicons
+                  name="wallet-outline"
+                  size={12}
+                  color="rgba(255,255,255,0.85)"
+                />
+                <Text style={styles.bigMetaText}>
+                  Min {restaurant.minimumOrder} MAD
+                </Text>
+              </View>
+            ) : null}
+            {hasFreeDelivery ? (
+              <View style={styles.freeBadgeLight}>
+                <Text style={styles.freeBadgeTextLight}>Gratuit</Text>
+              </View>
+            ) : restaurant.deliveryFee != null ? (
+              <View style={styles.bigMetaItem}>
+                <Ionicons
+                  name="bicycle-outline"
+                  size={12}
+                  color="rgba(255,255,255,0.85)"
+                />
+                <Text style={styles.bigMetaText}>
+                  {restaurant.deliveryFee} MAD
+                </Text>
+              </View>
+            ) : null}
+          </View>
+        </View>
+      </View>
+    </Pressable>
+  );
+}
+
+// ---------- Promo card (irregular corners) ----------
+function PromoCard({
+  restaurant,
+  scheme,
+  onPress,
+}: {
+  restaurant: Restaurant;
+  scheme: [string, string];
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.promoCard,
+        pressed && styles.pressedScale,
+      ]}
+    >
+      {restaurant.imageUrl ? (
+        <Image
+          source={{ uri: restaurant.imageUrl }}
+          style={styles.promoImg}
+          resizeMode="cover"
+        />
+      ) : (
+        <View style={[styles.promoImg, styles.imagePlaceholder]}>
+          <Ionicons name="restaurant" size={28} color={TEXT_MUTED} />
+        </View>
+      )}
+      <LinearGradient
+        colors={[
+          `${scheme[0]}00`,
+          `${scheme[0]}55`,
+          `${scheme[1]}EE`,
+        ]}
+        locations={[0, 0.45, 1]}
+        style={StyleSheet.absoluteFill}
+      />
+      <View style={styles.promoBadge}>
+        <Ionicons name="pricetag" size={10} color={PINK_DEEP} />
+        <Text style={styles.promoBadgeText}>PROMO</Text>
+      </View>
+      <View style={styles.promoBody}>
+        <Text style={styles.promoTitle} numberOfLines={1}>
+          {restaurant.name}
+        </Text>
+        <View style={styles.promoMeta}>
+          {restaurant.rating != null ? (
+            <View style={styles.promoMetaItem}>
+              <Ionicons name="star" size={12} color={STAR_YELLOW} />
+              <Text style={styles.promoMetaText}>
+                {restaurant.rating.toFixed(1)}
+              </Text>
+            </View>
+          ) : null}
+          {restaurant.deliveryTime != null ? (
+            <View style={styles.promoMetaItem}>
+              <Ionicons name="time-outline" size={12} color="#fff" />
+              <Text style={styles.promoMetaText}>
+                {restaurant.deliveryTime} min
+              </Text>
+            </View>
+          ) : null}
+          <View style={styles.promoCta}>
+            <Text style={styles.promoCtaText}>Voir</Text>
+            <Ionicons name="arrow-forward" size={12} color={PINK} />
+          </View>
+        </View>
+      </View>
+    </Pressable>
+  );
+}
+
+// ---------- Short / reel card ----------
+function ShortCard({
   restaurant,
   onPress,
 }: {
@@ -65,125 +363,21 @@ function RestaurantRow({
   onPress: () => void;
 }) {
   return (
-    <TouchableOpacity
+    <Pressable
       onPress={onPress}
-      activeOpacity={0.85}
-      style={styles.rCard}
+      style={({ pressed }) => [
+        styles.shortCard,
+        pressed && styles.pressedScale,
+      ]}
     >
-      <View style={styles.rImageWrap}>
-        {restaurant.imageUrl ? (
-          <Image source={{ uri: restaurant.imageUrl }} style={styles.rImage} resizeMode="cover" />
-        ) : (
-          <View style={[styles.rImage, styles.rImagePlaceholder]}>
-            <Ionicons name="restaurant" size={28} color={TEXT_MUTED} />
-          </View>
-        )}
-        {restaurant.deliveryTime != null && (
-          <View style={styles.deliveryBadge}>
-            <Ionicons name="time-outline" size={11} color="#fff" />
-            <Text style={styles.deliveryBadgeText}>{restaurant.deliveryTime} min</Text>
-          </View>
-        )}
-        {restaurant.isOpen === false && (
-          <View style={styles.closedOverlay}>
-            <Text style={styles.closedText}>Fermé</Text>
-          </View>
-        )}
-      </View>
-
-      <View style={styles.rBody}>
-        <View style={styles.rTitleRow}>
-          <Text style={styles.rTitle} numberOfLines={1}>{restaurant.name}</Text>
-          {restaurant.rating != null && (
-            <View style={styles.ratingPill}>
-              <Ionicons name="star" size={12} color={STAR_YELLOW} />
-              <Text style={styles.ratingText}>{restaurant.rating.toFixed(1)}</Text>
-            </View>
-          )}
-        </View>
-
-        {restaurant.category ? (
-          <Text style={styles.rCategory} numberOfLines={1}>{restaurant.category}</Text>
-        ) : null}
-
-        <View style={styles.rMetaRow}>
-          {restaurant.deliveryTime != null && (
-            <View style={styles.rMetaItem}>
-              <Ionicons name="bicycle-outline" size={13} color={TEXT_MUTED} />
-              <Text style={styles.rMetaText}>{restaurant.deliveryTime} min</Text>
-            </View>
-          )}
-          {restaurant.minimumOrder != null && restaurant.minimumOrder > 0 ? (
-            <View style={styles.rMetaItem}>
-              <Ionicons name="wallet-outline" size={13} color={TEXT_MUTED} />
-              <Text style={styles.rMetaText}>Min {restaurant.minimumOrder} MAD</Text>
-            </View>
-          ) : null}
-          {restaurant.deliveryFee != null && restaurant.deliveryFee === 0 ? (
-            <View style={styles.freeBadge}>
-              <Text style={styles.freeBadgeText}>Livraison offerte</Text>
-            </View>
-          ) : restaurant.deliveryFee != null ? (
-            <View style={styles.rMetaItem}>
-              <Text style={styles.rMetaText}>{restaurant.deliveryFee} MAD livraison</Text>
-            </View>
-          ) : null}
-        </View>
-      </View>
-    </TouchableOpacity>
-  );
-}
-
-function PromoCard({ restaurant, onPress }: { restaurant: Restaurant; onPress: () => void }) {
-  return (
-    <TouchableOpacity activeOpacity={0.9} onPress={onPress} style={styles.promoCard}>
       {restaurant.imageUrl ? (
-        <Image source={{ uri: restaurant.imageUrl }} style={styles.promoImg} resizeMode="cover" />
+        <Image
+          source={{ uri: restaurant.imageUrl }}
+          style={styles.shortImg}
+          resizeMode="cover"
+        />
       ) : (
-        <View style={[styles.promoImg, styles.rImagePlaceholder]}>
-          <Ionicons name="restaurant" size={28} color={TEXT_MUTED} />
-        </View>
-      )}
-      <LinearGradient
-        colors={["transparent", "rgba(0,0,0,0.0)", "rgba(0,0,0,0.85)"]}
-        locations={[0, 0.5, 1]}
-        style={StyleSheet.absoluteFill}
-      />
-      <View style={styles.promoBadge}>
-        <Text style={styles.promoBadgeText}>PROMO</Text>
-      </View>
-      <View style={styles.promoBody}>
-        <Text style={styles.promoTitle} numberOfLines={1}>{restaurant.name}</Text>
-        <View style={styles.promoMeta}>
-          {restaurant.rating != null && (
-            <View style={styles.promoMetaItem}>
-              <Ionicons name="star" size={12} color={STAR_YELLOW} />
-              <Text style={styles.promoMetaText}>{restaurant.rating.toFixed(1)}</Text>
-            </View>
-          )}
-          {restaurant.deliveryTime != null && (
-            <View style={styles.promoMetaItem}>
-              <Ionicons name="time-outline" size={12} color="#fff" />
-              <Text style={styles.promoMetaText}>{restaurant.deliveryTime} min</Text>
-            </View>
-          )}
-          <View style={styles.promoCta}>
-            <Text style={styles.promoCtaText}>Voir</Text>
-            <Ionicons name="arrow-forward" size={12} color={PINK} />
-          </View>
-        </View>
-      </View>
-    </TouchableOpacity>
-  );
-}
-
-function ShortCard({ restaurant, onPress }: { restaurant: Restaurant; onPress: () => void }) {
-  return (
-    <TouchableOpacity activeOpacity={0.9} onPress={onPress} style={styles.shortCard}>
-      {restaurant.imageUrl ? (
-        <Image source={{ uri: restaurant.imageUrl }} style={styles.shortImg} resizeMode="cover" />
-      ) : (
-        <View style={[styles.shortImg, styles.rImagePlaceholder]}>
+        <View style={[styles.shortImg, styles.imagePlaceholder]}>
           <Ionicons name="videocam" size={24} color={TEXT_MUTED} />
         </View>
       )}
@@ -196,7 +390,9 @@ function ShortCard({ restaurant, onPress }: { restaurant: Restaurant; onPress: (
         <Ionicons name="play" size={20} color="#fff" />
       </View>
       <View style={styles.shortBody}>
-        <Text style={styles.shortTitle} numberOfLines={2}>{restaurant.name}</Text>
+        <Text style={styles.shortTitle} numberOfLines={2}>
+          {restaurant.name}
+        </Text>
         <View style={styles.shortMetaRow}>
           <Ionicons name="heart" size={11} color={PINK} />
           <Text style={styles.shortMetaText}>
@@ -204,7 +400,7 @@ function ShortCard({ restaurant, onPress }: { restaurant: Restaurant; onPress: (
           </Text>
         </View>
       </View>
-    </TouchableOpacity>
+    </Pressable>
   );
 }
 
@@ -258,7 +454,6 @@ export default function HomeScreen() {
     return list;
   }, [pastOrders, allRestaurants]);
 
-  // Promotions = top-rated restaurants with images.
   const promoRestaurants = useMemo<Restaurant[]>(() => {
     if (!allRestaurants) return [];
     return [...allRestaurants]
@@ -267,7 +462,6 @@ export default function HomeScreen() {
       .slice(0, 6);
   }, [allRestaurants]);
 
-  // "Shorts" = restaurants shuffled deterministically by id, with images.
   const shortsRestaurants = useMemo<Restaurant[]>(() => {
     if (!allRestaurants) return [];
     return [...allRestaurants]
@@ -293,30 +487,42 @@ export default function HomeScreen() {
         {CATEGORIES.map((c) => {
           const active = activeCat === c.id;
           return (
-            <TouchableOpacity
+            <Pressable
               key={c.id}
-              activeOpacity={0.85}
               onPress={() => setActiveCat(c.id)}
-              style={[
+              style={({ pressed }) => [
                 styles.catCard,
                 active && styles.catCardActive,
+                pressed && styles.pressedScale,
               ]}
             >
-              <View style={[styles.catIconWrap, { backgroundColor: active ? "rgba(255,255,255,0.22)" : c.bg }]}>
+              <View
+                style={[
+                  styles.catIconWrap,
+                  {
+                    backgroundColor: active
+                      ? "rgba(255,255,255,0.22)"
+                      : c.bg,
+                  },
+                ]}
+              >
                 <Text style={styles.catEmoji}>{c.emoji}</Text>
               </View>
               <Text
-                style={[styles.catLabel, { color: active ? "#fff" : TEXT_DARK }]}
+                style={[
+                  styles.catLabel,
+                  { color: active ? "#fff" : TEXT_DARK },
+                ]}
                 numberOfLines={1}
               >
                 {c.label}
               </Text>
-            </TouchableOpacity>
+            </Pressable>
           );
         })}
       </ScrollView>
 
-      {/* Promotions — défilement horizontal */}
+      {/* Promotions */}
       {promoRestaurants.length > 0 ? (
         <View style={{ marginTop: 18 }}>
           <View style={styles.sectionHeaderRow}>
@@ -330,8 +536,13 @@ export default function HomeScreen() {
             decelerationRate="fast"
             snapToInterval={296}
           >
-            {promoRestaurants.map((r) => (
-              <PromoCard key={r.id} restaurant={r} onPress={() => goRestaurant(r.id)} />
+            {promoRestaurants.map((r, i) => (
+              <PromoCard
+                key={r.id}
+                restaurant={r}
+                scheme={PROMO_SCHEMES[i % PROMO_SCHEMES.length]}
+                onPress={() => goRestaurant(r.id)}
+              />
             ))}
           </ScrollView>
         </View>
@@ -353,7 +564,11 @@ export default function HomeScreen() {
             contentContainerStyle={styles.shortsRow}
           >
             {shortsRestaurants.map((r) => (
-              <ShortCard key={r.id} restaurant={r} onPress={() => goRestaurant(r.id)} />
+              <ShortCard
+                key={r.id}
+                restaurant={r}
+                onPress={() => goRestaurant(r.id)}
+              />
             ))}
           </ScrollView>
         </View>
@@ -372,27 +587,39 @@ export default function HomeScreen() {
             contentContainerStyle={styles.reorderRow}
           >
             {reorderRestaurants.map((r) => (
-              <TouchableOpacity
+              <Pressable
                 key={r.id}
-                activeOpacity={0.85}
                 onPress={() => goRestaurant(r.id)}
-                style={styles.reorderCard}
+                style={({ pressed }) => [
+                  styles.reorderCard,
+                  pressed && styles.pressedScale,
+                ]}
               >
                 <View style={styles.reorderImgWrap}>
                   {r.imageUrl ? (
-                    <Image source={{ uri: r.imageUrl }} style={styles.reorderImg} resizeMode="cover" />
+                    <Image
+                      source={{ uri: r.imageUrl }}
+                      style={styles.reorderImg}
+                      resizeMode="cover"
+                    />
                   ) : (
-                    <View style={[styles.reorderImg, styles.rImagePlaceholder]}>
-                      <Ionicons name="restaurant" size={22} color={TEXT_MUTED} />
+                    <View style={[styles.reorderImg, styles.imagePlaceholder]}>
+                      <Ionicons
+                        name="restaurant"
+                        size={22}
+                        color={TEXT_MUTED}
+                      />
                     </View>
                   )}
                 </View>
-                <Text style={styles.reorderName} numberOfLines={1}>{r.name}</Text>
+                <Text style={styles.reorderName} numberOfLines={1}>
+                  {r.name}
+                </Text>
                 <View style={styles.reorderBtn}>
                   <Ionicons name="repeat" size={12} color="#fff" />
                   <Text style={styles.reorderBtnText}>Recommander</Text>
                 </View>
-              </TouchableOpacity>
+              </Pressable>
             ))}
           </ScrollView>
         </View>
@@ -404,7 +631,8 @@ export default function HomeScreen() {
         </Text>
         {restaurants ? (
           <Text style={styles.sectionCount}>
-            {restaurants.length} résultat{restaurants.length !== 1 ? "s" : ""}
+            {restaurants.length} résultat
+            {restaurants.length !== 1 ? "s" : ""}
           </Text>
         ) : null}
       </View>
@@ -413,13 +641,17 @@ export default function HomeScreen() {
 
   return (
     <View style={[styles.flex, { backgroundColor: BG }]}>
-      {/* En-tête rose avec bord papier déchiré */}
+      {/* Gradient header (rose → turquoise) with torn paper edge */}
       <View style={styles.headerWrap}>
         <LinearGradient
-          colors={[PINK, PINK_DEEP]}
+          colors={[PINK, PINK_DEEP, TURQUOISE]}
+          locations={[0, 0.55, 1]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
-          style={[styles.headerBg, { paddingTop: insets.top + 12 + webTopPad }]}
+          style={[
+            styles.headerBg,
+            { paddingTop: insets.top + 12 + webTopPad },
+          ]}
         >
           <View style={styles.headerTopRow}>
             <View style={{ flex: 1 }}>
@@ -443,7 +675,10 @@ export default function HomeScreen() {
                 activeOpacity={0.8}
               >
                 {user.avatarUrl ? (
-                  <Image source={{ uri: user.avatarUrl }} style={styles.avatarImg} />
+                  <Image
+                    source={{ uri: user.avatarUrl }}
+                    style={styles.avatarImg}
+                  />
                 ) : (
                   <Text style={styles.avatarLetter}>
                     {(user.name ?? "J").charAt(0).toUpperCase()}
@@ -453,31 +688,36 @@ export default function HomeScreen() {
             ) : null}
           </View>
 
-          {/* Greeting */}
           <Text style={styles.greeting}>
-            {user ? `Salut ${user.name?.split(" ")[0] ?? ""} 👋` : "Bienvenue chez Jatek 👋"}
+            {user
+              ? `Salut ${user.name?.split(" ")[0] ?? ""} 👋`
+              : "Bienvenue chez Jatek 👋"}
           </Text>
-          <Text style={styles.greetingSub}>Que mangerez-vous aujourd'hui ?</Text>
-
-          {/* Search bar */}
-          <View style={styles.searchBox}>
-            <Ionicons name="search" size={18} color={TEXT_MUTED} />
-            <TextInput
-              style={styles.searchInput}
-              placeholder={t("home_search_ph")}
-              placeholderTextColor={TEXT_MUTED}
-              value={search}
-              onChangeText={setSearch}
-              returnKeyType="search"
-            />
-            {search ? (
-              <TouchableOpacity onPress={() => setSearch("")}>
-                <Ionicons name="close-circle" size={18} color={TEXT_MUTED} />
-              </TouchableOpacity>
-            ) : null}
-          </View>
+          <Text style={styles.greetingSub}>
+            Que mangerez-vous aujourd'hui ?
+          </Text>
         </LinearGradient>
-        <TornEdge color={PINK_DEEP} position="bottom" height={20} />
+        <TornEdge color={TURQUOISE} position="bottom" height={20} />
+      </View>
+
+      {/* Floating search bar (overlaps the torn edge) */}
+      <View style={styles.searchFloatWrap}>
+        <View style={styles.searchBox}>
+          <Ionicons name="search" size={18} color={TEXT_MUTED} />
+          <TextInput
+            style={styles.searchInput}
+            placeholder={t("home_search_ph")}
+            placeholderTextColor={TEXT_MUTED}
+            value={search}
+            onChangeText={setSearch}
+            returnKeyType="search"
+          />
+          {search ? (
+            <TouchableOpacity onPress={() => setSearch("")}>
+              <Ionicons name="close-circle" size={18} color={TEXT_MUTED} />
+            </TouchableOpacity>
+          ) : null}
+        </View>
       </View>
 
       {isLoading ? (
@@ -490,7 +730,11 @@ export default function HomeScreen() {
           keyExtractor={(r) => String(r.id)}
           contentContainerStyle={[
             styles.list,
-            { paddingTop: 22, paddingBottom: insets.bottom + (Platform.OS === "web" ? 34 : 90) },
+            {
+              paddingTop: 8,
+              paddingBottom:
+                insets.bottom + (Platform.OS === "web" ? 34 : 90),
+            },
           ]}
           showsVerticalScrollIndicator={false}
           onRefresh={refetch}
@@ -498,18 +742,31 @@ export default function HomeScreen() {
           ListHeaderComponent={ListHeader}
           ListEmptyComponent={
             <View style={styles.empty}>
-              <Ionicons name="restaurant-outline" size={48} color={TEXT_MUTED} />
+              <Ionicons
+                name="restaurant-outline"
+                size={48}
+                color={TEXT_MUTED}
+              />
               <Text style={styles.emptyTitle}>Aucun résultat</Text>
-              <Text style={styles.emptyText}>Essayez une autre recherche ou catégorie</Text>
+              <Text style={styles.emptyText}>
+                Essayez une autre recherche ou catégorie
+              </Text>
             </View>
           }
-          renderItem={({ item }) => (
-            <RestaurantRow restaurant={item} onPress={() => goRestaurant(item.id)} />
+          renderItem={({ item, index }) => (
+            <RestaurantCard
+              restaurant={item}
+              variant={index > 0 && index % 3 === 0 ? "split" : "standard"}
+              onPress={() => goRestaurant(item.id)}
+            />
           )}
         />
       )}
 
-      <AddressQuickPicker visible={showAddrPicker} onClose={() => setShowAddrPicker(false)} />
+      <AddressQuickPicker
+        visible={showAddrPicker}
+        onClose={() => setShowAddrPicker(false)}
+      />
     </View>
   );
 }
@@ -517,13 +774,11 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   flex: { flex: 1 },
 
-  // Header
-  headerWrap: {
-    position: "relative",
-  },
+  // ---------- Header ----------
+  headerWrap: { position: "relative" },
   headerBg: {
     paddingHorizontal: 16,
-    paddingBottom: 18,
+    paddingBottom: 26,
   },
   headerTopRow: {
     flexDirection: "row",
@@ -564,7 +819,6 @@ const styles = StyleSheet.create({
   },
   avatarImg: { width: "100%", height: "100%" },
   avatarLetter: { color: "#fff", fontFamily: "Inter_700Bold", fontSize: 16 },
-
   greeting: {
     fontSize: 22,
     fontFamily: "Inter_700Bold",
@@ -577,23 +831,28 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_400Regular",
     color: "rgba(255,255,255,0.9)",
     marginTop: 2,
-    marginBottom: 14,
   },
 
-  // Search
+  // ---------- Floating search ----------
+  searchFloatWrap: {
+    paddingHorizontal: 16,
+    marginTop: -28,
+    marginBottom: 4,
+    zIndex: 5,
+  },
   searchBox: {
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
-    height: 48,
-    borderRadius: 16,
+    height: 52,
+    borderRadius: 26,
     backgroundColor: "#fff",
-    paddingHorizontal: 16,
+    paddingHorizontal: 18,
     shadowColor: "#000",
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 3,
+    shadowOpacity: 0.14,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 8,
   },
   searchInput: {
     flex: 1,
@@ -602,7 +861,7 @@ const styles = StyleSheet.create({
     color: TEXT_DARK,
   },
 
-  // Section titles
+  // ---------- Section titles ----------
   sectionHeaderRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -633,39 +892,40 @@ const styles = StyleSheet.create({
     gap: 6,
   },
 
-  // Categories
+  // ---------- Categories ----------
   catRow: {
     paddingHorizontal: 16,
-    gap: 10,
-    paddingBottom: 4,
+    gap: 12,
+    paddingBottom: 6,
+    paddingTop: 2,
   },
   catCard: {
-    width: 82,
-    paddingVertical: 12,
+    width: 88,
+    paddingVertical: 14,
     paddingHorizontal: 6,
-    borderRadius: 18,
+    borderRadius: 22,
     alignItems: "center",
     gap: 8,
     backgroundColor: CARD_BG,
     borderWidth: 1,
     borderColor: BORDER,
     shadowColor: "#FF4593",
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 3 },
     elevation: 2,
   },
   catCardActive: {
     backgroundColor: PINK,
     borderColor: PINK,
-    shadowOpacity: 0.25,
+    shadowOpacity: 0.28,
     shadowRadius: 14,
     elevation: 6,
   },
   catIconWrap: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 50,
+    height: 50,
+    borderRadius: 25,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -675,36 +935,42 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_600SemiBold",
   },
 
-  // Promo banners
+  // ---------- Promo banners (irregular corners) ----------
   promoRow: {
     paddingHorizontal: 16,
-    gap: 12,
-    paddingBottom: 4,
+    gap: 14,
+    paddingBottom: 6,
   },
   promoCard: {
     width: 284,
-    height: 156,
-    borderRadius: 20,
+    height: 160,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 10,
+    borderBottomLeftRadius: 10,
+    borderBottomRightRadius: 28,
     overflow: "hidden",
     backgroundColor: "#222",
     shadowColor: "#000",
-    shadowOpacity: 0.18,
-    shadowRadius: 14,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 5,
+    shadowOpacity: 0.2,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 6,
   },
   promoImg: { width: "100%", height: "100%" },
   promoBadge: {
     position: "absolute",
     top: 12,
     left: 12,
-    backgroundColor: PINK,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    backgroundColor: "#fff",
     paddingHorizontal: 10,
-    paddingVertical: 4,
+    paddingVertical: 5,
     borderRadius: 999,
   },
   promoBadgeText: {
-    color: "#fff",
+    color: PINK_DEEP,
     fontSize: 10,
     fontFamily: "Inter_700Bold",
     letterSpacing: 0.6,
@@ -717,7 +983,7 @@ const styles = StyleSheet.create({
   },
   promoTitle: {
     color: "#fff",
-    fontSize: 16,
+    fontSize: 17,
     fontFamily: "Inter_700Bold",
     letterSpacing: -0.2,
   },
@@ -753,7 +1019,7 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_700Bold",
   },
 
-  // Shorts
+  // ---------- Shorts ----------
   shortsRow: {
     paddingHorizontal: 16,
     gap: 10,
@@ -811,7 +1077,7 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_600SemiBold",
   },
 
-  // Reorder
+  // ---------- Reorder ----------
   reorderSection: { marginTop: 18 },
   reorderRow: {
     paddingHorizontal: 16,
@@ -857,12 +1123,179 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_700Bold",
   },
 
-  // Restaurants list
+  // ---------- Restaurants list ----------
   list: {
     paddingHorizontal: 16,
     gap: 16,
   },
-  rCard: {
+  pressedScale: {
+    transform: [{ scale: 0.97 }],
+    opacity: 0.95,
+  },
+
+  // Big card (standard variant — image with overlay)
+  bigCard: {
+    backgroundColor: CARD_BG,
+    borderRadius: 22,
+    overflow: "hidden",
+    marginBottom: 16,
+    shadowColor: "#000",
+    shadowOpacity: 0.12,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 5,
+  },
+  bigImageWrap: {
+    width: "100%",
+    height: 220,
+    position: "relative",
+    backgroundColor: BG,
+  },
+  bigImage: { width: "100%", height: "100%" },
+  imagePlaceholder: {
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: PINK_SOFT,
+  },
+  bigTopRow: {
+    position: "absolute",
+    top: 12,
+    left: 12,
+    right: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  promoBadgeAbs: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    backgroundColor: PINK,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 999,
+    shadowColor: "#000",
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 3,
+  },
+  promoBadgeAbsText: {
+    color: "#fff",
+    fontSize: 10,
+    fontFamily: "Inter_700Bold",
+    letterSpacing: 0.5,
+  },
+  deliveryBadgeTop: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    backgroundColor: "rgba(255,255,255,0.95)",
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 999,
+  },
+  deliveryBadgeTopText: {
+    color: TEXT_DARK,
+    fontSize: 11,
+    fontFamily: "Inter_700Bold",
+  },
+  heartBtn: {
+    position: "absolute",
+    top: 56,
+    right: 12,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: "rgba(0,0,0,0.35)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  closedOverlayFull: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0,0,0,0.45)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  closedTextBig: {
+    color: "#fff",
+    fontSize: 22,
+    fontFamily: "Inter_700Bold",
+    letterSpacing: 1,
+  },
+  bigOverlayContent: {
+    position: "absolute",
+    left: 14,
+    right: 14,
+    bottom: 14,
+  },
+  bigTitleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 8,
+  },
+  bigTitle: {
+    flex: 1,
+    fontSize: 18,
+    fontFamily: "Inter_700Bold",
+    color: "#fff",
+    letterSpacing: -0.3,
+  },
+  ratingPillLight: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 3,
+    backgroundColor: "rgba(255,255,255,0.18)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.35)",
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 999,
+  },
+  ratingTextLight: {
+    fontSize: 12,
+    fontFamily: "Inter_700Bold",
+    color: "#fff",
+  },
+  bigCategory: {
+    fontSize: 12,
+    fontFamily: "Inter_500Medium",
+    color: "rgba(255,255,255,0.85)",
+    marginTop: 4,
+  },
+  bigMetaRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    flexWrap: "wrap",
+    marginTop: 8,
+  },
+  bigMetaItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  bigMetaText: {
+    fontSize: 12,
+    fontFamily: "Inter_600SemiBold",
+    color: "rgba(255,255,255,0.9)",
+  },
+  freeBadgeLight: {
+    backgroundColor: TURQUOISE,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 999,
+  },
+  freeBadgeTextLight: {
+    color: "#fff",
+    fontSize: 11,
+    fontFamily: "Inter_700Bold",
+  },
+
+  // Split card (every 3rd item — alternative layout)
+  splitCard: {
+    flexDirection: "row",
     backgroundColor: CARD_BG,
     borderRadius: 18,
     overflow: "hidden",
@@ -870,68 +1303,51 @@ const styles = StyleSheet.create({
     borderColor: BORDER,
     marginBottom: 16,
     shadowColor: "#000",
-    shadowOpacity: 0.05,
+    shadowOpacity: 0.06,
     shadowRadius: 10,
     shadowOffset: { width: 0, height: 4 },
     elevation: 2,
   },
-  rImageWrap: {
-    width: "100%",
-    height: 160,
+  splitImageWrap: {
+    width: 130,
+    height: 130,
     position: "relative",
     backgroundColor: BG,
   },
-  rImage: { width: "100%", height: "100%" },
-  rImagePlaceholder: {
-    alignItems: "center",
+  splitImage: { width: "100%", height: "100%" },
+  splitBody: {
+    flex: 1,
+    padding: 14,
     justifyContent: "center",
-    backgroundColor: PINK_SOFT,
-  },
-  deliveryBadge: {
-    position: "absolute",
-    top: 12,
-    left: 12,
-    flexDirection: "row",
-    alignItems: "center",
     gap: 4,
-    backgroundColor: TURQUOISE,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 999,
   },
-  deliveryBadgeText: {
-    color: "#fff",
-    fontSize: 11,
-    fontFamily: "Inter_700Bold",
-  },
-  closedOverlay: {
-    position: "absolute",
-    bottom: 12,
-    right: 12,
-    backgroundColor: "rgba(0,0,0,0.65)",
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 6,
-  },
-  closedText: {
-    color: "#fff",
-    fontSize: 11,
-    fontFamily: "Inter_700Bold",
-  },
-  rBody: { padding: 16, gap: 6 },
-  rTitleRow: {
+  splitTitleRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     gap: 8,
   },
-  rTitle: {
+  splitTitle: {
     flex: 1,
-    fontSize: 16,
+    fontSize: 15,
     fontFamily: "Inter_700Bold",
     color: TEXT_DARK,
     letterSpacing: -0.2,
   },
+  splitCategory: {
+    fontSize: 12,
+    fontFamily: "Inter_400Regular",
+    color: TEXT_MUTED,
+  },
+  splitMetaRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    flexWrap: "wrap",
+    marginTop: 6,
+  },
+
+  // Shared meta / pills
   ratingPill: {
     flexDirection: "row",
     alignItems: "center",
@@ -946,36 +1362,41 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_700Bold",
     color: TEXT_DARK,
   },
-  rCategory: {
-    fontSize: 12,
-    fontFamily: "Inter_400Regular",
-    color: TEXT_MUTED,
-  },
-  rMetaRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    flexWrap: "wrap",
-    marginTop: 4,
-  },
-  rMetaItem: {
+  metaItem: {
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
   },
-  rMetaText: {
+  metaText: {
     fontSize: 12,
     fontFamily: "Inter_400Regular",
     color: TEXT_MUTED,
   },
   freeBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
     backgroundColor: TURQUOISE_SOFT,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 999,
+  },
+  freeBadgeText: {
+    color: TURQUOISE,
+    fontSize: 11,
+    fontFamily: "Inter_700Bold",
+  },
+  closedOverlay: {
+    position: "absolute",
+    bottom: 8,
+    right: 8,
+    backgroundColor: "rgba(0,0,0,0.65)",
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 6,
   },
-  freeBadgeText: {
-    color: TURQUOISE,
+  closedText: {
+    color: "#fff",
     fontSize: 11,
     fontFamily: "Inter_700Bold",
   },
