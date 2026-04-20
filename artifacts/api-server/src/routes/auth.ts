@@ -133,10 +133,18 @@ router.post("/auth/send-otp", async (req, res): Promise<void> => {
 
   const providerReady = await anyOtpProviderConfigured();
   const isDev = process.env.NODE_ENV !== "production";
-  // Only expose the OTP in plaintext when running locally for development AND
-  // no real provider is wired up. Never expose it in staging/preview/production
-  // even if delivery fails — surface a 502 instead so the client can retry.
-  const canExposeDemoOtp = isDev && !providerReady;
+  // Replit sets REPLIT_DEPLOYMENT for published deployments. We treat the
+  // absence of that flag (and other deploy markers) as "local workspace".
+  // Only expose the OTP in plaintext when ALL of the following hold:
+  //   - NODE_ENV !== production
+  //   - no real OTP provider is configured
+  //   - we are running in a local workspace (not a published deployment)
+  // Otherwise — including preview/staging — we always require a real provider
+  // and return 502 if delivery fails. Never leak the code over the network.
+  const isLocalWorkspace = !process.env.REPLIT_DEPLOYMENT
+    && !process.env.REPLIT_DEPLOYMENT_ID
+    && !process.env.REPLIT_DEPLOYMENT_DOMAIN;
+  const canExposeDemoOtp = isDev && !providerReady && isLocalWorkspace;
 
   let actualChannel: string = "none";
   let smsSent = false;

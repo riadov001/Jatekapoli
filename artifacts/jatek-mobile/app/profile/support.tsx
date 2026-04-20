@@ -24,7 +24,7 @@ export default function SupportScreen() {
 
   const load = useCallback(async () => {
     try { setItems(await listSupportTickets()); }
-    catch {}
+    catch (err) { console.warn("[Support] failed to load tickets:", err); }
     finally { setLoading(false); }
   }, []);
   useEffect(() => { load(); }, [load]);

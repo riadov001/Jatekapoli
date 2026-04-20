@@ -57,6 +57,7 @@ export default function RestaurantPage() {
       setLocation("/login");
       return;
     }
+    const pricing = restaurant as { deliveryFee?: number | null; freeDeliveryThreshold?: number | null };
     addItem(restaurant.id, restaurant.name, {
       menuItemId: item.id,
       name: item.name,
@@ -64,8 +65,8 @@ export default function RestaurantPage() {
       quantity: 1,
       imageUrl: item.imageUrl,
     }, {
-      deliveryFee: (restaurant as any).deliveryFee,
-      freeDeliveryThreshold: (restaurant as any).freeDeliveryThreshold,
+      deliveryFee: pricing.deliveryFee,
+      freeDeliveryThreshold: pricing.freeDeliveryThreshold,
     });
     toast({ title: `${item.name} added to cart` });
   };

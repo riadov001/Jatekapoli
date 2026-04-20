@@ -178,7 +178,10 @@ export default function RestaurantScreen() {
             <MenuItemCard
               item={item}
               quantity={getQty(item.id)}
-              onAdd={() => addItem(restaurantId, restaurant.name, { menuItemId: item.id, name: item.name, price: item.price, imageUrl: item.imageUrl }, { deliveryFee: (restaurant as any).deliveryFee, freeDeliveryThreshold: (restaurant as any).freeDeliveryThreshold })}
+              onAdd={() => {
+                const pricing = restaurant as { deliveryFee?: number | null; freeDeliveryThreshold?: number | null };
+                addItem(restaurantId, restaurant.name, { menuItemId: item.id, name: item.name, price: item.price, imageUrl: item.imageUrl }, { deliveryFee: pricing.deliveryFee, freeDeliveryThreshold: pricing.freeDeliveryThreshold });
+              }}
               onRemove={() => updateQuantity(item.id, getQty(item.id) - 1)}
             />
           </TouchableOpacity>
@@ -225,13 +228,14 @@ export default function RestaurantScreen() {
         onClose={() => setSelectedItem(null)}
         onAdd={(qty) => {
           if (!selectedItem) return;
+          const pricing = restaurant as { deliveryFee?: number | null; freeDeliveryThreshold?: number | null };
           for (let i = 0; i < qty; i++) {
             addItem(restaurantId, restaurant.name, {
               menuItemId: selectedItem.id,
               name: selectedItem.name,
               price: selectedItem.price,
               imageUrl: selectedItem.imageUrl,
-            }, { deliveryFee: (restaurant as any).deliveryFee, freeDeliveryThreshold: (restaurant as any).freeDeliveryThreshold });
+            }, { deliveryFee: pricing.deliveryFee, freeDeliveryThreshold: pricing.freeDeliveryThreshold });
           }
         }}
       />

@@ -172,7 +172,7 @@ router.get("/drivers/:id/location", async (req, res): Promise<void> => {
   });
 });
 
-router.get("/drivers/:id/earnings", async (req, res): Promise<void> => {
+router.get("/drivers/:id/earnings", requireAuth, async (req: AuthedRequest, res): Promise<void> => {
   const params = GetDriverEarningsParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
@@ -184,6 +184,10 @@ router.get("/drivers/:id/earnings", async (req, res): Promise<void> => {
 
   if (!driver) {
     res.status(404).json({ error: "Driver not found" });
+    return;
+  }
+  if (req.userRole !== "admin" && driver.userId !== req.userId) {
+    res.status(403).json({ error: "Forbidden" });
     return;
   }
 

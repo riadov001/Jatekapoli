@@ -55,7 +55,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Load persisted auth on startup
     Promise.all([secureGet(TOKEN_KEY), secureGet(USER_KEY)]).then(([t, u]) => {
       if (t) setToken(t);
-      if (u) { try { setUser(JSON.parse(u)); } catch {} }
+      if (u) {
+        try { setUser(JSON.parse(u)); }
+        catch (err) { console.warn("[Auth] failed to parse persisted user:", err); }
+      }
       setIsLoading(false);
     });
   }, []);
