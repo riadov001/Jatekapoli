@@ -31,6 +31,8 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { AddressQuickPicker } from "@/components/AddressQuickPicker";
 import { useT } from "@/contexts/LanguageContext";
 import { TornEdge } from "@/components/TornEdge";
+import { SideMenu } from "@/components/SideMenu";
+import { ShortPlayerModal } from "@/components/ShortPlayerModal";
 
 // Talabat-inspired palette
 const BG = "#FFF5F8";
@@ -439,7 +441,12 @@ export default function HomeScreen() {
   const [search, setSearch] = useState("");
   const [activeCat, setActiveCat] = useState("all");
   const [showAddrPicker, setShowAddrPicker] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [shortsModal, setShortsModal] = useState<{ open: boolean; index: number }>({ open: false, index: 0 });
   const webTopPad = Platform.OS === "web" ? 67 : 0;
+  const promosScrollRef = useRef<ScrollView | null>(null);
+  const promoAutoIdx = useRef(0);
+  const promoUserPaused = useRef(false);
 
   const params = useMemo<ListRestaurantsParams>(() => {
     const p: ListRestaurantsParams = { businessType: "restaurant" };
@@ -506,6 +513,18 @@ export default function HomeScreen() {
   const goRestaurant = (id: number) =>
     router.push({ pathname: "/restaurant/[id]", params: { id: String(id) } });
 
+  // Auto-scroll the promo carousel every 3.5s, looping back to start.
+  React.useEffect(() => {
+    if (!promoRestaurants.length) return;
+    const interval = setInterval(() => {
+      if (promoUserPaused.current) return;
+      const next = (promoAutoIdx.current + 1) % promoRestaurants.length;
+      promoAutoIdx.current = next;
+      promosScrollRef.current?.scrollTo({ x: next * 296, y: 0, animated: true });
+    }, 3500);
+    return () => clearInterval(interval);
+  }, [promoRestaurants.length]);
+
   const ListHeader = (
     <View>
       {/* Catégories */}
@@ -563,11 +582,18 @@ export default function HomeScreen() {
             <Text style={styles.sectionLink}>Tout voir</Text>
           </View>
           <ScrollView
+            ref={promosScrollRef}
             horizontal
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.promoRow}
             decelerationRate="fast"
             snapToInterval={296}
+            onTouchStart={() => { promoUserPaused.current = true; }}
+            onMomentumScrollEnd={(e) => {
+              const x = e.nativeEvent.contentOffset.x;
+              promoAutoIdx.current = Math.round(x / 296);
+              setTimeout(() => { promoUserPaused.current = false; }, 4000);
+            }}
           >
             {promoRestaurants.map((r, i) => (
               <PromoCard
@@ -596,11 +622,11 @@ export default function HomeScreen() {
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.shortsRow}
           >
-            {shortsRestaurants.map((r) => (
+            {shortsRestaurants.map((r, i) => (
               <ShortCard
                 key={r.id}
                 restaurant={r}
-                onPress={() => goRestaurant(r.id)}
+                onPress={() => setShortsModal({ open: true, index: i })}
               />
             ))}
           </ScrollView>
@@ -686,7 +712,40 @@ export default function HomeScreen() {
             { paddingTop: insets.top + 12 + webTopPad },
           ]}
         >
-          <Animated.View style={[styles.headerTopRow, { opacity: addressOpacity, maxHeight: addressMaxH, overflow: "hidden" }]}>
+          {/* Brand bar — always visible (sticky during scroll) */}
+          <View style={styles.brandBar}>
+            <TouchableOpacity onPress={() => setMenuOpen(true)} hitSlop={10} style={styles.hamburgerBtn} activeOpacity={0.8}>
+              <Ionicons name="menu" size={22} color="#fff" />
+            </TouchableOpacity>
+
+            <View style={styles.brandCenter}>
+              <View style={styles.brandLogoBadge}>
+                <Text style={styles.brandLogoBadgeText}>J.</Text>
+              </View>
+              <Text style={styles.brandWordmark}>Jatek</Text>
+            </View>
+
+            {user ? (
+              <TouchableOpacity
+                onPress={() => router.push("/(tabs)/profile" as any)}
+                style={styles.brandAvatarBtn}
+                activeOpacity={0.8}
+              >
+                {user.avatarUrl ? (
+                  <Image source={{ uri: user.avatarUrl }} style={styles.brandAvatarImg} />
+                ) : (
+                  <Text style={styles.brandAvatarLetter}>
+                    {(user.name ?? "J").charAt(0).toUpperCase()}
+                  </Text>
+                )}
+              </TouchableOpacity>
+            ) : (
+              <View style={{ width: 36 }} />
+            )}
+          </View>
+
+          {/* Address row — collapses on scroll */}
+          <Animated.View style={[styles.headerTopRow, { opacity: addressOpacity, maxHeight: addressMaxH, overflow: "hidden", marginTop: 10 }]}>
             <View style={{ flex: 1 }}>
               <Text style={styles.deliverToLabel}>Livrer à</Text>
               <TouchableOpacity
@@ -701,34 +760,18 @@ export default function HomeScreen() {
                 <Ionicons name="chevron-down" size={16} color="#fff" />
               </TouchableOpacity>
             </View>
-            {user ? (
-              <TouchableOpacity
-                onPress={() => router.push("/(tabs)/profile" as any)}
-                style={styles.avatarBtn}
-                activeOpacity={0.8}
-              >
-                {user.avatarUrl ? (
-                  <Image
-                    source={{ uri: user.avatarUrl }}
-                    style={styles.avatarImg}
-                  />
-                ) : (
-                  <Text style={styles.avatarLetter}>
-                    {(user.name ?? "J").charAt(0).toUpperCase()}
-                  </Text>
-                )}
-              </TouchableOpacity>
-            ) : null}
           </Animated.View>
 
           <Animated.View style={{ opacity: greetingOpacity, maxHeight: greetingMaxH, overflow: "hidden" }}>
             <Text style={styles.greeting}>
               {user
-                ? `Salut ${user.name?.split(" ")[0] ?? ""} 👋`
-                : "Bienvenue chez Jatek 👋"}
+                ? `Hey ${user.name?.split(" ")[0] ?? ""} 🍔`
+                : "Salut, prêt à te régaler ? 🍔"}
             </Text>
             <Text style={styles.greetingSub}>
-              Que mangerez-vous aujourd'hui ?
+              {user
+                ? "Qu'est-ce qui te ferait plaisir aujourd'hui ?"
+                : "Découvre les meilleurs spots autour de toi"}
             </Text>
           </Animated.View>
         </LinearGradient>
@@ -807,6 +850,15 @@ export default function HomeScreen() {
         visible={showAddrPicker}
         onClose={() => setShowAddrPicker(false)}
       />
+
+      <SideMenu visible={menuOpen} onClose={() => setMenuOpen(false)} />
+
+      <ShortPlayerModal
+        visible={shortsModal.open}
+        shorts={shortsRestaurants}
+        initialIndex={shortsModal.index}
+        onClose={() => setShortsModal({ open: false, index: 0 })}
+      />
     </View>
   );
 }
@@ -859,6 +911,65 @@ const styles = StyleSheet.create({
   },
   avatarImg: { width: "100%", height: "100%" },
   avatarLetter: { color: "#fff", fontFamily: "Inter_700Bold", fontSize: 16 },
+  // Brand bar (always visible at top of header)
+  brandBar: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 10,
+  },
+  hamburgerBtn: {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    backgroundColor: "rgba(255,255,255,0.18)",
+    borderWidth: 2,
+    borderColor: "rgba(255,255,255,0.45)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  brandCenter: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  brandLogoBadge: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    backgroundColor: "#fff",
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 2.5,
+    borderColor: "#0A1B3D",
+    transform: [{ rotate: "-6deg" }],
+  },
+  brandLogoBadgeText: {
+    fontFamily: "Inter_900Black",
+    fontSize: 16,
+    color: "#E91E63",
+    fontStyle: "italic",
+  },
+  brandWordmark: {
+    color: "#fff",
+    fontFamily: "Inter_900Black",
+    fontSize: 19,
+    letterSpacing: -0.5,
+    fontStyle: "italic",
+  },
+  brandAvatarBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "rgba(255,255,255,0.2)",
+    borderWidth: 2,
+    borderColor: "rgba(255,255,255,0.6)",
+    alignItems: "center",
+    justifyContent: "center",
+    overflow: "hidden",
+  },
+  brandAvatarImg: { width: "100%", height: "100%" },
+  brandAvatarLetter: { color: "#fff", fontFamily: "Inter_700Bold", fontSize: 14 },
   greeting: {
     fontSize: 22,
     fontFamily: "Inter_700Bold",

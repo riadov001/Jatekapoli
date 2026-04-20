@@ -1,5 +1,5 @@
-import React from "react";
-import { StyleSheet, Text, View, TouchableOpacity, Image } from "react-native";
+import React, { useRef } from "react";
+import { StyleSheet, Text, View, TouchableOpacity, Image, Pressable, Animated, Platform } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { useColors } from "@/hooks/useColors";
@@ -16,86 +16,112 @@ interface MenuItemCardProps {
   quantity: number;
   onAdd: () => void;
   onRemove: () => void;
+  onPressCard?: () => void;
 }
 
-export function MenuItemCard({ item, quantity, onAdd, onRemove }: MenuItemCardProps) {
-  const colors = useColors();
+const INK = "#0A1B3D";
 
-  const handleAdd = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+export function MenuItemCard({ item, quantity, onAdd, onRemove, onPressCard }: MenuItemCardProps) {
+  const colors = useColors();
+  const cardScale = useRef(new Animated.Value(1)).current;
+  const plusScale = useRef(new Animated.Value(1)).current;
+
+  const handleAdd = (e?: any) => {
+    e?.stopPropagation?.();
+    if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    Animated.sequence([
+      Animated.spring(plusScale, { toValue: 1.35, useNativeDriver: true, friction: 3 }),
+      Animated.spring(plusScale, { toValue: 1, useNativeDriver: true, friction: 4 }),
+    ]).start();
     onAdd();
   };
-
-  const handleRemove = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  const handleRemove = (e?: any) => {
+    e?.stopPropagation?.();
+    if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     onRemove();
   };
 
   if (item.isAvailable === false) return null;
 
-  return (
-    <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-      <View style={styles.content}>
-        <View style={styles.textSection}>
-          <Text style={[styles.name, { color: colors.foreground }]} numberOfLines={2}>
-            {item.name}
-          </Text>
-          {item.description ? (
-            <Text style={[styles.desc, { color: colors.mutedForeground }]} numberOfLines={2}>
-              {item.description}
-            </Text>
-          ) : null}
-          <Text style={[styles.price, { color: colors.primary }]}>
-            {item.price.toFixed(0)} MAD
-          </Text>
-        </View>
+  const onPressIn = () => {
+    Animated.spring(cardScale, { toValue: 0.98, useNativeDriver: true, friction: 6 }).start();
+  };
+  const onPressOut = () => {
+    Animated.spring(cardScale, { toValue: 1, useNativeDriver: true, friction: 5 }).start();
+  };
 
-        <View style={styles.right}>
-          {item.imageUrl ? (
-            <Image source={{ uri: item.imageUrl }} style={styles.image} resizeMode="cover" />
-          ) : (
-            <View style={[styles.imagePlaceholder, { backgroundColor: colors.muted }]}>
-              <Ionicons name="fast-food-outline" size={24} color={colors.mutedForeground} />
+  return (
+    <Pressable onPress={onPressCard} onPressIn={onPressIn} onPressOut={onPressOut}>
+      <Animated.View
+        style={[
+          styles.card,
+          { backgroundColor: colors.card, transform: [{ scale: cardScale }] },
+        ]}
+      >
+        <View style={styles.content}>
+          <View style={styles.textSection}>
+            <Text style={[styles.name, { color: colors.foreground }]} numberOfLines={2}>
+              {item.name}
+            </Text>
+            {item.description ? (
+              <Text style={[styles.desc, { color: colors.mutedForeground }]} numberOfLines={2}>
+                {item.description}
+              </Text>
+            ) : null}
+            <View style={styles.priceRow}>
+              <Text style={[styles.price, { color: colors.primary }]}>{item.price.toFixed(0)} MAD</Text>
+              {quantity > 0 ? (
+                <View style={[styles.qtyPill, { backgroundColor: colors.primary }]}>
+                  <Text style={styles.qtyPillText}>×{quantity}</Text>
+                </View>
+              ) : null}
             </View>
-          )}
-          <View style={styles.controls}>
+          </View>
+
+          <View style={styles.imageWrap}>
+            {item.imageUrl ? (
+              <Image source={{ uri: item.imageUrl }} style={styles.image} resizeMode="cover" />
+            ) : (
+              <View style={[styles.image, styles.imagePlaceholder, { backgroundColor: colors.muted }]}>
+                <Ionicons name="fast-food-outline" size={26} color={colors.mutedForeground} />
+              </View>
+            )}
+
+            {/* Floating "+" / quantity controls overlapping image bottom-right */}
             {quantity > 0 ? (
-              <View style={styles.quantityRow}>
-                <TouchableOpacity
-                  onPress={handleRemove}
-                  style={[styles.controlBtn, { backgroundColor: colors.primary }]}
-                >
-                  <Ionicons name="remove" size={16} color="#fff" />
+              <View style={styles.qtyControls}>
+                <TouchableOpacity onPress={handleRemove} style={[styles.qtyBtn, { backgroundColor: "#fff" }]} hitSlop={6}>
+                  <Ionicons name="remove" size={16} color={colors.primary} />
                 </TouchableOpacity>
-                <Text style={[styles.qty, { color: colors.foreground }]}>{quantity}</Text>
-                <TouchableOpacity
-                  onPress={handleAdd}
-                  style={[styles.controlBtn, { backgroundColor: colors.primary }]}
-                >
+                <Text style={[styles.qtyText, { color: colors.primary }]}>{quantity}</Text>
+                <TouchableOpacity onPress={handleAdd} style={[styles.qtyBtn, { backgroundColor: colors.primary }]} hitSlop={6}>
                   <Ionicons name="add" size={16} color="#fff" />
                 </TouchableOpacity>
               </View>
             ) : (
-              <TouchableOpacity
-                onPress={handleAdd}
-                style={[styles.addBtn, { backgroundColor: colors.primary }]}
-              >
-                <Ionicons name="add" size={20} color="#fff" />
-              </TouchableOpacity>
+              <Animated.View style={[styles.plusFab, { backgroundColor: colors.primary, transform: [{ scale: plusScale }] }]}>
+                <TouchableOpacity onPress={handleAdd} hitSlop={10} style={styles.plusFabHit}>
+                  <Ionicons name="add" size={22} color="#fff" />
+                </TouchableOpacity>
+              </Animated.View>
             )}
           </View>
         </View>
-      </View>
-    </View>
+      </Animated.View>
+    </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
   card: {
-    borderRadius: 12,
-    borderWidth: 1,
-    marginBottom: 10,
-    overflow: "hidden",
+    borderRadius: 16,
+    marginBottom: 12,
+    overflow: "visible",
+    shadowColor: "#000",
+    shadowOpacity: 0.08,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 3,
   },
   content: {
     flexDirection: "row",
@@ -105,64 +131,85 @@ const styles = StyleSheet.create({
   textSection: {
     flex: 1,
     gap: 4,
+    paddingTop: 2,
   },
   name: {
-    fontSize: 14,
-    fontFamily: "Inter_600SemiBold",
+    fontSize: 15,
+    fontFamily: "Inter_700Bold",
     lineHeight: 20,
+    letterSpacing: -0.2,
   },
   desc: {
     fontSize: 12,
     fontFamily: "Inter_400Regular",
     lineHeight: 17,
+    marginTop: 2,
   },
+  priceRow: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: 6 },
   price: {
     fontSize: 15,
     fontFamily: "Inter_700Bold",
-    marginTop: 4,
   },
-  right: {
-    alignItems: "center",
-    gap: 8,
-  },
-  image: {
-    width: 80,
-    height: 80,
+  qtyPill: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
     borderRadius: 10,
+  },
+  qtyPillText: { color: "#fff", fontSize: 11, fontFamily: "Inter_700Bold" },
+
+  imageWrap: { width: 96, height: 96, position: "relative" },
+  image: {
+    width: 96,
+    height: 96,
+    borderRadius: 14,
   },
   imagePlaceholder: {
-    width: 80,
-    height: 80,
-    borderRadius: 10,
     alignItems: "center",
     justifyContent: "center",
   },
-  controls: {
+  plusFab: {
+    position: "absolute",
+    bottom: -8,
+    right: -8,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 3,
+    borderColor: "#fff",
+    shadowColor: "#000",
+    shadowOpacity: 0.25,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 6,
   },
-  quantityRow: {
+  plusFabHit: { width: "100%", height: "100%", alignItems: "center", justifyContent: "center" },
+  qtyControls: {
+    position: "absolute",
+    bottom: -10,
+    right: -4,
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
+    gap: 4,
+    paddingHorizontal: 4,
+    paddingVertical: 4,
+    borderRadius: 22,
+    backgroundColor: "rgba(255,255,255,0.98)",
+    shadowColor: "#000",
+    shadowOpacity: 0.18,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 5,
+    borderWidth: 1,
+    borderColor: "#F1E0E8",
   },
-  controlBtn: {
+  qtyBtn: {
     width: 28,
     height: 28,
     borderRadius: 14,
     alignItems: "center",
     justifyContent: "center",
   },
-  qty: {
-    fontSize: 15,
-    fontFamily: "Inter_600SemiBold",
-    minWidth: 20,
-    textAlign: "center",
-  },
-  addBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    alignItems: "center",
-    justifyContent: "center",
-  },
+  qtyText: { fontSize: 13, fontFamily: "Inter_700Bold", minWidth: 16, textAlign: "center" },
 });

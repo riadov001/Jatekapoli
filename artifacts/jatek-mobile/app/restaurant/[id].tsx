@@ -180,21 +180,18 @@ export default function RestaurantScreen() {
           </>
         }
         renderItem={({ item }) => (
-          <TouchableOpacity
-            activeOpacity={0.7}
-            onPress={() => setSelectedItem(item)}
-            style={styles.menuItemWrap}
-          >
+          <View style={styles.menuItemWrap}>
             <MenuItemCard
               item={item}
               quantity={getQty(item.id)}
+              onPressCard={() => setSelectedItem(item)}
               onAdd={() => {
                 const pricing = restaurant as { deliveryFee?: number | null; freeDeliveryThreshold?: number | null };
                 addItem(restaurantId, restaurant.name, { menuItemId: item.id, name: item.name, price: item.price, imageUrl: item.imageUrl }, { deliveryFee: pricing.deliveryFee, freeDeliveryThreshold: pricing.freeDeliveryThreshold });
               }}
               onRemove={() => updateQuantity(item.id, getQty(item.id) - 1)}
             />
-          </TouchableOpacity>
+          </View>
         )}
       />
 
