@@ -2,7 +2,7 @@ import React from "react";
 import { StyleSheet, Text, View, FlatList, ActivityIndicator, Platform } from "react-native";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { useListOrders } from "@workspace/api-client-react";
+import { useListOrders, getListOrdersQueryKey } from "@workspace/api-client-react";
 import { useColors } from "@/hooks/useColors";
 import { useAuth } from "@/contexts/AuthContext";
 import { OrderCard } from "@/components/OrderCard";
@@ -14,9 +14,16 @@ export default function OrdersScreen() {
   const { user, token } = useAuth();
   const webTopPad = Platform.OS === "web" ? 67 : 0;
 
+  const ordersParams = user ? { userId: user.id } : undefined;
   const { data: orders, isLoading, refetch } = useListOrders(
-    user ? { userId: user.id } : undefined,
-    { query: { enabled: !!token && !!user, refetchInterval: 30000 } as any }
+    ordersParams,
+    {
+      query: {
+        queryKey: getListOrdersQueryKey(ordersParams),
+        enabled: !!token && !!user,
+        refetchInterval: 30000,
+      },
+    }
   );
 
   const sorted = [...(orders ?? [])].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());

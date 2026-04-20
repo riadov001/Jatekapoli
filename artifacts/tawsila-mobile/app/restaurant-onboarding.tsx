@@ -13,7 +13,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import { useListRestaurants } from "@workspace/api-client-react";
+import { useListRestaurants, getListRestaurantsQueryKey } from "@workspace/api-client-react";
 
 import { useColors } from "@/hooks/useColors";
 import { useAuth } from "@/contexts/AuthContext";
@@ -24,9 +24,15 @@ export default function RestaurantOnboardingScreen() {
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
 
+  const restaurantsParams = user ? { ownerId: user.id } : undefined;
   const { data: restaurants, refetch } = useListRestaurants(
-    user ? { ownerId: user.id } : undefined,
-    { query: { enabled: !!user } as any }
+    restaurantsParams,
+    {
+      query: {
+        queryKey: getListRestaurantsQueryKey(restaurantsParams),
+        enabled: !!user,
+      },
+    }
   );
   const myRestaurant = restaurants?.[0];
 

@@ -33,6 +33,8 @@ import {
   useGetDriverEarnings,
   useListOrders,
   useUpdateOrderStatus,
+  getGetDriverEarningsQueryKey,
+  getListOrdersQueryKey,
 } from "@workspace/api-client-react";
 import { useColors } from "@/hooks/useColors";
 import { useAuth } from "@/contexts/AuthContext";
@@ -67,12 +69,22 @@ export default function DeliverScreen() {
   const updateStatus = useUpdateOrderStatus();
 
   const { data: earnings } = useGetDriverEarnings(myDriver?.id ?? 0, {
-    query: { enabled: !!myDriver } as any,
+    query: {
+      queryKey: getGetDriverEarningsQueryKey(myDriver?.id ?? 0),
+      enabled: !!myDriver,
+    },
   });
 
+  const myOrdersParams = myDriver ? { driverId: myDriver.id } : undefined;
   const { data: myOrders, refetch: refetchMyOrders } = useListOrders(
-    myDriver ? { driverId: myDriver.id } : undefined,
-    { query: { enabled: !!myDriver, refetchInterval: 30000 } as any }
+    myOrdersParams,
+    {
+      query: {
+        queryKey: getListOrdersQueryKey(myOrdersParams),
+        enabled: !!myDriver,
+        refetchInterval: 30000,
+      },
+    }
   );
 
   const [available, setAvailable] = useState<any[]>([]);

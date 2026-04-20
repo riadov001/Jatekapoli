@@ -24,7 +24,7 @@ import * as Haptics from "expo-haptics";
 import Animated, { FadeIn, FadeInDown, useAnimatedStyle, useSharedValue, withRepeat, withTiming, Easing } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { useGetOrder, useListDrivers } from "@workspace/api-client-react";
+import { useGetOrder, useListDrivers, getGetOrderQueryKey } from "@workspace/api-client-react";
 import { useColors } from "@/hooks/useColors";
 import { useSSE } from "@/hooks/useSSE";
 import { DriverMap } from "@/components/DriverMap";
@@ -101,7 +101,11 @@ export default function OrderDetailScreen() {
   const orderId = parseInt(id, 10);
 
   const { data: order, isLoading, refetch } = useGetOrder(orderId, {
-    query: { enabled: !!orderId, refetchInterval: 20000 } as any,
+    query: {
+      queryKey: getGetOrderQueryKey(orderId),
+      enabled: !!orderId,
+      refetchInterval: 20000,
+    },
   });
 
   const { data: drivers } = useListDrivers();

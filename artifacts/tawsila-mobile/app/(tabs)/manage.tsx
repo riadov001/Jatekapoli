@@ -18,7 +18,12 @@ import Animated, { FadeIn, FadeInDown, Layout } from "react-native-reanimated";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { router } from "expo-router";
-import { useListRestaurants, useListOrders } from "@workspace/api-client-react";
+import {
+  useListRestaurants,
+  useListOrders,
+  getListRestaurantsQueryKey,
+  getListOrdersQueryKey,
+} from "@workspace/api-client-react";
 
 import { useColors } from "@/hooks/useColors";
 import { useAuth } from "@/contexts/AuthContext";
@@ -179,16 +184,29 @@ export default function ManageScreen() {
   const { user, token } = useAuth();
   const webTopPad = Platform.OS === "web" ? 67 : 0;
 
+  const restaurantsParams = user ? { ownerId: user.id } : undefined;
   const { data: restaurants, refetch: refetchRestaurants } = useListRestaurants(
-    user ? { ownerId: user.id } : undefined,
-    { query: { enabled: !!user } as any }
+    restaurantsParams,
+    {
+      query: {
+        queryKey: getListRestaurantsQueryKey(restaurantsParams),
+        enabled: !!user,
+      },
+    }
   );
   const myRestaurant = restaurants?.[0];
   const profileComplete = !!(myRestaurant as any)?.profileCompletedAt;
 
+  const ordersParams = myRestaurant ? { restaurantId: myRestaurant.id } : undefined;
   const { data: orders, isLoading, refetch: refetchOrders } = useListOrders(
-    myRestaurant ? { restaurantId: myRestaurant.id } : undefined,
-    { query: { enabled: !!myRestaurant, refetchInterval: 30000 } as any }
+    ordersParams,
+    {
+      query: {
+        queryKey: getListOrdersQueryKey(ordersParams),
+        enabled: !!myRestaurant,
+        refetchInterval: 30000,
+      },
+    }
   );
 
   const [refreshing, setRefreshing] = useState(false);
