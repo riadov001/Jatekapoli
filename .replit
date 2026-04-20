@@ -55,6 +55,7 @@ packages = ["eas-cli"]
 [userenv]
 
 [userenv.shared]
+INFOBIP_WA_SENDER = "+15072600620"
 
 [userenv.development]
 EXPO_PUBLIC_DOMAIN = "jatek.straight-path.eu"
