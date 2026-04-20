@@ -131,7 +131,7 @@ router.post("/auth/send-otp", async (req, res): Promise<void> => {
 
   const messageBody = `Votre code Jatek : ${code}\nValable ${OTP_EXPIRY_MINUTES} minutes. Ne le communiquez à personne.`;
 
-  const providerReady = anyOtpProviderConfigured();
+  const providerReady = await anyOtpProviderConfigured();
   const isDev = process.env.NODE_ENV !== "production";
 
   let actualChannel: string = "none";

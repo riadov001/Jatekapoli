@@ -214,12 +214,11 @@ export async function sendOtpMessage(
   throw new Error(`All OTP providers failed: ${summary}`);
 }
 
-export function anyOtpProviderConfigured(): boolean {
-  // Synchronous quick-check used to decide whether to expose `demoOtp` in dev.
-  // Twilio readiness is verified inside the orchestrator at call time.
-  return (
-    infobipConfigured() ||
-    !!(process.env.REPLIT_CONNECTORS_HOSTNAME &&
-      (process.env.REPL_IDENTITY || process.env.WEB_REPL_RENEWAL))
-  );
+export async function anyOtpProviderConfigured(): Promise<boolean> {
+  // Used to decide whether to expose `demoOtp` and whether to surface a hard
+  // 502 when delivery fails. Reflects ACTUAL readiness — for Twilio that means
+  // verifying the connector is authorized for this Repl, not just that the
+  // Replit connector env vars exist.
+  if (infobipConfigured()) return true;
+  return await twilioConfigured();
 }
