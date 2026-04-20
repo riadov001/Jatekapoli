@@ -129,7 +129,7 @@ router.post("/auth/send-otp", async (req, res): Promise<void> => {
   const expiresAt = new Date(Date.now() + OTP_EXPIRY_MINUTES * 60 * 1000);
   await db.insert(otpCodesTable).values({ phone: normalizedPhone, code, expiresAt });
 
-  const messageBody = `Votre code Jatek : ${code}\nValable ${OTP_EXPIRY_MINUTES} minutes. Ne le communiquez à personne.`;
+  const messageBody = `Votre code MYTOOLSAPP : ${code}\nValable ${OTP_EXPIRY_MINUTES} minutes. Ne le communiquez à personne.`;
 
   const providerReady = await anyOtpProviderConfigured();
   const isDev = process.env.NODE_ENV !== "production";
