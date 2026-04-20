@@ -156,7 +156,7 @@ export function SideMenu({ visible, onClose }: Props) {
           {/* Footer */}
           <View style={styles.footer}>
             <TouchableOpacity
-              onPress={() => handleNav("/profile/settings" as any)}
+              onPress={() => handleNav("/profile/info" as any)}
               style={[styles.footerBtn, { borderColor: colors.border }]}
             >
               <Ionicons name="settings-outline" size={18} color={colors.mutedForeground} />

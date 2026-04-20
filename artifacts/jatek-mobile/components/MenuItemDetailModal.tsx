@@ -21,8 +21,22 @@ interface Props {
   item: MenuItem | null;
   initialQty?: number;
   onClose: () => void;
-  onAdd: (qty: number, note?: string) => void;
+  onAdd: (selection: {
+    qty: number;
+    size: "S" | "M" | "L";
+    extras: string[];
+    unitPrice: number;
+    displayName: string;
+    variantId: number;
+  }) => void;
 }
+
+const EXTRA_LABELS: Record<string, string> = {
+  cheese: "Fromage extra",
+  spicy: "Sauce piquante",
+  fries: "Frites maison",
+};
+const EXTRA_KEYS = ["cheese", "spicy", "fries"] as const;
 
 // Default rich content (used when no per-item info is provided by the API).
 const DEFAULT_INGREDIENTS = ["Pain frais", "Sauce maison", "Légumes croquants", "Fromage fondant"];
@@ -80,7 +94,14 @@ export function MenuItemDetailModal({ visible, item, initialQty = 0, onClose, on
       Animated.spring(addPulse, { toValue: 0.94, useNativeDriver: true, friction: 4 }),
       Animated.spring(addPulse, { toValue: 1, useNativeDriver: true, friction: 4 }),
     ]).start();
-    onAdd(qty);
+    const sizeIdx = size === "S" ? 1 : size === "L" ? 3 : 2;
+    const extrasMask = EXTRA_KEYS.reduce((m, k, i) => m + (extras[k] ? 1 << i : 0), 0);
+    const extrasArr = EXTRA_KEYS.filter((k) => extras[k]).map((k) => EXTRA_LABELS[k]);
+    const variantId = item.id * 100000 + sizeIdx * 100 + extrasMask;
+    const sizeLabel = size === "M" ? "" : ` (${size})`;
+    const extrasLabel = extrasArr.length ? ` + ${extrasArr.join(", ")}` : "";
+    const displayName = `${item.name}${sizeLabel}${extrasLabel}`;
+    onAdd({ qty, size, extras: extrasArr, unitPrice, displayName, variantId });
     onClose();
   };
 

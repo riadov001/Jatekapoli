@@ -111,16 +111,26 @@ function ShortFrame({
   const heartBurst = useRef(new Animated.Value(0)).current;
   const [liked, setLiked] = useState(false);
   const playPulse = useRef(new Animated.Value(1)).current;
+  const loopRef = useRef<Animated.CompositeAnimation | null>(null);
 
   useEffect(() => {
     if (active) {
-      Animated.loop(
+      const loop = Animated.loop(
         Animated.sequence([
           Animated.timing(playPulse, { toValue: 1.12, duration: 700, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
           Animated.timing(playPulse, { toValue: 1, duration: 700, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
         ]),
-      ).start();
+      );
+      loopRef.current = loop;
+      loop.start();
+      return () => {
+        loop.stop();
+        loopRef.current = null;
+        playPulse.setValue(1);
+      };
     } else {
+      loopRef.current?.stop();
+      loopRef.current = null;
       playPulse.setValue(1);
     }
   }, [active, playPulse]);

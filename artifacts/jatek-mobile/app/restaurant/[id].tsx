@@ -228,14 +228,14 @@ export default function RestaurantScreen() {
         item={selectedItem}
         initialQty={selectedItem ? getQty(selectedItem.id) : 0}
         onClose={() => setSelectedItem(null)}
-        onAdd={(qty) => {
+        onAdd={({ qty, unitPrice, displayName, variantId }) => {
           if (!selectedItem) return;
           const pricing = restaurant as { deliveryFee?: number | null; freeDeliveryThreshold?: number | null };
           for (let i = 0; i < qty; i++) {
             addItem(restaurantId, restaurant.name, {
-              menuItemId: selectedItem.id,
-              name: selectedItem.name,
-              price: selectedItem.price,
+              menuItemId: variantId,
+              name: displayName,
+              price: unitPrice,
               imageUrl: selectedItem.imageUrl,
             }, { deliveryFee: pricing.deliveryFee, freeDeliveryThreshold: pricing.freeDeliveryThreshold });
           }
