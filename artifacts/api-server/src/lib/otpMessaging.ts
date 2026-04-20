@@ -1,10 +1,12 @@
 // OTP messaging with multi-provider fallback chain.
 //
-// Order:
-//   1. Infobip WhatsApp
-//   2. Infobip SMS
-//   3. Twilio WhatsApp   (via Replit Twilio integration)
-//   4. Twilio SMS        (via Replit Twilio integration)
+// Order (SMS first — WhatsApp Business templates often "succeed" with HTTP
+// 200 but never deliver if the template isn't approved, which silently breaks
+// signups. SMS is the universal expectation for OTP and is far more reliable):
+//   1. Infobip SMS
+//   2. Twilio SMS        (via Replit Twilio integration)
+//   3. Infobip WhatsApp  (fallback)
+//   4. Twilio WhatsApp   (fallback, via Replit Twilio integration)
 //
 // Each provider is skipped silently when it isn't configured (no creds / no
 // connector). The first successful send wins; failures are logged and the
@@ -181,24 +183,24 @@ export async function sendOtpMessage(
   type Step = { channel: OtpChannel; available: boolean; fn: () => Promise<void> };
   const steps: Step[] = [
     {
-      channel: "infobip-whatsapp",
-      available: infobipReady && !!process.env.INFOBIP_WA_SENDER,
-      fn: () => sendInfobipWhatsapp(to, body),
-    },
-    {
       channel: "infobip-sms",
       available: infobipReady,
       fn: () => sendInfobipSms(to, body),
     },
     {
-      channel: "twilio-whatsapp",
-      available: twilioReady,
-      fn: () => sendTwilioWhatsapp(to, body),
-    },
-    {
       channel: "twilio-sms",
       available: twilioReady,
       fn: () => sendTwilioSms(to, body),
+    },
+    {
+      channel: "infobip-whatsapp",
+      available: infobipReady && !!process.env.INFOBIP_WA_SENDER,
+      fn: () => sendInfobipWhatsapp(to, body),
+    },
+    {
+      channel: "twilio-whatsapp",
+      available: twilioReady,
+      fn: () => sendTwilioWhatsapp(to, body),
     },
   ];
 

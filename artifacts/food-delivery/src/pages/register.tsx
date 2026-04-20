@@ -177,49 +177,80 @@ export default function RegisterPage() {
                   </FormItem>
                 )}
               />
-              {/* Consent checkboxes */}
+              {/* Consent checkboxes — use plain divs (not <label>) so the
+                  inline links to /legal don't trigger when toggling the box. */}
               <div className="space-y-3 pt-1">
-                <label className="flex items-start gap-3 cursor-pointer group">
+                <div
+                  className="flex items-start gap-3 cursor-pointer group"
+                  onClick={() => setRgpd(!rgpd)}
+                  role="checkbox"
+                  aria-checked={rgpd}
+                  tabIndex={0}
+                  onKeyDown={(e) => { if (e.key === " " || e.key === "Enter") { e.preventDefault(); setRgpd(!rgpd); } }}
+                >
                   <div
                     className={`mt-0.5 w-5 h-5 rounded border-2 flex-shrink-0 flex items-center justify-center transition-colors ${rgpd ? "bg-primary border-primary" : "border-border group-hover:border-primary/50"}`}
-                    onClick={() => setRgpd(!rgpd)}
                   >
                     {rgpd && <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
                   </div>
                   <span className="text-xs text-foreground leading-relaxed">
                     J'accepte la{" "}
-                    <button type="button" onClick={() => setLocation("/legal")} className="text-primary underline inline-flex items-center gap-0.5">
+                    <a
+                      href="/legal"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={(e) => e.stopPropagation()}
+                      className="text-primary underline inline-flex items-center gap-0.5"
+                    >
                       politique de confidentialité <ExternalLink className="w-3 h-3" />
-                    </button>
+                    </a>
                     {" "}et les{" "}
-                    <button type="button" onClick={() => setLocation("/legal")} className="text-primary underline">
+                    <a
+                      href="/legal"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={(e) => e.stopPropagation()}
+                      className="text-primary underline"
+                    >
                       CGU
-                    </button>
+                    </a>
                     {" "}(obligatoire)
                   </span>
-                </label>
-                <label className="flex items-start gap-3 cursor-pointer group">
+                </div>
+                <div
+                  className="flex items-start gap-3 cursor-pointer group"
+                  onClick={() => setSmsConsent(!smsConsent)}
+                  role="checkbox"
+                  aria-checked={smsConsent}
+                  tabIndex={0}
+                  onKeyDown={(e) => { if (e.key === " " || e.key === "Enter") { e.preventDefault(); setSmsConsent(!smsConsent); } }}
+                >
                   <div
                     className={`mt-0.5 w-5 h-5 rounded border-2 flex-shrink-0 flex items-center justify-center transition-colors ${smsConsent ? "bg-primary border-primary" : "border-border group-hover:border-primary/50"}`}
-                    onClick={() => setSmsConsent(!smsConsent)}
                   >
                     {smsConsent && <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
                   </div>
                   <span className="text-xs text-muted-foreground leading-relaxed">
                     J'accepte de recevoir des SMS promotionnels de Jatek (optionnel)
                   </span>
-                </label>
-                <label className="flex items-start gap-3 cursor-pointer group">
+                </div>
+                <div
+                  className="flex items-start gap-3 cursor-pointer group"
+                  onClick={() => setEmailConsent(!emailConsent)}
+                  role="checkbox"
+                  aria-checked={emailConsent}
+                  tabIndex={0}
+                  onKeyDown={(e) => { if (e.key === " " || e.key === "Enter") { e.preventDefault(); setEmailConsent(!emailConsent); } }}
+                >
                   <div
                     className={`mt-0.5 w-5 h-5 rounded border-2 flex-shrink-0 flex items-center justify-center transition-colors ${emailConsent ? "bg-primary border-primary" : "border-border group-hover:border-primary/50"}`}
-                    onClick={() => setEmailConsent(!emailConsent)}
                   >
                     {emailConsent && <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
                   </div>
                   <span className="text-xs text-muted-foreground leading-relaxed">
                     J'accepte de recevoir la newsletter et des offres par email (optionnel)
                   </span>
-                </label>
+                </div>
               </div>
 
               <Button
