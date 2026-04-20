@@ -67,12 +67,12 @@ export default function DeliverScreen() {
   const updateStatus = useUpdateOrderStatus();
 
   const { data: earnings } = useGetDriverEarnings(myDriver?.id ?? 0, {
-    query: { enabled: !!myDriver },
+    query: { enabled: !!myDriver } as any,
   });
 
   const { data: myOrders, refetch: refetchMyOrders } = useListOrders(
     myDriver ? { driverId: myDriver.id } : undefined,
-    { query: { enabled: !!myDriver, refetchInterval: 30000 } }
+    { query: { enabled: !!myDriver, refetchInterval: 30000 } as any }
   );
 
   const [available, setAvailable] = useState<any[]>([]);
@@ -392,13 +392,13 @@ export default function DeliverScreen() {
         <View style={styles.statsRow}>
           <View style={[styles.statBox, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <Text style={[styles.statValue, { color: colors.foreground }]}>
-              {earnings?.todayEarnings?.toFixed(0) ?? 0}
+              {earnings?.today?.toFixed(0) ?? 0}
             </Text>
             <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>MAD today</Text>
           </View>
           <View style={[styles.statBox, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <Text style={[styles.statValue, { color: colors.foreground }]}>
-              {earnings?.todayDeliveries ?? 0}
+              {earnings?.completedToday ?? 0}
             </Text>
             <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>Deliveries</Text>
           </View>

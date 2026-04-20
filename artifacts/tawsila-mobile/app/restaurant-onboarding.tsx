@@ -26,7 +26,7 @@ export default function RestaurantOnboardingScreen() {
 
   const { data: restaurants, refetch } = useListRestaurants(
     user ? { ownerId: user.id } : undefined,
-    { query: { enabled: !!user } }
+    { query: { enabled: !!user } as any }
   );
   const myRestaurant = restaurants?.[0];
 

@@ -101,7 +101,7 @@ export default function OrderDetailScreen() {
   const orderId = parseInt(id, 10);
 
   const { data: order, isLoading, refetch } = useGetOrder(orderId, {
-    query: { enabled: !!orderId, refetchInterval: 20000 },
+    query: { enabled: !!orderId, refetchInterval: 20000 } as any,
   });
 
   const { data: drivers } = useListDrivers();

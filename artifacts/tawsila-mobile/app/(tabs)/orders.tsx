@@ -16,7 +16,7 @@ export default function OrdersScreen() {
 
   const { data: orders, isLoading, refetch } = useListOrders(
     user ? { userId: user.id } : undefined,
-    { query: { enabled: !!token && !!user, refetchInterval: 30000 } }
+    { query: { enabled: !!token && !!user, refetchInterval: 30000 } as any }
   );
 
   const sorted = [...(orders ?? [])].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());

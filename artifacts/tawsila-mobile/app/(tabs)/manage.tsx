@@ -181,14 +181,14 @@ export default function ManageScreen() {
 
   const { data: restaurants, refetch: refetchRestaurants } = useListRestaurants(
     user ? { ownerId: user.id } : undefined,
-    { query: { enabled: !!user } }
+    { query: { enabled: !!user } as any }
   );
   const myRestaurant = restaurants?.[0];
   const profileComplete = !!(myRestaurant as any)?.profileCompletedAt;
 
   const { data: orders, isLoading, refetch: refetchOrders } = useListOrders(
     myRestaurant ? { restaurantId: myRestaurant.id } : undefined,
-    { query: { enabled: !!myRestaurant, refetchInterval: 30000 } }
+    { query: { enabled: !!myRestaurant, refetchInterval: 30000 } as any }
   );
 
   const [refreshing, setRefreshing] = useState(false);
