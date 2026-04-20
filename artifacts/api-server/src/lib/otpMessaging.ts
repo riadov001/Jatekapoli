@@ -34,13 +34,21 @@ export interface AttemptLog {
 }
 
 // ─── Infobip ──────────────────────────────────────────────────────────────────
+// Accept either INFOBIP_BASE_URL or INFOBIP_URL; strip an optional protocol
+// and trailing slash so callers can paste the URL straight from the dashboard.
+function infobipBaseHost(): string | undefined {
+  const raw = process.env.INFOBIP_BASE_URL || process.env.INFOBIP_URL;
+  if (!raw) return undefined;
+  return raw.replace(/^https?:\/\//, "").replace(/\/+$/, "");
+}
+
 function infobipConfigured(): boolean {
-  return !!(process.env.INFOBIP_API_KEY && process.env.INFOBIP_BASE_URL);
+  return !!(process.env.INFOBIP_API_KEY && infobipBaseHost());
 }
 
 async function sendInfobipSms(to: string, body: string): Promise<void> {
   const apiKey = process.env.INFOBIP_API_KEY!;
-  const baseUrl = process.env.INFOBIP_BASE_URL!;
+  const baseUrl = infobipBaseHost()!;
   const sender = process.env.INFOBIP_SENDER || "Jatek";
   const url = `https://${baseUrl}/sms/2/text/advanced`;
 
@@ -64,7 +72,7 @@ async function sendInfobipSms(to: string, body: string): Promise<void> {
 
 async function sendInfobipWhatsapp(to: string, body: string): Promise<void> {
   const apiKey = process.env.INFOBIP_API_KEY!;
-  const baseUrl = process.env.INFOBIP_BASE_URL!;
+  const baseUrl = infobipBaseHost()!;
   const from = process.env.INFOBIP_WA_SENDER;
   if (!from) throw new Error("INFOBIP_WA_SENDER not set");
 
