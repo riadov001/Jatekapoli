@@ -193,9 +193,9 @@ export default function OtpScreen() {
         </Text>
 
         {demoOtp ? (
-          <View style={[styles.demoBanner, { backgroundColor: colors.warning + "20", borderColor: colors.warning + "40" }]}>
-            <Ionicons name="information-circle-outline" size={16} color={colors.warning} />
-            <Text style={[styles.demoText, { color: colors.warning }]}>
+          <View style={[styles.demoBanner, { backgroundColor: colors.yellowSoft, borderColor: colors.yellow }]}>
+            <Ionicons name="information-circle-outline" size={16} color={colors.yellowForeground} />
+            <Text style={[styles.demoText, { color: colors.yellowForeground }]}>
               {t("otp_demo_code")}{" "}
               <Text style={{ fontFamily: "Inter_700Bold" }}>{demoOtp}</Text>
             </Text>

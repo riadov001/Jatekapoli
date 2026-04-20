@@ -1,4 +1,5 @@
-// Quick-commerce Flink-inspired palette: hot pink + dark navy
+// Jatek brand palette — Talabat-inspired:
+// Hot pink primary, sunny yellow promos, turquoise info/highlights.
 const colors = {
   light: {
     text: "#0A1B3D",
@@ -8,11 +9,24 @@ const colors = {
     heading: "#0A1B3D",
     card: "#FFFFFF",
     cardForeground: "#0A1B3D",
+
+    // Primary — hot pink
     primary: "#E2006A",
     primaryForeground: "#FFFFFF",
     primarySoft: "#FFE5F0",
     primarySoftForeground: "#E2006A",
     pinkBg: "#FFD9E8",
+
+    // Yellow — promos, ratings, discount pills
+    yellow: "#FFD400",
+    yellowForeground: "#0A1B3D",
+    yellowSoft: "#FFF6CC",
+
+    // Turquoise — status / info / secondary highlights
+    turquoise: "#00C2C7",
+    turquoiseForeground: "#FFFFFF",
+    turquoiseSoft: "#D6F5F6",
+
     secondary: "#F5F5F5",
     secondaryForeground: "#0A1B3D",
     muted: "#F5F5F5",
@@ -24,7 +38,7 @@ const colors = {
     border: "#EBEBEB",
     input: "#EBEBEB",
     success: "#22C55E",
-    warning: "#F59E0B",
+    warning: "#FFD400",
   },
   dark: {
     text: "#F5F5F5",
@@ -34,11 +48,21 @@ const colors = {
     heading: "#F5F5F5",
     card: "#171717",
     cardForeground: "#F5F5F5",
+
     primary: "#FF1A85",
     primaryForeground: "#FFFFFF",
     primarySoft: "#3D0E26",
     primarySoftForeground: "#FF6BB0",
     pinkBg: "#3D0E26",
+
+    yellow: "#FFD400",
+    yellowForeground: "#0A1B3D",
+    yellowSoft: "#3D3000",
+
+    turquoise: "#00D4DA",
+    turquoiseForeground: "#0A1B3D",
+    turquoiseSoft: "#0E3D3F",
+
     secondary: "#212121",
     secondaryForeground: "#F5F5F5",
     muted: "#1F1F1F",
@@ -50,7 +74,7 @@ const colors = {
     border: "#2A2A2A",
     input: "#2A2A2A",
     success: "#22C55E",
-    warning: "#F59E0B",
+    warning: "#FFD400",
   },
   radius: 14,
 };

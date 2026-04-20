@@ -30,7 +30,7 @@ export default function ProfilePage() {
   return (
     <div className="max-w-2xl mx-auto space-y-6 pb-6">
       {/* Profile header */}
-      <div className="bg-gradient-to-br from-primary via-primary to-pink-400 rounded-2xl p-6 text-white">
+      <div className="bg-gradient-to-br from-primary via-primary to-brand-turquoise rounded-2xl p-6 text-white">
         <div className="flex items-center gap-4">
           <div className="w-16 h-16 rounded-full bg-white/20 flex items-center justify-center text-2xl font-bold font-display">
             {user.name.charAt(0).toUpperCase()}
@@ -53,12 +53,12 @@ export default function ProfilePage() {
           <p className="text-xs text-muted-foreground">{t("profile.orders")}</p>
         </div>
         <div className="bg-card rounded-xl border border-card-border p-4 text-center" data-testid="stat-points">
-          <Gift className="w-5 h-5 text-primary mx-auto mb-1" />
+          <Gift className="w-5 h-5 text-brand-turquoise mx-auto mb-1" />
           <p className="font-bold text-xl">{user.loyaltyPoints}</p>
           <p className="text-xs text-muted-foreground">{t("profile.points")}</p>
         </div>
         <div className="bg-card rounded-xl border border-card-border p-4 text-center" data-testid="stat-tier">
-          <Star className="w-5 h-5 text-yellow-500 mx-auto mb-1" />
+          <Star className="w-5 h-5 text-brand-yellow fill-brand-yellow mx-auto mb-1" />
           <p className="font-bold text-sm">{tierName}</p>
           <p className="text-xs text-muted-foreground">{t("profile.tier")}</p>
         </div>

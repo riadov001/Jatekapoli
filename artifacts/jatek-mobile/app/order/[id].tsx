@@ -201,12 +201,12 @@ export default function OrderDetailScreen() {
         <Animated.View entering={FadeInDown.duration(350)} style={styles.hero}>
           <View style={styles.heroRow}>
             <View style={[styles.heroIcon, {
-              backgroundColor: isCancelled ? colors.destructive + "20" : isCompleted ? "#22C55E20" : colors.primary + "20",
+              backgroundColor: isCancelled ? colors.destructive + "20" : isCompleted ? colors.turquoiseSoft : colors.yellowSoft,
             }]}>
               <Ionicons
                 name={isCancelled ? "close-circle" : isCompleted ? "checkmark-done-circle" : (currentStep.icon as any)}
                 size={26}
-                color={isCancelled ? colors.destructive : isCompleted ? "#22C55E" : colors.primary}
+                color={isCancelled ? colors.destructive : isCompleted ? colors.turquoise : colors.primary}
               />
             </View>
             <View style={{ flex: 1 }}>
@@ -216,7 +216,7 @@ export default function OrderDetailScreen() {
               <Text style={[styles.heroValue, { color: colors.foreground }]}>{t(currentStep.labelKey)}</Text>
               <Text style={[styles.heroDesc, { color: colors.mutedForeground }]}>{t(currentStep.descKey)}</Text>
               {!isCancelled && !isCompleted && etaMin != null && (
-                <Text style={[styles.heroEta, { color: colors.primary }]}>
+                <Text style={[styles.heroEta, { color: colors.turquoise }]}>
                   {t("order_eta")} · {t("order_eta_min", { n: etaMin })}{etaTime ? ` · ${t("order_eta_at", { time: etaTime })}` : ""}
                 </Text>
               )}
@@ -227,7 +227,7 @@ export default function OrderDetailScreen() {
 
         {/* Pickup hand-off code — shown to the customer once the order is accepted. */}
         {(order as any).pickupCode && !["delivered", "cancelled"].includes(order.status) && (
-          <Animated.View entering={FadeInDown.duration(300)} style={[styles.pickupCard, { backgroundColor: colors.primary }]}>
+          <Animated.View entering={FadeInDown.duration(300)} style={[styles.pickupCard, { backgroundColor: colors.yellow }]}>
             <Text style={styles.pickupLabel}>{t("order_pickup_code_title")}</Text>
             <Text style={styles.pickupCode} testID="text-pickup-code">{(order as any).pickupCode}</Text>
             <Text style={styles.pickupHelp}>{t("order_pickup_code_help")}</Text>
@@ -263,7 +263,7 @@ export default function OrderDetailScreen() {
                 <View style={styles.driverMetaRow}>
                   {driver.rating != null && (
                     <View style={styles.driverMeta}>
-                      <Ionicons name="star" size={12} color="#F59E0B" />
+                      <Ionicons name="star" size={12} color={colors.yellow} />
                       <Text style={[styles.driverMetaText, { color: colors.mutedForeground }]}>
                         {driver.rating.toFixed(1)}
                       </Text>
@@ -308,13 +308,13 @@ export default function OrderDetailScreen() {
               return (
                 <View key={step.key} style={styles.step}>
                   <View style={[styles.stepIcon, {
-                    backgroundColor: done ? colors.primary : colors.muted,
+                    backgroundColor: active ? colors.yellow : done ? colors.turquoise : colors.muted,
                     transform: [{ scale: active ? 1.1 : 1 }],
                   }]}>
-                    <Ionicons name={step.icon as any} size={16} color={done ? "#fff" : colors.mutedForeground} />
+                    <Ionicons name={step.icon as any} size={16} color={active ? colors.yellowForeground : done ? "#fff" : colors.mutedForeground} />
                   </View>
                   {idx < STEP_KEYS.length - 1 && (
-                    <View style={[styles.stepLine, { backgroundColor: idx < currentIdx ? colors.primary : colors.border }]} />
+                    <View style={[styles.stepLine, { backgroundColor: idx < currentIdx ? colors.turquoise : colors.border }]} />
                   )}
                   <Text style={[styles.stepLabel, {
                     color: done ? colors.foreground : colors.mutedForeground,

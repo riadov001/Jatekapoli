@@ -406,9 +406,9 @@ export default function LoginPage() {
                 </div>
 
                 {demoOtp && (
-                  <div className="mb-5 p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-xl text-center">
-                    <p className="text-xs text-amber-700 dark:text-amber-400 font-medium">{t("login.demoMode")}</p>
-                    <p className="text-2xl font-bold tracking-widest text-amber-600 dark:text-amber-300 mt-0.5">{demoOtp}</p>
+                  <div className="mb-5 p-3 bg-brand-yellow-soft border border-brand-yellow/40 rounded-xl text-center">
+                    <p className="text-xs text-brand-yellow-foreground font-semibold">{t("login.demoMode")}</p>
+                    <p className="text-2xl font-bold tracking-widest text-brand-yellow-foreground mt-0.5">{demoOtp}</p>
                   </div>
                 )}
 

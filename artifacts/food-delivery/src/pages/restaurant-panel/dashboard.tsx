@@ -49,10 +49,10 @@ function openReceiptWindow(orderId: number) {
 }
 
 const statusColors: Record<string, string> = {
-  pending: "bg-accent text-accent-foreground border-primary/20",
-  accepted: "bg-primary/15 text-primary border-primary/25",
-  preparing: "bg-primary/20 text-primary border-primary/30",
-  ready: "bg-primary/25 text-primary border-primary/35",
+  pending: "bg-brand-yellow text-brand-yellow-foreground border-brand-yellow",
+  accepted: "bg-brand-turquoise-soft text-brand-turquoise border-brand-turquoise/30",
+  preparing: "bg-brand-turquoise-soft text-brand-turquoise border-brand-turquoise/40",
+  ready: "bg-brand-turquoise text-brand-turquoise-foreground border-brand-turquoise",
   picked_up: "bg-primary text-primary-foreground border-primary",
   delivered: "bg-foreground text-background border-foreground",
   cancelled: "bg-muted text-muted-foreground border-border",
@@ -320,17 +320,17 @@ export default function RestaurantDashboardPage() {
     <div className="space-y-6">
       {/* Profile completion gate banner */}
       {!profileComplete && (
-        <div className="bg-yellow-50 border border-yellow-300 rounded-2xl p-4 flex items-start gap-4" data-testid="banner-profile-incomplete">
-          <div className="w-10 h-10 rounded-full bg-yellow-100 flex items-center justify-center shrink-0">
-            <Bell className="w-5 h-5 text-yellow-700" />
+        <div className="bg-brand-yellow-soft border border-brand-yellow rounded-2xl p-4 flex items-start gap-4" data-testid="banner-profile-incomplete">
+          <div className="w-10 h-10 rounded-full bg-brand-yellow flex items-center justify-center shrink-0">
+            <Bell className="w-5 h-5 text-brand-yellow-foreground" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="font-semibold text-yellow-900">Complete your business profile to accept orders</p>
-            <p className="text-sm text-yellow-800 mt-0.5">
+            <p className="font-semibold text-foreground">Complete your business profile to accept orders</p>
+            <p className="text-sm text-foreground/80 mt-0.5">
               We need your legal name and ICE number on each kitchen ticket and invoice.
             </p>
           </div>
-          <Button size="sm" className="bg-yellow-700 hover:bg-yellow-800 text-white shrink-0" onClick={openProfile} data-testid="button-open-profile">
+          <Button size="sm" className="bg-primary hover:bg-primary/90 text-primary-foreground shrink-0" onClick={openProfile} data-testid="button-open-profile">
             Complete now
           </Button>
         </div>
@@ -459,12 +459,12 @@ export default function RestaurantDashboardPage() {
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-card rounded-2xl border border-card-border p-4">
-          <Package className="w-5 h-5 text-primary mb-2" />
+          <Package className="w-5 h-5 text-brand-turquoise mb-2" />
           <p className="font-bold text-2xl">{activeOrders.length}</p>
           <p className="text-xs text-muted-foreground">{t("restaurantPanel.activeOrders")}</p>
         </div>
         <div className="bg-card rounded-2xl border border-card-border p-4">
-          <DollarSign className="w-5 h-5 text-primary mb-2" />
+          <DollarSign className="w-5 h-5 text-brand-yellow-foreground mb-2" />
           <p className="font-bold text-2xl">{revenue.toFixed(0)}</p>
           <p className="text-xs text-muted-foreground">{t("restaurantPanel.revenue")}</p>
         </div>
@@ -473,13 +473,13 @@ export default function RestaurantDashboardPage() {
           <p className="font-bold text-2xl">{orders?.length ?? 0}</p>
           <p className="text-xs text-muted-foreground">{t("restaurantPanel.totalOrders")}</p>
           {pendingOrders.length > 0 && (
-            <span className="absolute top-3 right-3 w-5 h-5 bg-destructive text-white text-xs font-bold rounded-full flex items-center justify-center">
+            <span className="absolute top-3 right-3 w-5 h-5 bg-brand-yellow text-brand-yellow-foreground text-xs font-bold rounded-full flex items-center justify-center">
               {pendingOrders.length}
             </span>
           )}
         </div>
         <div className="bg-card rounded-2xl border border-card-border p-4">
-          <Clock className="w-5 h-5 text-primary mb-2" />
+          <Clock className="w-5 h-5 text-brand-turquoise mb-2" />
           <p className="font-bold text-2xl">{myRestaurant.deliveryTime ?? "—"}</p>
           <p className="text-xs text-muted-foreground">{t("restaurantPanel.avgDelivery")}</p>
         </div>
@@ -516,7 +516,7 @@ export default function RestaurantDashboardPage() {
               <div
                 key={order.id}
                 className={`bg-card rounded-2xl border p-4 flex items-center gap-4 transition-all ${
-                  order.status === "pending" ? "border-yellow-300 shadow-sm shadow-yellow-100" : "border-card-border"
+                  order.status === "pending" ? "border-brand-yellow shadow-sm" : "border-card-border"
                 }`}
               >
                 <div className="flex-1 min-w-0">

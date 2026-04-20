@@ -10,10 +10,10 @@ import { RestaurantCard } from "@/components/RestaurantCard";
 import { useTranslation } from "react-i18next";
 
 const TOP_CATEGORIES = [
-  { id: "restaurant", label: "Restaurants", emoji: "🍽️" },
-  { id: "grocery", label: "Courses", emoji: "🛒" },
-  { id: "health", label: "Santé", emoji: "💊" },
-  { id: "other", label: "Autres", emoji: "📦" },
+  { id: "restaurant", label: "Restaurants", emoji: "🍽️", bg: "bg-brand-turquoise-soft" },
+  { id: "grocery", label: "Courses", emoji: "🛒", bg: "bg-brand-yellow-soft" },
+  { id: "health", label: "Santé", emoji: "💊", bg: "bg-brand-turquoise-soft" },
+  { id: "other", label: "Cadeaux", emoji: "🎁", bg: "bg-accent" },
 ] as const;
 
 type TopCatId = typeof TOP_CATEGORIES[number]["id"];
@@ -110,6 +110,11 @@ function FeaturedBanner({ businesses }: { businesses: any[] }) {
                   {r.deliveryTime ?? 25} min
                 </span>
               </div>
+              <div className="absolute top-2 right-2">
+                <span className="inline-flex items-center bg-brand-yellow text-brand-yellow-foreground text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm">
+                  -15%
+                </span>
+              </div>
             </div>
             <div className="p-3">
               <p className="font-semibold text-sm leading-tight truncate">{r.name}</p>
@@ -159,25 +164,45 @@ export default function HomePage() {
         />
       </div>
 
-      {/* Top category tabs – Flink circle icon style */}
-      <div className="grid grid-cols-4 gap-2">
+      {/* Top category tiles – Talabat-style colored cards */}
+      <div className="grid grid-cols-4 gap-2 sm:gap-3">
         {TOP_CATEGORIES.map((cat) => (
           <button
             key={cat.id}
             onClick={() => setActiveTop(cat.id)}
-            className={`flex flex-col items-center gap-1.5 py-3 rounded-2xl border transition-all duration-200 ${
+            className={`relative flex flex-col items-start justify-between p-3 sm:p-4 h-24 sm:h-28 rounded-2xl border transition-all duration-200 overflow-hidden ${cat.bg} ${
               activeTop === cat.id
-                ? "border-primary bg-accent shadow-sm shadow-primary/15"
-                : "border-card-border bg-card hover:border-primary/30"
+                ? "border-primary border-2 shadow-md shadow-primary/15"
+                : "border-transparent hover:border-primary/30"
             }`}
             data-testid={`btn-top-cat-${cat.id}`}
           >
-            <span className="text-2xl">{cat.emoji}</span>
-            <span className={`text-xs font-semibold leading-none ${activeTop === cat.id ? "text-primary" : "text-foreground"}`}>
+            <span className="text-xs sm:text-sm font-bold leading-tight text-foreground text-left">
               {cat.label}
             </span>
+            <span className="text-3xl sm:text-4xl self-end leading-none">{cat.emoji}</span>
           </button>
         ))}
+      </div>
+
+      {/* Promo banner — yellow Talabat accent */}
+      <div className="relative flex items-center gap-3 rounded-2xl overflow-hidden bg-brand-yellow text-brand-yellow-foreground p-4 sm:p-5">
+        <div className="flex-1 min-w-0">
+          <p className="font-display font-bold text-lg sm:text-xl leading-tight">
+            1ère commande offerte 🎉
+          </p>
+          <p className="text-xs sm:text-sm opacity-80 mt-1">
+            Code <span className="font-bold">JATEK10</span> — livraison gratuite
+          </p>
+          <Button
+            size="sm"
+            className="mt-3 rounded-full bg-primary text-primary-foreground hover:bg-primary/90 font-bold h-8 px-4"
+            onClick={() => setActiveSub("Tous")}
+          >
+            Commander
+          </Button>
+        </div>
+        <span className="text-5xl sm:text-6xl shrink-0">🛍️</span>
       </div>
 
       {/* Subcategory horizontal scroll */}

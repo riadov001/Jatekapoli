@@ -125,6 +125,14 @@ export default function CartPage() {
       <h1 className="font-display font-bold text-2xl">{t("cart.title")}</h1>
       <p className="text-sm text-muted-foreground -mt-4">{t("cart.from", { name: restaurantName })}</p>
 
+      {/* Promo banner */}
+      <div className="bg-brand-yellow text-brand-yellow-foreground rounded-2xl px-4 py-3 flex items-center gap-3">
+        <span className="text-xl">🎉</span>
+        <p className="text-sm font-semibold leading-tight">
+          Code <span className="font-bold">JATEK10</span> — livraison gratuite sur ta 1ère commande
+        </p>
+      </div>
+
       {/* Items */}
       <div className="bg-card rounded-2xl border border-card-border overflow-hidden">
         {items.map((item, idx) => (
@@ -184,7 +192,7 @@ export default function CartPage() {
             type="button"
             onClick={handleDetectLocation}
             disabled={locating}
-            className="flex items-center gap-1.5 text-xs text-primary font-medium hover:underline disabled:opacity-60"
+            className="flex items-center gap-1.5 text-xs text-brand-turquoise font-medium hover:underline disabled:opacity-60"
           >
             {locating ? (
               <><Loader2 className="w-3 h-3 animate-spin" /> {t("cart.detecting")}</>
@@ -225,7 +233,7 @@ export default function CartPage() {
         </div>
         <div className="flex justify-between text-sm">
           <span className="text-muted-foreground">{t("cart.deliveryFee")}</span>
-          <span>{DELIVERY_FEE} MAD</span>
+          <span className="text-brand-turquoise font-semibold">{DELIVERY_FEE} MAD</span>
         </div>
         <Separator />
         <div className="flex justify-between font-bold text-base">

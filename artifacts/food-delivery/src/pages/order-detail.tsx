@@ -131,7 +131,7 @@ export default function OrderDetailPage() {
       {/* Pickup code — shown to the customer to read out to the driver. */}
       {(order as any).pickupCode && !["delivered", "cancelled"].includes(order.status) && (
         <div
-          className="bg-gradient-to-br from-primary to-primary/80 text-primary-foreground rounded-2xl p-5 text-center shadow-md"
+          className="bg-gradient-to-br from-primary via-primary to-brand-turquoise text-primary-foreground rounded-2xl p-5 text-center shadow-md"
           data-testid="card-pickup-code"
         >
           <p className="text-xs uppercase tracking-wider opacity-90 font-semibold">{t("orderDetail.pickupCodeTitle", { defaultValue: "Hand-off code" })}</p>
@@ -173,8 +173,10 @@ export default function OrderDetailPage() {
               return (
                 <div key={step.key} className="flex items-start gap-3 mb-4 last:mb-0" data-testid={`status-step-${step.key}`}>
                   <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-colors ${
-                    isCompleted ? "bg-primary text-white" : "bg-muted text-muted-foreground"
-                  } ${isCurrent ? "ring-2 ring-primary ring-offset-2 ring-offset-background" : ""}`}>
+                    isCurrent ? "bg-brand-yellow text-brand-yellow-foreground" :
+                    isCompleted ? "bg-brand-turquoise text-brand-turquoise-foreground" :
+                    "bg-muted text-muted-foreground"
+                  } ${isCurrent ? "ring-2 ring-brand-yellow ring-offset-2 ring-offset-background" : ""}`}>
                     <Icon className="w-4 h-4" />
                   </div>
                   <div className="flex-1 pt-1">
@@ -182,7 +184,7 @@ export default function OrderDetailPage() {
                       {step.label}
                     </p>
                     {isCurrent && order.estimatedDeliveryTime && (
-                      <p className="text-xs text-primary mt-0.5">{t("orderDetail.estRemaining", { time: order.estimatedDeliveryTime })}</p>
+                      <p className="text-xs text-brand-turquoise mt-0.5 font-semibold">{t("orderDetail.estRemaining", { time: order.estimatedDeliveryTime })}</p>
                     )}
                   </div>
                 </div>

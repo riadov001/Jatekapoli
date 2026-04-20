@@ -4,10 +4,10 @@ import { Ionicons } from "@expo/vector-icons";
 import { useColors } from "@/hooks/useColors";
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; icon: string }> = {
-  pending: { label: "Pending", color: "#E2006A", icon: "time-outline" },
-  accepted: { label: "Accepted", color: "#E2006A", icon: "checkmark-circle-outline" },
-  preparing: { label: "Preparing", color: "#E2006A", icon: "restaurant-outline" },
-  ready: { label: "Ready", color: "#E2006A", icon: "bag-check-outline" },
+  pending: { label: "Pending", color: "#B58900", icon: "time-outline" },
+  accepted: { label: "Accepted", color: "#00C2C7", icon: "checkmark-circle-outline" },
+  preparing: { label: "Preparing", color: "#00C2C7", icon: "restaurant-outline" },
+  ready: { label: "Ready", color: "#00C2C7", icon: "bag-check-outline" },
   picked_up: { label: "On the way", color: "#E2006A", icon: "bicycle-outline" },
   delivered: { label: "Delivered", color: "#0F172A", icon: "checkmark-done-circle-outline" },
   cancelled: { label: "Cancelled", color: "#64748B", icon: "close-circle-outline" },

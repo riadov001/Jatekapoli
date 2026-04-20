@@ -141,7 +141,7 @@ export default function DriverDashboardPage() {
       </div>
 
       {/* Status badge */}
-      <div className={`p-4 rounded-xl text-center font-semibold ${myDriver.isAvailable ? "bg-primary/15 text-primary border border-primary/25" : "bg-muted text-muted-foreground"}`}>
+      <div className={`p-4 rounded-xl text-center font-semibold ${myDriver.isAvailable ? "bg-brand-turquoise-soft text-brand-turquoise border border-brand-turquoise/30" : "bg-muted text-muted-foreground"}`}>
         {myDriver.isAvailable ? t("driver.availableForDeliveries") : t("driver.youAreOffline")}
       </div>
 
@@ -188,7 +188,7 @@ export default function DriverDashboardPage() {
           <p className="text-xs text-muted-foreground">{t("driver.totalDeliveries")}</p>
         </div>
         <div className="bg-card rounded-2xl border border-card-border p-4">
-          <Star className="w-5 h-5 text-primary mb-2 fill-primary" />
+          <Star className="w-5 h-5 text-brand-yellow mb-2 fill-brand-yellow" />
           <p className="font-bold text-2xl">{myDriver.rating?.toFixed(1) ?? "N/A"}</p>
           <p className="text-xs text-muted-foreground">{t("driver.rating")}</p>
         </div>
@@ -226,7 +226,11 @@ export default function DriverDashboardPage() {
                     <p className="font-semibold text-sm">Order #{order.id}</p>
                     <p className="text-xs text-muted-foreground">{order.restaurantName}</p>
                   </div>
-                  <Badge className="text-xs border-0 bg-primary/10 text-primary">{t(`status.${order.status}`, { defaultValue: order.status })}</Badge>
+                  <Badge className={`text-xs border-0 ${
+                    order.status === "picked_up" ? "bg-primary text-primary-foreground" :
+                    order.status === "ready" ? "bg-brand-turquoise text-brand-turquoise-foreground" :
+                    "bg-brand-yellow text-brand-yellow-foreground"
+                  }`}>{t(`status.${order.status}`, { defaultValue: order.status })}</Badge>
                 </div>
                 <p className="text-xs text-muted-foreground mb-3">{order.deliveryAddress}</p>
                 <div className="flex items-center gap-2">

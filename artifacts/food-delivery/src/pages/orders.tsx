@@ -9,10 +9,10 @@ import { formatDistanceToNow } from "date-fns";
 import { useTranslation } from "react-i18next";
 
 const statusColors: Record<string, string> = {
-  pending: "bg-accent text-accent-foreground border border-primary/20",
-  accepted: "bg-primary/15 text-primary border border-primary/25",
-  preparing: "bg-primary/20 text-primary border border-primary/30",
-  ready: "bg-primary/25 text-primary border border-primary/35",
+  pending: "bg-brand-yellow-soft text-brand-yellow-foreground border border-brand-yellow/40",
+  accepted: "bg-brand-turquoise-soft text-brand-turquoise border border-brand-turquoise/30",
+  preparing: "bg-brand-turquoise-soft text-brand-turquoise border border-brand-turquoise/40",
+  ready: "bg-brand-turquoise text-brand-turquoise-foreground",
   picked_up: "bg-primary text-primary-foreground",
   delivered: "bg-foreground text-background",
   cancelled: "bg-muted text-muted-foreground border border-border",

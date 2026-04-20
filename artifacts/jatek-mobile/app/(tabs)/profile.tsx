@@ -24,16 +24,19 @@ function Row({ icon, label, onPress, danger, subtitle }: RowProps) {
   );
 }
 
-function QuickCard({ icon, label, accent, onPress }: { icon: string; label: string; accent?: boolean; onPress: () => void }) {
+function QuickCard({ icon, label, accent, yellow, onPress }: { icon: string; label: string; accent?: boolean; yellow?: boolean; onPress: () => void }) {
   const colors = useColors();
+  const tint = yellow ? colors.yellowForeground : accent ? colors.primary : colors.heading;
+  const bg = yellow ? colors.yellowSoft : colors.card;
+  const border = yellow ? colors.yellow : colors.border;
   return (
     <TouchableOpacity
       onPress={onPress}
       activeOpacity={0.7}
-      style={[styles.quickCard, { backgroundColor: colors.card, borderColor: colors.border }]}
+      style={[styles.quickCard, { backgroundColor: bg, borderColor: border }]}
     >
-      <Ionicons name={icon as any} size={28} color={accent ? colors.primary : colors.heading} />
-      <Text style={[styles.quickLabel, { color: accent ? colors.primary : colors.heading }]}>{label}</Text>
+      <Ionicons name={icon as any} size={28} color={tint} />
+      <Text style={[styles.quickLabel, { color: tint }]}>{label}</Text>
     </TouchableOpacity>
   );
 }
@@ -141,7 +144,7 @@ export default function ProfileScreen() {
       <Animated.View entering={FadeInDown.duration(380)} style={styles.quickRow}>
         <QuickCard icon="heart-outline" label="Favoris" onPress={() => router.push("/profile/favorites" as any)} />
         <QuickCard icon="bag-handle-outline" label="Commandes" onPress={() => router.push("/(tabs)/orders")} />
-        <QuickCard icon="gift" label="Récompenses" accent onPress={() => router.push("/profile/coupons" as any)} />
+        <QuickCard icon="gift" label="Récompenses" accent yellow onPress={() => router.push("/profile/coupons" as any)} />
       </Animated.View>
 
       {/* Jatek+ premium upsell */}

@@ -8,9 +8,9 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useTranslation } from "react-i18next";
 
 const tierConfig = {
-  Bronze: { color: "text-amber-700", bg: "bg-amber-100 dark:bg-amber-900/30", icon: "🥉" },
-  Silver: { color: "text-slate-500", bg: "bg-slate-100 dark:bg-slate-900/30", icon: "🥈" },
-  Gold: { color: "text-yellow-600", bg: "bg-yellow-100 dark:bg-yellow-900/30", icon: "🥇" },
+  Bronze: { color: "text-brand-yellow-foreground", bg: "bg-brand-yellow-soft", icon: "🥉" },
+  Silver: { color: "text-brand-turquoise", bg: "bg-brand-turquoise-soft", icon: "🥈" },
+  Gold: { color: "text-brand-yellow-foreground", bg: "bg-brand-yellow", icon: "🥇" },
 };
 
 const DISCOUNTS = [

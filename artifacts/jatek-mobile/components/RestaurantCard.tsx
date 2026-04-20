@@ -66,7 +66,7 @@ export function RestaurantCard({ restaurant, onPress, horizontal }: RestaurantCa
         <View style={styles.meta}>
           {restaurant.rating != null && (
             <View style={styles.metaItem}>
-              <Ionicons name="star" size={12} color={colors.warning} />
+              <Ionicons name="star" size={12} color={colors.yellow} />
               <Text style={[styles.metaText, { color: colors.mutedForeground }]}>
                 {" "}{restaurant.rating.toFixed(1)}
               </Text>

@@ -91,7 +91,7 @@ export default function RestaurantPage() {
               <div className="flex items-center gap-2 mb-1">
                 <h1 className="font-display font-bold text-2xl text-white">{restaurant.name}</h1>
                 {restaurant.isLocal && (
-                  <Badge className="bg-green-500 text-white text-xs gap-1">
+                  <Badge className="bg-brand-turquoise text-brand-turquoise-foreground text-xs gap-1 border-0">
                     <Award className="w-3 h-3" />
                     {t("restaurant.local")}
                   </Badge>
@@ -111,7 +111,7 @@ export default function RestaurantPage() {
                   </span>
                 )}
                 {restaurant.deliveryFee !== null && restaurant.deliveryFee !== undefined && (
-                  <span className="flex items-center gap-1">
+                  <span className={`flex items-center gap-1 ${restaurant.deliveryFee === 0 ? "text-brand-turquoise font-semibold" : ""}`}>
                     <Truck className="w-3.5 h-3.5" />
                     {restaurant.deliveryFee === 0 ? t("restaurant.free") : t("restaurant.delivery", { fee: restaurant.deliveryFee })}
                   </span>
@@ -174,7 +174,7 @@ export default function RestaurantPage() {
                     <div className="flex items-center gap-2">
                       <h3 className="font-semibold text-sm">{item.name}</h3>
                       {item.isPopular && (
-                        <Badge variant="secondary" className="text-xs bg-accent text-accent-foreground">{t("restaurant.popular")}</Badge>
+                        <Badge variant="secondary" className="text-xs bg-brand-yellow text-brand-yellow-foreground border-0">{t("restaurant.popular")}</Badge>
                       )}
                     </div>
                     {item.description && (

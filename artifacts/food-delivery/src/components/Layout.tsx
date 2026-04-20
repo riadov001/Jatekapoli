@@ -57,9 +57,9 @@ export function Layout({ children }: LayoutProps) {
           </Link>
 
           {/* Location pill */}
-          <button className="hidden sm:flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors bg-secondary/60 hover:bg-secondary rounded-full px-3 py-1.5">
-            <MapPin className="w-3.5 h-3.5 text-primary" />
-            <span className="font-medium">Oujda</span>
+          <button className="hidden sm:flex items-center gap-1.5 text-sm text-foreground transition-colors bg-brand-turquoise-soft hover:bg-brand-turquoise/15 rounded-full px-3 py-1.5">
+            <MapPin className="w-3.5 h-3.5 text-brand-turquoise" />
+            <span className="font-semibold">Oujda</span>
             <ChevronDown className="w-3 h-3" />
           </button>
 

@@ -113,7 +113,7 @@ export default function RestaurantScreen() {
               <View style={styles.metaRow}>
                 {restaurant.rating != null && (
                   <View style={styles.metaItem}>
-                    <Ionicons name="star" size={14} color={colors.warning} />
+                    <Ionicons name="star" size={14} color={colors.yellow} />
                     <Text style={[styles.metaText, { color: colors.foreground }]}>{restaurant.rating.toFixed(1)}</Text>
                   </View>
                 )}
@@ -125,8 +125,8 @@ export default function RestaurantScreen() {
                 )}
                 {restaurant.deliveryFee != null && (
                   <View style={styles.metaItem}>
-                    <Ionicons name="bicycle-outline" size={14} color={colors.mutedForeground} />
-                    <Text style={[styles.metaText, { color: colors.mutedForeground }]}>{restaurant.deliveryFee > 0 ? `${restaurant.deliveryFee} MAD` : "Livraison offerte"}</Text>
+                    <Ionicons name="bicycle-outline" size={14} color={restaurant.deliveryFee === 0 ? colors.turquoise : colors.mutedForeground} />
+                    <Text style={[styles.metaText, { color: restaurant.deliveryFee === 0 ? colors.turquoise : colors.mutedForeground, fontFamily: restaurant.deliveryFee === 0 ? "Inter_700Bold" : "Inter_500Medium" }]}>{restaurant.deliveryFee > 0 ? `${restaurant.deliveryFee} MAD` : "Livraison offerte"}</Text>
                   </View>
                 )}
               </View>

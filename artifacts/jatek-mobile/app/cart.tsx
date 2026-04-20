@@ -116,6 +116,14 @@ export default function CartScreen() {
         {/* Restaurant name */}
         <Text style={[styles.fromText, { color: colors.mutedForeground }]}>{t("cart_from", { name: restaurantName ?? "" })}</Text>
 
+        {/* Promo banner */}
+        <View style={[styles.promo, { backgroundColor: colors.yellow }]}>
+          <Text style={styles.promoEmoji}>🎉</Text>
+          <Text style={[styles.promoText, { color: colors.yellowForeground }]} numberOfLines={2}>
+            Code <Text style={{ fontFamily: "Inter_700Bold" }}>JATEK10</Text> — 1ère commande livrée
+          </Text>
+        </View>
+
         {/* Items */}
         <View style={[styles.section, { backgroundColor: colors.card, borderColor: colors.border }]}>
           {items.map((item, idx) => (
@@ -195,7 +203,7 @@ export default function CartScreen() {
           </View>
           <View style={styles.summaryRow}>
             <Text style={[styles.summaryLabel, { color: colors.mutedForeground }]}>{t("cart_delivery_fee")}</Text>
-            <Text style={[styles.summaryValue, { color: colors.foreground }]}>{DELIVERY_FEE} MAD</Text>
+            <Text style={[styles.summaryValue, { color: colors.turquoise, fontFamily: "Inter_700Bold" }]}>{DELIVERY_FEE} MAD</Text>
           </View>
           <View style={[styles.divider, { backgroundColor: colors.border }]} />
           <View style={styles.summaryRow}>
@@ -306,4 +314,10 @@ const styles = StyleSheet.create({
     shadowColor: "#E2006A", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 12, elevation: 6,
   },
   browseBtnText: { color: "#fff", fontSize: 15, fontFamily: "Inter_600SemiBold" },
+  promo: {
+    marginHorizontal: 16, marginBottom: 16, padding: 14, borderRadius: 14,
+    flexDirection: "row", alignItems: "center", gap: 10,
+  },
+  promoEmoji: { fontSize: 22 },
+  promoText: { flex: 1, fontSize: 13, fontFamily: "Inter_600SemiBold", lineHeight: 18 },
 });

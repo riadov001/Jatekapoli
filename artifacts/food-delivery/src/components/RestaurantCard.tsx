@@ -90,7 +90,7 @@ export function RestaurantCard({ restaurant, compact = false }: { restaurant: Re
               className="absolute bottom-2 right-2 flex items-center gap-0.5 bg-white/95 dark:bg-black/70 backdrop-blur-sm rounded-full px-1.5 py-0.5 shadow-sm"
               data-testid={`text-rating-${restaurant.id}`}
             >
-              <Star className="w-2.5 h-2.5 fill-primary text-primary" />
+              <Star className="w-2.5 h-2.5 fill-brand-yellow text-brand-yellow" />
               <span className="text-[10px] font-bold text-foreground">{restaurant.rating.toFixed(1)}</span>
             </div>
           )}
@@ -107,8 +107,8 @@ export function RestaurantCard({ restaurant, compact = false }: { restaurant: Re
             <div className="flex items-center gap-3 text-[11px] text-muted-foreground mt-2">
               {restaurant.deliveryFee !== null && restaurant.deliveryFee !== undefined && (
                 <span className="flex items-center gap-1">
-                  <Truck className="w-3 h-3 text-primary/70" />
-                  <span className={`font-medium ${restaurant.deliveryFee === 0 ? "text-primary" : "text-foreground"}`}>
+                  <Truck className={`w-3 h-3 ${restaurant.deliveryFee === 0 ? "text-brand-turquoise" : "text-primary/70"}`} />
+                  <span className={`font-medium ${restaurant.deliveryFee === 0 ? "text-brand-turquoise" : "text-foreground"}`}>
                     {restaurant.deliveryFee === 0 ? t("card.freeDelivery") : `${restaurant.deliveryFee} MAD`}
                   </span>
                 </span>

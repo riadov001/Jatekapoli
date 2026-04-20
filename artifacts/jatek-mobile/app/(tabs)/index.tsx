@@ -16,10 +16,10 @@ import { AddressQuickPicker } from "@/components/AddressQuickPicker";
 import { useT } from "@/contexts/LanguageContext";
 
 const TOP_CATEGORIES = [
-  { id: "restaurant", label: "Restos",   emoji: "🍽️", bg: "#D7EDE9" }, // mint/turquoise
-  { id: "grocery",    label: "Courses",  emoji: "🛒", bg: "#FFE066" }, // mustard yellow
-  { id: "health",     label: "Santé",    emoji: "💊", bg: "#BFE8DE" }, // light turquoise
-  { id: "other",      label: "Cadeaux",  emoji: "🎁", bg: "#FFE5F0" }, // soft pink
+  { id: "restaurant", label: "Restos",   emoji: "🍽️", bg: "#D6F5F6" }, // turquoise soft
+  { id: "grocery",    label: "Courses",  emoji: "🛒", bg: "#FFF6CC" }, // yellow soft
+  { id: "health",     label: "Santé",    emoji: "💊", bg: "#D6F5F6" }, // turquoise soft
+  { id: "other",      label: "Cadeaux",  emoji: "🎁", bg: "#FFE5F0" }, // pink soft
 ] as const;
 
 type TopId = typeof TOP_CATEGORIES[number]["id"];
@@ -155,11 +155,11 @@ export default function HomeScreen() {
         })}
       </View>
 
-      {/* Promo banner */}
-      <View style={[styles.promoBanner, { backgroundColor: colors.primarySoft }]}>
+      {/* Promo banner — sunny yellow Talabat-style */}
+      <View style={[styles.promoBanner, { backgroundColor: colors.yellow }]}>
         <View style={{ flex: 1 }}>
-          <Text style={[styles.promoTitle, { color: colors.heading }]}>1ère commande{"\n"}offerte 🎉</Text>
-          <Text style={[styles.promoSub, { color: colors.heading }]}>Code JATEK10 — livraison gratuite</Text>
+          <Text style={[styles.promoTitle, { color: colors.yellowForeground }]}>1ère commande{"\n"}offerte 🎉</Text>
+          <Text style={[styles.promoSub, { color: colors.yellowForeground }]}>Code JATEK10 — livraison gratuite</Text>
           <TouchableOpacity
             activeOpacity={0.85}
             style={[styles.promoBtn, { backgroundColor: colors.primary }]}
@@ -224,10 +224,10 @@ export default function HomeScreen() {
             <View style={[styles.triangle, { borderTopColor: colors.primary }]} />
           </TouchableOpacity>
 
-          <TouchableOpacity activeOpacity={0.85} style={[styles.schedulePill, { backgroundColor: "#EAF1FF" }]}>
-            <Ionicons name="calendar-outline" size={14} color="#0A1B3D" />
-            <Text style={styles.scheduleText}>{t("home_schedule")}</Text>
-            <Ionicons name="chevron-forward" size={14} color="#0A1B3D" />
+          <TouchableOpacity activeOpacity={0.85} style={[styles.schedulePill, { backgroundColor: colors.turquoiseSoft }]}>
+            <Ionicons name="calendar-outline" size={14} color={colors.turquoise} />
+            <Text style={[styles.scheduleText, { color: colors.turquoise }]}>{t("home_schedule")}</Text>
+            <Ionicons name="chevron-forward" size={14} color={colors.turquoise} />
           </TouchableOpacity>
         </View>
       </View>
@@ -355,7 +355,7 @@ const styles = StyleSheet.create({
   bannerEmoji: { fontSize: 36 },
   delivTimePill: { position: "absolute", bottom: 6, left: 6, flexDirection: "row", alignItems: "center", gap: 3, backgroundColor: "#E2006A", paddingHorizontal: 7, paddingVertical: 3, borderRadius: 99 },
   delivTimeText: { color: "#fff", fontSize: 10, fontFamily: "Inter_700Bold" },
-  discountPill: { position: "absolute", top: 6, right: 6, backgroundColor: "#FFE066", paddingHorizontal: 8, paddingVertical: 3, borderRadius: 99 },
+  discountPill: { position: "absolute", top: 6, right: 6, backgroundColor: "#FFD400", paddingHorizontal: 8, paddingVertical: 3, borderRadius: 99 },
   discountText: { color: "#0A1B3D", fontSize: 11, fontFamily: "Inter_700Bold" },
   bannerInfo: { padding: 10 },
   bannerName: { fontSize: 13, fontFamily: "Inter_600SemiBold" },

@@ -32,7 +32,7 @@ export default function WelcomePage() {
       {/* HERO */}
       <section
         className="relative px-6 pt-12 pb-20 overflow-hidden"
-        style={{ background: "linear-gradient(160deg, #B0004F 0%, #E2006A 45%, #FF1A85 80%, #FF66AC 100%)" }}
+        style={{ background: "linear-gradient(160deg, #B0004F 0%, #E2006A 40%, #FF1A85 70%, #00C2C7 100%)" }}
       >
         <motion.div
           initial={{ opacity: 0, y: -10 }}
@@ -208,7 +208,7 @@ export default function WelcomePage() {
       <section className="px-6 py-14 bg-muted/30">
         <div
           className="max-w-3xl mx-auto rounded-3xl px-8 py-10 sm:py-14 text-center text-white shadow-xl"
-          style={{ background: "linear-gradient(135deg, #E2006A 0%, #FF1A85 60%, #FF66AC 100%)" }}
+          style={{ background: "linear-gradient(135deg, #E2006A 0%, #FF1A85 55%, #FFD400 100%)" }}
         >
           <h2 className="font-display font-bold text-3xl sm:text-4xl leading-tight">
             Prêt à commander ?

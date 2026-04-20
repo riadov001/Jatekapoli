@@ -68,6 +68,14 @@ export default function WelcomeScreen() {
         <TouchableOpacity onPress={() => go("/(tabs)")} activeOpacity={0.7} style={styles.guestBtn}>
           <Text style={[styles.guestText, { color: colors.primary }]}>Continuer comme invité</Text>
         </TouchableOpacity>
+
+        {/* Promo strip */}
+        <View style={[styles.promoStrip, { backgroundColor: colors.yellow }]}>
+          <Text style={styles.promoStripEmoji}>🎁</Text>
+          <Text style={[styles.promoStripText, { color: colors.yellowForeground }]}>
+            Code <Text style={{ fontFamily: "Inter_700Bold" }}>JATEK10</Text> — livraison gratuite sur ta 1ère commande
+          </Text>
+        </View>
       </View>
     </ScrollView>
   );
@@ -116,4 +124,10 @@ const styles = StyleSheet.create({
   btnGhostText: { fontSize: 16, fontFamily: "Inter_700Bold" },
   guestBtn: { alignItems: "center", justifyContent: "center", paddingVertical: 12 },
   guestText: { fontSize: 15, fontFamily: "Inter_700Bold" },
+  promoStrip: {
+    marginTop: 8, padding: 14, borderRadius: 16,
+    flexDirection: "row", alignItems: "center", gap: 10,
+  },
+  promoStripEmoji: { fontSize: 22 },
+  promoStripText: { flex: 1, fontSize: 13, fontFamily: "Inter_600SemiBold", lineHeight: 18 },
 });

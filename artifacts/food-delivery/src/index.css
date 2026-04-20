@@ -46,6 +46,14 @@
   --color-chart-4: hsl(var(--chart-4));
   --color-chart-5: hsl(var(--chart-5));
 
+  /* Brand accents (Talabat-style): yellow promos + turquoise info */
+  --color-brand-yellow: hsl(var(--brand-yellow));
+  --color-brand-yellow-foreground: hsl(var(--brand-yellow-foreground));
+  --color-brand-yellow-soft: hsl(var(--brand-yellow-soft));
+  --color-brand-turquoise: hsl(var(--brand-turquoise));
+  --color-brand-turquoise-foreground: hsl(var(--brand-turquoise-foreground));
+  --color-brand-turquoise-soft: hsl(var(--brand-turquoise-soft));
+
   --color-sidebar: hsl(var(--sidebar));
   --color-sidebar-foreground: hsl(var(--sidebar-foreground));
   --color-sidebar-border: hsl(var(--sidebar-border));
@@ -118,10 +126,18 @@
   --ring: 330 100% 44%;
 
   --chart-1: 330 100% 44%;
-  --chart-2: 142 72% 42%;
-  --chart-3: 200 80% 50%;
+  --chart-2: 182 100% 39%;
+  --chart-3: 50 100% 50%;
   --chart-4: 280 60% 55%;
-  --chart-5: 50 90% 50%;
+  --chart-5: 142 72% 42%;
+
+  /* Brand accents — Talabat-inspired */
+  --brand-yellow: 50 100% 50%;          /* #FFD400 sunny yellow */
+  --brand-yellow-foreground: 222 65% 14%;
+  --brand-yellow-soft: 50 100% 90%;     /* #FFF6CC */
+  --brand-turquoise: 182 100% 39%;      /* #00C2C7 turquoise */
+  --brand-turquoise-foreground: 0 0% 100%;
+  --brand-turquoise-soft: 182 60% 90%;  /* #D6F5F6 */
 
   --app-font-sans: 'Inter', sans-serif;
   --app-font-serif: Georgia, serif;
@@ -202,10 +218,18 @@
   --ring: 330 100% 52%;
 
   --chart-1: 330 100% 52%;
-  --chart-2: 142 72% 45%;
-  --chart-3: 200 80% 55%;
+  --chart-2: 182 90% 45%;
+  --chart-3: 50 100% 55%;
   --chart-4: 280 60% 60%;
-  --chart-5: 50 90% 55%;
+  --chart-5: 142 72% 45%;
+
+  /* Brand accents — Talabat-inspired (dark) */
+  --brand-yellow: 50 100% 55%;
+  --brand-yellow-foreground: 222 65% 14%;
+  --brand-yellow-soft: 50 60% 18%;
+  --brand-turquoise: 182 90% 45%;
+  --brand-turquoise-foreground: 222 65% 10%;
+  --brand-turquoise-soft: 182 50% 16%;
 
   --shadow-2xs: 0px 1px 2px 0px rgba(0,0,0,0.3);
   --shadow-xs: 0px 1px 3px 0px rgba(0,0,0,0.35);

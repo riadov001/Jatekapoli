@@ -49,9 +49,9 @@ export default function AdminDashboardPage() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {usersLoading ? [...Array(4)].map((_, i) => <Skeleton key={i} className="h-24 rounded-2xl" />) : (
           <>
-            <StatCard label={t("admin.users")} value={users?.length ?? 0} icon={Users} color="bg-accent text-accent-foreground" />
-            <StatCard label={t("admin.restaurants")} value={restaurants?.length ?? 0} icon={Store} color="bg-primary/15 text-primary" />
-            <StatCard label={t("admin.orders")} value={orders?.length ?? 0} icon={Package} color="bg-primary/25 text-primary" />
+            <StatCard label={t("admin.users")} value={users?.length ?? 0} icon={Users} color="bg-brand-turquoise-soft text-brand-turquoise" />
+            <StatCard label={t("admin.restaurants")} value={restaurants?.length ?? 0} icon={Store} color="bg-brand-yellow-soft text-brand-yellow-foreground" />
+            <StatCard label={t("admin.orders")} value={orders?.length ?? 0} icon={Package} color="bg-accent text-primary" />
             <StatCard label={t("admin.revenue")} value={totalRevenue.toFixed(0)} icon={TrendingUp} color="bg-primary text-primary-foreground" />
           </>
         )}
@@ -100,9 +100,10 @@ export default function AdminDashboardPage() {
                   <td className="px-4 py-3 hidden sm:table-cell">{order.total.toFixed(0)} MAD</td>
                   <td className="px-4 py-3">
                     <span className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full ${
-                      order.status === "delivered" ? "bg-foreground text-background" :
+                      order.status === "delivered" ? "bg-brand-turquoise text-brand-turquoise-foreground" :
                       order.status === "cancelled" ? "bg-muted text-muted-foreground border border-border" :
-                      "bg-accent text-accent-foreground border border-primary/20"
+                      order.status === "pending" ? "bg-brand-yellow text-brand-yellow-foreground" :
+                      "bg-brand-turquoise-soft text-brand-turquoise"
                     }`}>
                       {order.status === "delivered" ? <CheckCircle className="w-3 h-3" /> : order.status === "cancelled" ? <XCircle className="w-3 h-3" /> : null}
                       {t(`status.${order.status}`, { defaultValue: order.status })}

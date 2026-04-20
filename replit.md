@@ -83,5 +83,13 @@ JWT stored in localStorage (`jatek_token`). `setAuthTokenGetter` registered in `
 - Phone OTP auth (Twilio), shares same backend API
 - Screens: Login, OTP verify, Home (restaurants), Restaurant detail + menu, Cart, Orders list, Order tracking, Profile
 - State: AuthContext (expo-secure-store token persistence), CartContext (AsyncStorage)
-- Design tokens synced from web app: primary #F97316, background #F9F6F2, card #FFFFFF
 - Workflow: `artifacts/jatek-mobile: expo`
+
+### Brand palette (Talabat-inspired)
+- Primary **Hot pink** `#E2006A` — main CTAs, brand mark, delivery-time pills
+- Accent **Sunny yellow** `#FFD400` — promo banners, ratings (★), discount pills
+- Accent **Turquoise** `#00C2C7` — info / status (preparing, ready), free-delivery tag, location pill
+- Neutrals: white background `#FFFFFF`, ink `#0A1B3D`, muted `#F5F5F5`, border `#EBEBEB`
+- Tokens:
+  - Web: `artifacts/food-delivery/src/index.css` (`--primary`, `--brand-yellow*`, `--brand-turquoise*`); use Tailwind `bg-brand-yellow`, `text-brand-turquoise`, etc.
+  - Mobile: `artifacts/jatek-mobile/constants/colors.ts` (`primary`, `yellow`, `yellowSoft`, `turquoise`, `turquoiseSoft`); read via `useColors()`
