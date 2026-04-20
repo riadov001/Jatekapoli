@@ -164,43 +164,41 @@ export default function RestaurantPage() {
           <p className="text-center text-muted-foreground py-8">{t("restaurant.noItems")}</p>
         ) : (
           filteredItems.map((item) => (
-            <div key={item.id} className="flex gap-4 p-4 rounded-xl border border-card-border bg-card hover:shadow-sm transition-shadow" data-testid={`card-menu-item-${item.id}`}>
-              {item.imageUrl ? (
-                <img src={item.imageUrl} alt={item.name} className="w-24 h-24 rounded-xl object-cover shrink-0" />
-              ) : (
-                <div className="w-24 h-24 rounded-xl bg-muted shrink-0 flex items-center justify-center text-3xl">
-                  🍽
-                </div>
-              )}
-              <div className="flex-1 min-w-0">
-                <div className="flex items-start justify-between gap-2">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <h3 className="font-semibold text-sm">{item.name}</h3>
-                      {item.isPopular && (
-                        <Badge variant="secondary" className="text-xs bg-brand-yellow text-brand-yellow-foreground border-0">{t("restaurant.popular")}</Badge>
-                      )}
-                    </div>
-                    {item.description && (
-                      <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{item.description}</p>
-                    )}
-                  </div>
-                </div>
-                <div className="flex items-center justify-between mt-3">
+            <div key={item.id} className="flex gap-4 p-3 rounded-2xl bg-card hover:shadow-md hover:shadow-black/5 transition-shadow" data-testid={`card-menu-item-${item.id}`}>
+              {/* Image with overlay + button (no border, larger) */}
+              <div className="relative w-32 h-32 sm:w-36 sm:h-36 shrink-0 rounded-2xl overflow-hidden bg-muted shadow-sm">
+                {item.imageUrl ? (
+                  <img src={item.imageUrl} alt={item.name} className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-4xl">🍽</div>
+                )}
+                {item.isPopular && (
+                  <span className="absolute top-1.5 left-1.5 inline-flex items-center bg-brand-yellow text-brand-yellow-foreground text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm">
+                    {t("restaurant.popular")}
+                  </span>
+                )}
+                {item.isAvailable ? (
+                  <button
+                    onClick={() => handleAddToCart(item)}
+                    aria-label={t("restaurant.add")}
+                    className="absolute bottom-1.5 right-1.5 w-9 h-9 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-lg shadow-primary/40 hover:scale-105 active:scale-95 transition-transform"
+                    data-testid={`button-add-${item.id}`}
+                  >
+                    <Plus className="w-5 h-5" strokeWidth={3} />
+                  </button>
+                ) : (
+                  <span className="absolute bottom-1.5 right-1.5 text-[10px] font-bold bg-black/60 text-white px-2 py-1 rounded-full">
+                    {t("restaurant.unavailable")}
+                  </span>
+                )}
+              </div>
+              <div className="flex-1 min-w-0 py-1">
+                <h3 className="font-semibold text-sm sm:text-base leading-tight">{item.name}</h3>
+                {item.description && (
+                  <p className="text-xs text-muted-foreground mt-1 line-clamp-3">{item.description}</p>
+                )}
+                <div className="mt-2">
                   <span className="font-bold text-base text-primary" data-testid={`text-price-${item.id}`}>{item.price} MAD</span>
-                  {item.isAvailable ? (
-                    <Button
-                      size="sm"
-                      className="h-8 gap-1 rounded-full px-3"
-                      onClick={() => handleAddToCart(item)}
-                      data-testid={`button-add-${item.id}`}
-                    >
-                      <Plus className="w-3.5 h-3.5" />
-                      {t("restaurant.add")}
-                    </Button>
-                  ) : (
-                    <Badge variant="secondary" className="text-xs">{t("restaurant.unavailable")}</Badge>
-                  )}
                 </div>
               </div>
             </div>

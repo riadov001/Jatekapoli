@@ -337,6 +337,29 @@
     font-family: 'Poppins', sans-serif;
   }
 
+  /* Wood-cut header — soft warm gradient with subtle rings (less hatching) */
+  .wood-header {
+    background-color: hsl(28 35% 90%);
+    background-image:
+      radial-gradient(ellipse 120% 80% at 30% -10%, hsl(30 45% 95% / 0.95), transparent 60%),
+      radial-gradient(ellipse 100% 70% at 80% 110%, hsl(24 38% 82% / 0.7), transparent 60%),
+      repeating-radial-gradient(ellipse at 25% 60%, hsl(28 25% 70% / 0.06) 0px, hsl(28 25% 70% / 0.06) 1px, transparent 2px, transparent 22px),
+      linear-gradient(180deg, hsl(30 35% 92%), hsl(28 30% 86%));
+    box-shadow:
+      0 1px 0 hsl(28 25% 70% / 0.4) inset,
+      0 -1px 0 hsl(24 30% 55% / 0.18) inset,
+      0 4px 14px -8px hsl(24 30% 30% / 0.25);
+  }
+  .dark .wood-header {
+    background-color: hsl(24 18% 14%);
+    background-image:
+      radial-gradient(ellipse 120% 80% at 30% -10%, hsl(28 25% 22% / 0.9), transparent 60%),
+      radial-gradient(ellipse 100% 70% at 80% 110%, hsl(20 22% 10% / 0.8), transparent 60%),
+      repeating-radial-gradient(ellipse at 25% 60%, hsl(28 18% 30% / 0.08) 0px, hsl(28 18% 30% / 0.08) 1px, transparent 2px, transparent 24px),
+      linear-gradient(180deg, hsl(24 18% 16%), hsl(24 18% 12%));
+  }
+  .xs\:inline { display: inline; }
+
   .line-clamp-2 {
     display: -webkit-box;
     -webkit-line-clamp: 2;
