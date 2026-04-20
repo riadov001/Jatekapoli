@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useRef } from "react";
 import {
   StyleSheet,
   Text,
@@ -11,6 +11,7 @@ import {
   ScrollView,
   Image,
   Pressable,
+  Animated,
 } from "react-native";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -114,6 +115,18 @@ function RestaurantCard({
               <Text style={styles.closedText}>Fermé</Text>
             </View>
           ) : null}
+          {/* Merchant logo overlay */}
+          <View style={styles.splitLogoWrap}>
+            {restaurant.logoUrl ? (
+              <Image source={{ uri: restaurant.logoUrl }} style={styles.splitLogoImg} resizeMode="cover" />
+            ) : (
+              <View style={[styles.splitLogoImg, styles.bigLogoFallback]}>
+                <Text style={styles.splitLogoLetter}>
+                  {restaurant.name?.charAt(0)?.toUpperCase() ?? "?"}
+                </Text>
+              </View>
+            )}
+          </View>
         </View>
 
         <View style={styles.splitBody}>
@@ -181,6 +194,19 @@ function RestaurantCard({
             <Ionicons name="restaurant" size={40} color={TEXT_MUTED} />
           </View>
         )}
+
+        {/* Merchant logo overlay (top-left) */}
+        <View style={styles.bigLogoWrap}>
+          {restaurant.logoUrl ? (
+            <Image source={{ uri: restaurant.logoUrl }} style={styles.bigLogoImg} resizeMode="cover" />
+          ) : (
+            <View style={[styles.bigLogoImg, styles.bigLogoFallback]}>
+              <Text style={styles.bigLogoLetter}>
+                {restaurant.name?.charAt(0)?.toUpperCase() ?? "?"}
+              </Text>
+            </View>
+          )}
+        </View>
 
         <LinearGradient
           colors={[
@@ -424,6 +450,13 @@ export default function HomeScreen() {
 
   const { data: restaurants, isLoading, refetch } = useListRestaurants(params);
 
+  // Smooth scroll-driven header collapse: greeting+address fade & shrink while search stays.
+  const scrollY = useRef(new Animated.Value(0)).current;
+  const greetingOpacity = scrollY.interpolate({ inputRange: [0, 60], outputRange: [1, 0], extrapolate: "clamp" });
+  const greetingMaxH = scrollY.interpolate({ inputRange: [0, 80], outputRange: [60, 0], extrapolate: "clamp" });
+  const addressOpacity = scrollY.interpolate({ inputRange: [40, 110], outputRange: [1, 0], extrapolate: "clamp" });
+  const addressMaxH = scrollY.interpolate({ inputRange: [40, 130], outputRange: [44, 0], extrapolate: "clamp" });
+
   const allRestaurantsParams: ListRestaurantsParams = useMemo(
     () => ({ businessType: "restaurant" }),
     [],
@@ -653,7 +686,7 @@ export default function HomeScreen() {
             { paddingTop: insets.top + 12 + webTopPad },
           ]}
         >
-          <View style={styles.headerTopRow}>
+          <Animated.View style={[styles.headerTopRow, { opacity: addressOpacity, maxHeight: addressMaxH, overflow: "hidden" }]}>
             <View style={{ flex: 1 }}>
               <Text style={styles.deliverToLabel}>Livrer à</Text>
               <TouchableOpacity
@@ -686,16 +719,18 @@ export default function HomeScreen() {
                 )}
               </TouchableOpacity>
             ) : null}
-          </View>
+          </Animated.View>
 
-          <Text style={styles.greeting}>
-            {user
-              ? `Salut ${user.name?.split(" ")[0] ?? ""} 👋`
-              : "Bienvenue chez Jatek 👋"}
-          </Text>
-          <Text style={styles.greetingSub}>
-            Que mangerez-vous aujourd'hui ?
-          </Text>
+          <Animated.View style={{ opacity: greetingOpacity, maxHeight: greetingMaxH, overflow: "hidden" }}>
+            <Text style={styles.greeting}>
+              {user
+                ? `Salut ${user.name?.split(" ")[0] ?? ""} 👋`
+                : "Bienvenue chez Jatek 👋"}
+            </Text>
+            <Text style={styles.greetingSub}>
+              Que mangerez-vous aujourd'hui ?
+            </Text>
+          </Animated.View>
         </LinearGradient>
         <TornEdge color={TURQUOISE} position="bottom" height={20} />
       </View>
@@ -725,9 +760,9 @@ export default function HomeScreen() {
           <ActivityIndicator color={PINK} size="large" />
         </View>
       ) : (
-        <FlatList
+        <Animated.FlatList
           data={restaurants ?? []}
-          keyExtractor={(r) => String(r.id)}
+          keyExtractor={(r: Restaurant) => String(r.id)}
           contentContainerStyle={[
             styles.list,
             {
@@ -739,6 +774,11 @@ export default function HomeScreen() {
           showsVerticalScrollIndicator={false}
           onRefresh={refetch}
           refreshing={isLoading}
+          onScroll={Animated.event(
+            [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+            { useNativeDriver: false },
+          )}
+          scrollEventThrottle={16}
           ListHeaderComponent={ListHeader}
           ListEmptyComponent={
             <View style={styles.empty}>
@@ -1152,6 +1192,56 @@ const styles = StyleSheet.create({
     backgroundColor: BG,
   },
   bigImage: { width: "100%", height: "100%" },
+  // Merchant logo overlays
+  bigLogoWrap: {
+    position: "absolute",
+    top: 12,
+    left: 12,
+    width: 52,
+    height: 52,
+    borderRadius: 14,
+    backgroundColor: "#fff",
+    padding: 3,
+    shadowColor: "#000",
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 6,
+    zIndex: 3,
+  },
+  bigLogoImg: { width: "100%", height: "100%", borderRadius: 11 },
+  bigLogoFallback: {
+    backgroundColor: PINK,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  bigLogoLetter: {
+    color: "#fff",
+    fontFamily: "Inter_700Bold",
+    fontSize: 22,
+  },
+  splitLogoWrap: {
+    position: "absolute",
+    top: 8,
+    left: 8,
+    width: 38,
+    height: 38,
+    borderRadius: 11,
+    backgroundColor: "#fff",
+    padding: 2,
+    shadowColor: "#000",
+    shadowOpacity: 0.18,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 3,
+    zIndex: 3,
+  },
+  splitLogoImg: { width: "100%", height: "100%", borderRadius: 9 },
+  splitLogoLetter: {
+    color: "#fff",
+    fontFamily: "Inter_700Bold",
+    fontSize: 16,
+  },
   imagePlaceholder: {
     alignItems: "center",
     justifyContent: "center",

@@ -114,6 +114,8 @@ export interface Restaurant {
   imageUrl?: string | null;
   /** @nullable */
   coverImageUrl?: string | null;
+  /** @nullable */
+  logoUrl?: string | null;
   category: string;
   businessType: string;
   isLocal: boolean;
@@ -138,6 +140,8 @@ export interface CreateRestaurantBody {
   phone?: string;
   imageUrl?: string;
   coverImageUrl?: string;
+  /** @nullable */
+  logoUrl?: string | null;
   category: string;
   businessType?: string;
   isLocal?: boolean;
@@ -153,6 +157,8 @@ export interface UpdateRestaurantBody {
   phone?: string;
   imageUrl?: string;
   coverImageUrl?: string;
+  /** @nullable */
+  logoUrl?: string | null;
   category?: string;
   businessType?: string;
   isLocal?: boolean;

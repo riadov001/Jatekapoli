@@ -64,7 +64,8 @@ export function Layout({ children }: LayoutProps) {
   return (
     <div className="min-h-screen bg-background">
       {/* Top Nav — wood-cut style */}
-      <header className="sticky top-0 z-50 wood-header">
+      <header className="sticky top-0 z-50 wood-header relative">
+        <span aria-hidden className="zigzag-bottom" />
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           {/* Row A — secondary controls (collapses on scroll) */}
           <div

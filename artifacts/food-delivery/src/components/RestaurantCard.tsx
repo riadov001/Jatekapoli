@@ -8,6 +8,7 @@ interface Restaurant {
   name: string;
   description?: string | null;
   imageUrl?: string | null;
+  logoUrl?: string | null;
   category: string;
   isLocal: boolean;
   isOpen: boolean;
@@ -61,7 +62,7 @@ export function RestaurantCard({ restaurant, compact = false }: { restaurant: Re
 
   return (
     <Link href={`/restaurants/${restaurant.id}`} data-testid={`card-restaurant-${restaurant.id}`}>
-      <div className="group relative bg-card rounded-3xl overflow-visible cursor-pointer transition-all duration-300 hover:-translate-y-0.5">
+      <div className="group relative bg-card rounded-3xl overflow-visible cursor-pointer transition-all duration-300 hover:-translate-y-1 active:scale-[0.98] active:translate-y-0">
         {/* Image (rounded, no border) */}
         <div className={`relative ${imageHeight} bg-muted overflow-hidden rounded-3xl shadow-md shadow-black/10`}>
           {restaurant.imageUrl ? (
@@ -116,13 +117,19 @@ export function RestaurantCard({ restaurant, compact = false }: { restaurant: Re
 
         {/* Logo straddling image / content boundary */}
         <div className="relative">
-          <div
-            className={`absolute -top-7 left-3 w-14 h-14 rounded-2xl ring-4 ring-card overflow-hidden shadow-lg shadow-black/20 bg-gradient-to-br ${logoGradient(
-              restaurant.name + restaurant.id,
-            )} flex items-center justify-center text-white font-display font-extrabold text-xl`}
-          >
-            <span className="drop-shadow">{initial}</span>
-          </div>
+          {restaurant.logoUrl ? (
+            <div className="absolute -top-7 left-3 w-14 h-14 rounded-2xl ring-4 ring-card overflow-hidden shadow-lg shadow-black/20 bg-card transition-transform duration-300 group-hover:rotate-[-4deg] group-hover:scale-110">
+              <img src={restaurant.logoUrl} alt={`${restaurant.name} logo`} className="w-full h-full object-cover" loading="lazy" />
+            </div>
+          ) : (
+            <div
+              className={`absolute -top-7 left-3 w-14 h-14 rounded-2xl ring-4 ring-card overflow-hidden shadow-lg shadow-black/20 bg-gradient-to-br ${logoGradient(
+                restaurant.name + restaurant.id,
+              )} flex items-center justify-center text-white font-display font-extrabold text-xl transition-transform duration-300 group-hover:rotate-[-4deg] group-hover:scale-110`}
+            >
+              <span className="drop-shadow">{initial}</span>
+            </div>
+          )}
         </div>
 
         {/* Content */}

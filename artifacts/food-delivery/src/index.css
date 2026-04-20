@@ -366,4 +366,61 @@
     -webkit-box-orient: vertical;
     overflow: hidden;
   }
+
+  /* Native zigzag bottom border for the wood-cut header */
+  .zigzag-bottom {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -10px;
+    height: 12px;
+    background-color: hsl(28 35% 90%);
+    -webkit-mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 12' preserveAspectRatio='none'><polygon fill='black' points='0,0 24,0 24,2 22,12 18,2 14,12 10,2 6,12 2,2 0,2'/></svg>");
+            mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 12' preserveAspectRatio='none'><polygon fill='black' points='0,0 24,0 24,2 22,12 18,2 14,12 10,2 6,12 2,2 0,2'/></svg>");
+    -webkit-mask-size: 24px 12px;
+            mask-size: 24px 12px;
+    -webkit-mask-repeat: repeat-x;
+            mask-repeat: repeat-x;
+    pointer-events: none;
+    filter: drop-shadow(0 2px 1px hsl(24 30% 30% / 0.18));
+  }
+  .dark .zigzag-bottom { background-color: hsl(24 18% 14%); }
+
+  /* Comics-style chunky button: thick black border + offset shadow + bouncy press */
+  .comics-btn {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.25rem;
+    font-weight: 800;
+    font-family: 'Poppins', sans-serif;
+    color: #fff;
+    background: hsl(var(--primary));
+    border: 3px solid #0a1b3d;
+    border-radius: 1rem;
+    box-shadow: 4px 4px 0 0 #0a1b3d;
+    transform: translate(0, 0) rotate(-1deg);
+    transition: transform 120ms cubic-bezier(.34,1.56,.64,1), box-shadow 120ms;
+    cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .comics-btn:hover {
+    transform: translate(-1px, -1px) rotate(-1deg) scale(1.02);
+    box-shadow: 5px 5px 0 0 #0a1b3d;
+    animation: comics-jiggle 600ms ease-in-out infinite;
+  }
+  .comics-btn:active {
+    transform: translate(3px, 3px) rotate(-1deg) scale(0.97);
+    box-shadow: 1px 1px 0 0 #0a1b3d;
+    animation: none;
+  }
+  @keyframes comics-jiggle {
+    0%, 100% { transform: translate(-1px, -1px) rotate(-1deg) scale(1.02); }
+    25% { transform: translate(-1px, -1px) rotate(0.5deg) scale(1.03); }
+    50% { transform: translate(-1px, -1px) rotate(-1.5deg) scale(1.02); }
+    75% { transform: translate(-1px, -1px) rotate(0deg) scale(1.03); }
+  }
 }

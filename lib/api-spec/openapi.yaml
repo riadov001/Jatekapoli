@@ -1037,6 +1037,8 @@ components:
           type: ["string", "null"]
         coverImageUrl:
           type: ["string", "null"]
+        logoUrl:
+          type: ["string", "null"]
         category:
           type: string
         businessType:
@@ -1088,6 +1090,8 @@ components:
           type: string
         coverImageUrl:
           type: string
+        logoUrl:
+          type: ["string", "null"]
         category:
           type: string
         businessType:
@@ -1120,6 +1124,8 @@ components:
           type: string
         coverImageUrl:
           type: string
+        logoUrl:
+          type: ["string", "null"]
         category:
           type: string
         businessType:

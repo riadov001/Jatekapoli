@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import {
   StyleSheet, Text, View, FlatList, TouchableOpacity,
-  Image, ActivityIndicator, Platform, ScrollView,
+  Image, ActivityIndicator, Platform, ScrollView, Animated, Pressable,
 } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -102,10 +102,20 @@ export default function RestaurantScreen() {
               >
                 <Ionicons name={isFav ? "heart" : "heart-outline"} size={22} color={isFav ? "#E2006A" : "#fff"} />
               </TouchableOpacity>
+              {/* Circular merchant logo overlapping hero bottom-left */}
+              {(restaurant as any).logoUrl || restaurant.imageUrl ? (
+                <View style={[styles.heroLogoWrap, { borderColor: colors.background }]}>
+                  <Image
+                    source={{ uri: (restaurant as any).logoUrl || restaurant.imageUrl }}
+                    style={styles.heroLogoImg}
+                    resizeMode="cover"
+                  />
+                </View>
+              ) : null}
             </View>
 
             {/* Info */}
-            <View style={[styles.infoSection, { backgroundColor: colors.background }]}>
+            <View style={[styles.infoSection, { backgroundColor: colors.background, paddingTop: 36 }]}>
               <Text style={[styles.rName, { color: colors.foreground }]}>{restaurant.name}</Text>
               {restaurant.description && (
                 <Text style={[styles.rDesc, { color: colors.mutedForeground }]}>{restaurant.description}</Text>
@@ -203,20 +213,15 @@ export default function RestaurantScreen() {
         </View>
       )}
 
-      {/* Cart CTA — compact pill, responsive width */}
+      {/* Cart CTA — comics style with bouncy press */}
       {!isServices && itemCount > 0 && (
         <View style={[styles.cartBar, { paddingBottom: insets.bottom + (Platform.OS === "web" ? 34 : 10) }]}>
-          <TouchableOpacity
-            style={[styles.cartBtn, { backgroundColor: colors.primary }]}
+          <ComicsCartButton
+            count={itemCount}
+            label={t("view_cart")}
             onPress={() => router.push("/cart")}
-            activeOpacity={0.85}
-          >
-            <View style={[styles.cartQty, { backgroundColor: "rgba(255,255,255,0.28)" }]}>
-              <Text style={styles.cartQtyText}>{itemCount}</Text>
-            </View>
-            <Text style={styles.cartBtnText} numberOfLines={1}>{t("view_cart")}</Text>
-            <Ionicons name="arrow-forward" size={16} color="#fff" />
-          </TouchableOpacity>
+            color={colors.primary}
+          />
         </View>
       )}
 
@@ -243,12 +248,75 @@ export default function RestaurantScreen() {
   );
 }
 
+// Comics-style "Voir panier" button — chunky border + offset shadow + bouncy spring
+function ComicsCartButton({
+  count,
+  label,
+  onPress,
+  color,
+}: {
+  count: number;
+  label: string;
+  onPress: () => void;
+  color: string;
+}) {
+  const scale = useRef(new Animated.Value(1)).current;
+  const rot = useRef(new Animated.Value(-1)).current;
+
+  const onIn = () => {
+    Animated.spring(scale, { toValue: 0.92, useNativeDriver: true, friction: 5, tension: 200 }).start();
+    Animated.spring(rot, { toValue: 0, useNativeDriver: true, friction: 4 }).start();
+  };
+  const onOut = () => {
+    Animated.spring(scale, { toValue: 1, useNativeDriver: true, friction: 3, tension: 240 }).start();
+    Animated.spring(rot, { toValue: -1, useNativeDriver: true, friction: 4 }).start();
+  };
+
+  const rotate = rot.interpolate({ inputRange: [-2, 0], outputRange: ["-2deg", "0deg"] });
+
+  return (
+    <Pressable onPress={onPress} onPressIn={onIn} onPressOut={onOut}>
+      <View style={styles.comicsShadow}>
+        <Animated.View
+          style={[
+            styles.comicsBtn,
+            { backgroundColor: color, transform: [{ scale }, { rotate }] },
+          ]}
+        >
+          <View style={styles.comicsQty}>
+            <Text style={styles.comicsQtyText}>{count}</Text>
+          </View>
+          <Text style={styles.comicsBtnText} numberOfLines={1}>{label}</Text>
+          <Ionicons name="arrow-forward" size={18} color="#fff" />
+        </Animated.View>
+      </View>
+    </Pressable>
+  );
+}
+
 const styles = StyleSheet.create({
   flex: { flex: 1 },
   center: { flex: 1, alignItems: "center", justifyContent: "center" },
   heroWrap: { position: "relative" },
   hero: { width: "100%", height: 220 },
   heroPlaceholder: { width: "100%", height: 220, alignItems: "center", justifyContent: "center" },
+  heroLogoWrap: {
+    position: "absolute",
+    bottom: -26,
+    left: 16,
+    width: 78,
+    height: 78,
+    borderRadius: 22,
+    borderWidth: 4,
+    backgroundColor: "#fff",
+    overflow: "hidden",
+    shadowColor: "#000",
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 8,
+  },
+  heroLogoImg: { width: "100%", height: "100%" },
   backBtn: {
     position: "absolute", top: 48, left: 16,
     width: 40, height: 40, borderRadius: 20, alignItems: "center", justifyContent: "center",
@@ -289,4 +357,32 @@ const styles = StyleSheet.create({
   cartQtyText: { color: "#fff", fontSize: 12, fontFamily: "Inter_700Bold" },
   cartBtnText: { color: "#fff", fontSize: 14, fontFamily: "Inter_700Bold", textAlign: "center" },
   warning: { color: "#F59E0B" },
+  // Comics-style cart button
+  comicsShadow: {
+    backgroundColor: "#0a1b3d",
+    borderRadius: 18,
+    alignSelf: "center",
+    transform: [{ translateX: 4 }, { translateY: 4 }],
+  },
+  comicsBtn: {
+    flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10,
+    height: 52, borderRadius: 18,
+    paddingHorizontal: 22,
+    minWidth: 220,
+    maxWidth: 360,
+    borderWidth: 3,
+    borderColor: "#0a1b3d",
+    transform: [{ translateX: -4 }, { translateY: -4 }],
+  },
+  comicsQty: {
+    minWidth: 28, height: 28, paddingHorizontal: 8, borderRadius: 14,
+    backgroundColor: "rgba(255,255,255,0.28)",
+    borderWidth: 2, borderColor: "#0a1b3d",
+    alignItems: "center", justifyContent: "center",
+  },
+  comicsQtyText: { color: "#fff", fontSize: 13, fontFamily: "Inter_700Bold" },
+  comicsBtnText: {
+    color: "#fff", fontSize: 15, fontFamily: "Inter_700Bold",
+    textAlign: "center", letterSpacing: 0.5, textTransform: "uppercase",
+  },
 });

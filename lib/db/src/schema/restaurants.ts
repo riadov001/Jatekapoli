@@ -11,6 +11,7 @@ export const restaurantsTable = pgTable("restaurants", {
   phone: text("phone"),
   imageUrl: text("image_url"),
   coverImageUrl: text("cover_image_url"),
+  logoUrl: text("logo_url"),
   category: text("category").notNull().default("Other"),
   businessType: text("business_type").notNull().default("restaurant"),
   isLocal: boolean("is_local").notNull().default(false),

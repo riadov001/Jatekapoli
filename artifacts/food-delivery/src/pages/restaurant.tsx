@@ -80,15 +80,28 @@ export default function RestaurantPage() {
       </Button>
 
       {/* Cover image */}
-      <div className="relative h-56 sm:h-72 rounded-2xl overflow-hidden bg-muted">
-        {restaurant.coverImageUrl ? (
-          <img src={restaurant.coverImageUrl} alt={restaurant.name} className="w-full h-full object-cover" />
-        ) : restaurant.imageUrl ? (
-          <img src={restaurant.imageUrl} alt={restaurant.name} className="w-full h-full object-cover" />
-        ) : (
-          <div className="w-full h-full bg-gradient-to-br from-primary/20 to-primary/5" />
+      <div className="relative h-56 sm:h-72 rounded-2xl overflow-visible bg-muted">
+        <div className="absolute inset-0 rounded-2xl overflow-hidden">
+          {restaurant.coverImageUrl ? (
+            <img src={restaurant.coverImageUrl} alt={restaurant.name} className="w-full h-full object-cover" />
+          ) : restaurant.imageUrl ? (
+            <img src={restaurant.imageUrl} alt={restaurant.name} className="w-full h-full object-cover" />
+          ) : (
+            <div className="w-full h-full bg-gradient-to-br from-primary/20 to-primary/5" />
+          )}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+        </div>
+
+        {/* Circular merchant logo overlapping the cover */}
+        {(restaurant.logoUrl || restaurant.imageUrl) && (
+          <div className="absolute -bottom-7 left-5 sm:left-7 w-20 h-20 rounded-2xl ring-4 ring-background overflow-hidden shadow-xl shadow-black/30 bg-card transition-transform duration-300 hover:rotate-[-4deg] hover:scale-105">
+            <img
+              src={restaurant.logoUrl || restaurant.imageUrl!}
+              alt={`${restaurant.name} logo`}
+              className="w-full h-full object-cover"
+            />
+          </div>
         )}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
         <div className="absolute bottom-4 left-4 right-4">
           <div className="flex items-start gap-3">
             <div>
@@ -228,17 +241,17 @@ export default function RestaurantPage() {
         </div>
       )}
 
-      {/* Floating cart button */}
+      {/* Floating comics-style cart button */}
       {itemCount > 0 && (
         <div className="fixed bottom-20 sm:bottom-6 left-1/2 -translate-x-1/2 z-50">
-          <Button
-            className="rounded-2xl px-6 h-12 shadow-lg gap-2 text-base font-semibold"
+          <button
+            className="comics-btn"
             onClick={() => setLocation("/cart")}
             data-testid="button-view-cart"
           >
             <ShoppingBag className="w-5 h-5" />
-            {t("restaurant.viewCart", { count: itemCount })}
-          </Button>
+            <span>{t("restaurant.viewCart", { count: itemCount })}</span>
+          </button>
         </div>
       )}
     </div>
