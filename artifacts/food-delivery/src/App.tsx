@@ -24,6 +24,8 @@ import AdminRestaurantsPage from "@/pages/admin/restaurants";
 import AdminRestaurantMenuPage from "@/pages/admin/restaurant-menu";
 import AdminDriversPage from "@/pages/admin/drivers";
 import AdminOrdersPage from "@/pages/admin/orders";
+import AdminReviewsPage from "@/pages/admin/reviews";
+import AdminSupportPage from "@/pages/admin/support";
 import { AdminRoute } from "@/components/AdminRoute";
 import RestaurantDashboardPage from "@/pages/restaurant-panel/dashboard";
 import RestaurantMenuPage from "@/pages/restaurant-panel/menu";
@@ -71,6 +73,8 @@ function Router() {
         <Route path="/admin/restaurants/:id/menu"><AdminRoute><AdminRestaurantMenuPage /></AdminRoute></Route>
         <Route path="/admin/drivers"><AdminRoute><AdminDriversPage /></AdminRoute></Route>
         <Route path="/admin/orders"><AdminRoute><AdminOrdersPage /></AdminRoute></Route>
+        <Route path="/admin/reviews"><AdminRoute><AdminReviewsPage /></AdminRoute></Route>
+        <Route path="/admin/support"><AdminRoute><AdminSupportPage /></AdminRoute></Route>
         <Route path="/restaurant/dashboard" component={RestaurantDashboardPage} />
         <Route path="/restaurant/menu" component={RestaurantMenuPage} />
         <Route path="/driver/dashboard" component={DriverDashboardPage} />
