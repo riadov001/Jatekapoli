@@ -330,6 +330,155 @@ router.get("/auth/me", async (req, res): Promise<void> => {
   }
 });
 
+// ─── Forgot password — send OTP to user's phone ──────────────────────────────
+router.post("/auth/forgot-password", async (req, res): Promise<void> => {
+  const { email } = req.body ?? {};
+  if (!email || typeof email !== "string") {
+    res.status(400).json({ error: "Email requis" });
+    return;
+  }
+
+  const normalizedEmail = email.trim().toLowerCase();
+  const [user] = await db
+    .select()
+    .from(usersTable)
+    .where(eq(usersTable.email, normalizedEmail))
+    .limit(1);
+
+  const isDev = process.env.NODE_ENV !== "production";
+  const isLocalWorkspace = !process.env.REPLIT_DEPLOYMENT
+    && !process.env.REPLIT_DEPLOYMENT_ID
+    && !process.env.REPLIT_DEPLOYMENT_DOMAIN;
+  const providerReady = await anyOtpProviderConfigured();
+  const canExposeDemoOtp = isDev && !providerReady && isLocalWorkspace;
+
+  // Constant-shape response — never reveal whether the email exists or has a
+  // phone on file. Always return the same body regardless of outcome.
+  const genericResponse: Record<string, unknown> = {
+    success: true,
+    message: "Si un compte est associé à cet email et possède un numéro de téléphone, un code a été envoyé.",
+  };
+
+  // Silently no-op when user is unknown or has no phone — same response shape.
+  if (!user || !user.phone) {
+    res.json(genericResponse);
+    return;
+  }
+
+  const normalizedPhone = normalizePhone(user.phone);
+
+  // Rate limit (silent — same response shape, no 429 leak)
+  const recentOtp = await db
+    .select()
+    .from(otpCodesTable)
+    .where(
+      and(
+        eq(otpCodesTable.phone, normalizedPhone),
+        gt(otpCodesTable.createdAt, new Date(Date.now() - OTP_RATE_LIMIT_MINUTES * 60 * 1000))
+      )
+    )
+    .limit(1);
+
+  if (recentOtp.length > 0) {
+    res.json(genericResponse);
+    return;
+  }
+
+  const code = generateOtp();
+  const expiresAt = new Date(Date.now() + OTP_EXPIRY_MINUTES * 60 * 1000);
+  await db.insert(otpCodesTable).values({ phone: normalizedPhone, code, expiresAt });
+
+  const messageBody = `Code de réinitialisation Jatek : ${code}\nValable ${OTP_EXPIRY_MINUTES} minutes.`;
+
+  try {
+    await sendOtpMessage(normalizedPhone, messageBody);
+  } catch (err: any) {
+    console.error(`[forgot-password] all providers failed for ${normalizedPhone}:`, err?.message ?? err);
+    // Stay silent on delivery failures too — no info leak.
+  }
+
+  // Demo OTP only ever exposed in local-workspace dev with no provider configured.
+  if (canExposeDemoOtp) {
+    genericResponse.demoOtp = code;
+  }
+
+  res.json(genericResponse);
+});
+
+// ─── Reset password using OTP ────────────────────────────────────────────────
+router.post("/auth/reset-password", async (req, res): Promise<void> => {
+  const { email, code, newPassword } = req.body ?? {};
+  if (!email || !code || !newPassword) {
+    res.status(400).json({ error: "Email, code et nouveau mot de passe requis" });
+    return;
+  }
+  if (typeof newPassword !== "string" || newPassword.length < 6) {
+    res.status(400).json({ error: "Le mot de passe doit comporter au moins 6 caractères" });
+    return;
+  }
+
+  const normalizedEmail = String(email).trim().toLowerCase();
+  const [user] = await db
+    .select()
+    .from(usersTable)
+    .where(eq(usersTable.email, normalizedEmail))
+    .limit(1);
+
+  if (!user || !user.phone) {
+    res.status(400).json({ error: "Code invalide ou expiré" });
+    return;
+  }
+
+  const normalizedPhone = normalizePhone(user.phone);
+  const now = new Date();
+
+  const [otpRecord] = await db
+    .select()
+    .from(otpCodesTable)
+    .where(
+      and(
+        eq(otpCodesTable.phone, normalizedPhone),
+        eq(otpCodesTable.used, false),
+        gt(otpCodesTable.expiresAt, now)
+      )
+    )
+    .orderBy(desc(otpCodesTable.createdAt))
+    .limit(1);
+
+  if (!otpRecord) {
+    res.status(400).json({ error: "Code expiré ou introuvable. Demandez un nouveau code." });
+    return;
+  }
+
+  if (otpRecord.attempts >= OTP_MAX_ATTEMPTS) {
+    res.status(400).json({ error: "Trop de tentatives. Demandez un nouveau code." });
+    return;
+  }
+
+  if (otpRecord.code !== String(code).trim()) {
+    await db
+      .update(otpCodesTable)
+      .set({ attempts: otpRecord.attempts + 1 })
+      .where(eq(otpCodesTable.id, otpRecord.id));
+    const remaining = OTP_MAX_ATTEMPTS - (otpRecord.attempts + 1);
+    res.status(400).json({
+      error: remaining > 0
+        ? `Code incorrect. ${remaining} tentative${remaining === 1 ? "" : "s"} restante${remaining === 1 ? "" : "s"}.`
+        : "Trop de tentatives. Demandez un nouveau code.",
+    });
+    return;
+  }
+
+  await db.update(otpCodesTable).set({ used: true }).where(eq(otpCodesTable.id, otpRecord.id));
+
+  const hashed = await bcrypt.hash(newPassword, 10);
+  await db.update(usersTable).set({ password: hashed }).where(eq(usersTable.id, user.id));
+
+  const token = jwt.sign({ userId: user.id, role: user.role }, JWT_SECRET, { expiresIn: "30d" });
+  const { password: _pw, ...safeUser } = user;
+  res.json({ success: true, token, user: safeUser });
+});
+
 router.post("/auth/logout", async (_req, res): Promise<void> => {
   res.json({ success: true });
 });

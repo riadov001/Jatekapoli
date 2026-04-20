@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Phone, ArrowRight, ArrowLeft, Truck, RefreshCw, Mail, KeyRound, MessageCircle, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/PasswordInput";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -537,7 +538,7 @@ export default function LoginPage() {
                         <FormItem>
                           <FormLabel>{t("login.password")}</FormLabel>
                           <FormControl>
-                            <Input {...field} type="password" placeholder="••••••••" className="h-12 rounded-xl" data-testid="input-password" />
+                            <PasswordInput {...field} placeholder="••••••••" className="h-12 rounded-xl" data-testid="input-password" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -551,6 +552,16 @@ export default function LoginPage() {
                     >
                       {loginMutation.isPending ? t("login.signingIn") : t("login.signIn")}
                     </Button>
+                    <div className="text-center">
+                      <button
+                        type="button"
+                        onClick={() => setLocation("/forgot-password")}
+                        className="text-sm text-primary font-medium hover:underline"
+                        data-testid="link-forgot-password"
+                      >
+                        Mot de passe oublié ?
+                      </button>
+                    </div>
                   </form>
                 </Form>
 

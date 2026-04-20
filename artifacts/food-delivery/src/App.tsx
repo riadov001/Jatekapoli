@@ -16,6 +16,7 @@ import OrderDetailPage from "@/pages/order-detail";
 import RewardsPage from "@/pages/rewards";
 import LoginPage from "@/pages/login";
 import RegisterPage from "@/pages/register";
+import ForgotPasswordPage from "@/pages/forgot-password";
 import ProfilePage from "@/pages/profile";
 import AdminDashboardPage from "@/pages/admin/dashboard";
 import AdminUsersPage from "@/pages/admin/users";
@@ -61,6 +62,7 @@ function Router() {
         <Route path="/profile" component={ProfilePage} />
         <Route path="/login" component={LoginPage} />
         <Route path="/register" component={RegisterPage} />
+        <Route path="/forgot-password" component={ForgotPasswordPage} />
         <Route path="/legal" component={LegalPage} />
         <Route path="/admin"><Redirect to="/admin/dashboard" /></Route>
         <Route path="/admin/dashboard"><AdminRoute><AdminDashboardPage /></AdminRoute></Route>

@@ -7,6 +7,7 @@ import { motion } from "framer-motion";
 import { Truck, UserPlus, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/PasswordInput";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useRegister } from "@workspace/api-client-react";
@@ -144,7 +145,7 @@ export default function RegisterPage() {
                   <FormItem>
                     <FormLabel>{t("register.password")}</FormLabel>
                     <FormControl>
-                      <Input {...field} type="password" placeholder={t("register.minChars")} className="h-12 rounded-xl" data-testid="input-password" />
+                      <PasswordInput {...field} placeholder={t("register.minChars")} className="h-12 rounded-xl" data-testid="input-password" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
