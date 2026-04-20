@@ -9,62 +9,53 @@ type Props = {
 };
 
 /**
- * Torn-paper edge effect drawn as an SVG path.
- *
- * Generates an irregular zigzag/wavy line at the top or bottom of a colored
- * area to make a header look like it has been torn from paper. The path is
- * deterministic (no per-render randomness) so the layout is stable.
- *
- * Usage:
- *   <View style={{ backgroundColor: "pink" }}>
- *     ...header content...
- *     <TornEdge color="pink" position="bottom" />
- *   </View>
+ * Sharp zigzag edge with irregular (pseudo-random but deterministic) angles.
+ * Each tooth has its own width and depth so the line never feels mechanical.
  */
-export function TornEdge({ color, height = 18, position = "bottom" }: Props) {
-  // Pre-computed irregular bumps (x%, y) — tuned to read as "torn".
-  // y in [0, height]. Not perfectly symmetric — that's the point.
-  const bumps = [
-    [0, 0.3],
-    [0.06, 0.95],
-    [0.12, 0.4],
-    [0.19, 1.0],
-    [0.26, 0.55],
-    [0.34, 0.15],
-    [0.42, 0.85],
-    [0.5, 0.35],
-    [0.58, 0.95],
-    [0.66, 0.45],
-    [0.74, 0.85],
-    [0.82, 0.2],
-    [0.9, 0.7],
-    [0.96, 0.4],
-    [1.0, 0.85],
+export function TornEdge({ color, height = 22, position = "bottom" }: Props) {
+  // Deterministic "random" zigzag teeth.
+  // Each entry = [x in 0..1, y in 0..1] alternating peak (low y) / valley (high y).
+  // Hand-tuned to look like a torn comic-book edge: sharp angles, varied spacing.
+  const teeth: Array<[number, number]> = [
+    [0.0, 0.15],
+    [0.045, 1.0],
+    [0.09, 0.05],
+    [0.155, 0.92],
+    [0.21, 0.25],
+    [0.27, 1.0],
+    [0.33, 0.0],
+    [0.385, 0.85],
+    [0.44, 0.2],
+    [0.5, 1.0],
+    [0.555, 0.1],
+    [0.61, 0.95],
+    [0.665, 0.3],
+    [0.725, 1.0],
+    [0.78, 0.05],
+    [0.835, 0.9],
+    [0.89, 0.2],
+    [0.945, 1.0],
+    [1.0, 0.15],
   ];
 
-  // We work in viewBox units 0..100 horizontally so the path scales fluidly.
-  const w = 100;
-  const points = bumps.map(([x, y]) => [x * w, y * height]);
+  const W = 100;
+  const pts = teeth.map(([x, y]) => [x * W, y * height] as [number, number]);
 
-  // Build a clean polygon: trace the torn edge left-to-right, then close back
-  // along the opposite (flat) edge. The previous version started at (0,0)
-  // then jumped to the first bump (also at x=0) which produced a degenerate
-  // crossing path.
   let d: string;
   if (position === "bottom") {
-    // Top is flat at y=0, bottom is the torn zigzag.
-    const torn = points
+    // Top is flat at y=0; bottom is the sharp zigzag.
+    const zig = pts
       .map(([x, y], i) => `${i === 0 ? "M" : "L"}${x.toFixed(2)},${y.toFixed(2)}`)
       .join(" ");
-    d = `${torn} L${w},0 L0,0 Z`;
+    d = `${zig} L${W},0 L0,0 Z`;
   } else {
-    // Bottom is flat at y=height, top is the torn zigzag (mirrored).
-    const torn = points
+    // Bottom is flat at y=height; top is mirrored zigzag.
+    const zig = pts
       .map(([x, y], i) =>
         `${i === 0 ? "M" : "L"}${x.toFixed(2)},${(height - y).toFixed(2)}`,
       )
       .join(" ");
-    d = `${torn} L${w},${height} L0,${height} Z`;
+    d = `${zig} L${W},${height} L0,${height} Z`;
   }
 
   return (
@@ -79,7 +70,7 @@ export function TornEdge({ color, height = 18, position = "bottom" }: Props) {
       <Svg
         width="100%"
         height={height}
-        viewBox={`0 0 ${w} ${height}`}
+        viewBox={`0 0 ${W} ${height}`}
         preserveAspectRatio="none"
       >
         <Path d={d} fill={color} />
