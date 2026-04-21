@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
-import { Package, DollarSign, Clock, TrendingUp, Bell, ChefHat, CheckCircle, XCircle, Truck, Settings } from "lucide-react";
+import { Package, DollarSign, Clock, TrendingUp, Bell, ChefHat, CheckCircle, XCircle, Truck, Settings, Upload } from "lucide-react";
+import { useUpload } from "@workspace/object-storage-web";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -26,6 +27,7 @@ type RestaurantFormState = {
   address: string;
   phone: string;
   imageUrl: string;
+  logoUrl: string;
   deliveryTime: string;
   deliveryFee: string;
   minimumOrder: string;
@@ -134,9 +136,29 @@ export default function RestaurantDashboardPage() {
   const [profileForm, setProfileForm] = useState<BusinessProfileForm>({ legalName: "", ice: "", printerEmail: "" });
   const [restaurantForm, setRestaurantForm] = useState<RestaurantFormState>({
     name: "", category: "", businessType: "restaurant", address: "",
-    phone: "", imageUrl: "", deliveryTime: "", deliveryFee: "", minimumOrder: "",
+    phone: "", imageUrl: "", logoUrl: "", deliveryTime: "", deliveryFee: "", minimumOrder: "",
   });
   const updateRestaurant = useUpdateRestaurant();
+
+  const { uploadFile: uploadLogoFile, isUploading: isUploadingLogo } = useUpload({
+    getRequestHeaders: () => {
+      const token = localStorage.getItem("jatek_token");
+      const headers: Record<string, string> = {};
+      if (token) headers.Authorization = `Bearer ${token}`;
+      return headers;
+    },
+    onSuccess: (resp) => {
+      setRestaurantForm((f) => ({ ...f, logoUrl: `/api/storage${resp.objectPath}` }));
+      toast({ title: "Logo uploaded" });
+    },
+    onError: (err) => toast({ title: "Logo upload failed", description: err.message, variant: "destructive" }),
+  });
+
+  const handlePickLogo = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) uploadLogoFile(file);
+    e.target.value = "";
+  };
 
   const { data: restaurants, refetch: refetchRestaurants } = useListRestaurants({ ownerId: user?.id });
   const myRestaurant = restaurants?.[0];
@@ -258,6 +280,7 @@ export default function RestaurantDashboardPage() {
       address: myRestaurant.address,
       phone: myRestaurant.phone ?? "",
       imageUrl: myRestaurant.imageUrl ?? "",
+      logoUrl: myRestaurant.logoUrl ?? "",
       deliveryTime: myRestaurant.deliveryTime != null ? String(myRestaurant.deliveryTime) : "",
       deliveryFee: myRestaurant.deliveryFee != null ? String(myRestaurant.deliveryFee) : "",
       minimumOrder: myRestaurant.minimumOrder != null ? String(myRestaurant.minimumOrder) : "",
@@ -288,6 +311,7 @@ export default function RestaurantDashboardPage() {
       address: restaurantForm.address.trim(),
       phone: restaurantForm.phone.trim() || undefined,
       imageUrl: restaurantForm.imageUrl.trim() || undefined,
+      logoUrl: restaurantForm.logoUrl.trim() ? restaurantForm.logoUrl.trim() : null,
       deliveryTime: intOrUndef(restaurantForm.deliveryTime),
       deliveryFee: numOrUndef(restaurantForm.deliveryFee),
       minimumOrder: numOrUndef(restaurantForm.minimumOrder),
@@ -438,6 +462,33 @@ export default function RestaurantDashboardPage() {
                 <Label>Min. order (MAD)</Label>
                 <Input type="number" value={restaurantForm.minimumOrder} onChange={(e) => setRestaurantForm({ ...restaurantForm, minimumOrder: e.target.value })} className="mt-1" />
               </div>
+            </div>
+            <div>
+              <Label>Logo</Label>
+              <div className="mt-1 flex items-center gap-3">
+                {restaurantForm.logoUrl ? (
+                  <img src={restaurantForm.logoUrl} alt="logo" className="w-16 h-16 rounded-xl object-cover border" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
+                ) : (
+                  <div className="w-16 h-16 rounded-xl border bg-muted flex items-center justify-center text-xs text-muted-foreground shrink-0">No logo</div>
+                )}
+                <div className="flex-1 flex items-center gap-2">
+                  <label className="inline-flex">
+                    <input type="file" accept="image/*" onChange={handlePickLogo} className="hidden" data-testid="input-logo-file" />
+                    <Button asChild type="button" variant="outline" size="sm" disabled={isUploadingLogo}>
+                      <span className="cursor-pointer gap-1.5 inline-flex items-center">
+                        <Upload className="w-4 h-4" />
+                        {isUploadingLogo ? "Uploading..." : restaurantForm.logoUrl ? "Replace logo" : "Upload logo"}
+                      </span>
+                    </Button>
+                  </label>
+                  {restaurantForm.logoUrl && (
+                    <Button type="button" variant="ghost" size="sm" onClick={() => setRestaurantForm({ ...restaurantForm, logoUrl: "" })} data-testid="button-remove-logo">
+                      Remove
+                    </Button>
+                  )}
+                </div>
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">PNG, JPEG, WebP or GIF. Max 5 MB.</p>
             </div>
             <div>
               <Label>Image URL</Label>
