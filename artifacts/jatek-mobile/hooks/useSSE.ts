@@ -19,6 +19,11 @@ interface SSEOptions {
 
 export function useSSE({ url, events, enabled = true }: SSEOptions) {
   const abortRef = useRef<AbortController | null>(null);
+  // Keep the latest event handlers in a ref so the effect doesn't need to
+  // re-subscribe (and tear down the stream) every time the parent re-renders
+  // and creates a new `events` object.
+  const eventsRef = useRef(events);
+  eventsRef.current = events;
 
   useEffect(() => {
     if (!enabled) return;
@@ -57,9 +62,8 @@ export function useSSE({ url, events, enabled = true }: SSEOptions) {
               const rawData = line.slice(5).trim();
               try {
                 const parsed = JSON.parse(rawData);
-                if (events[currentEvent]) {
-                  events[currentEvent](parsed);
-                }
+                const handler = eventsRef.current[currentEvent];
+                if (handler) handler(parsed);
               } catch (err) {
                 console.warn("[SSE] failed to parse event payload:", err);
               }

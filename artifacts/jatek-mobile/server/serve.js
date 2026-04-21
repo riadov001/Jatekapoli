@@ -81,7 +81,7 @@ function serveLandingPage(req, res, landingPageTemplate, appName) {
   res.end(html);
 }
 
-function serveStaticFile(urlPath, res) {
+function serveStaticFile(urlPath, res, req) {
   const safePath = path.normalize(urlPath).replace(/^(\.\.(\/|\\|$))+/, "");
   const filePath = path.join(STATIC_ROOT, safePath);
 
@@ -92,6 +92,16 @@ function serveStaticFile(urlPath, res) {
   }
 
   if (!fs.existsSync(filePath) || fs.statSync(filePath).isDirectory()) {
+    // Unknown path → redirect users to the landing page rather than showing a
+    // bare "Not Found" string. The landing page explains how to open the app
+    // in Expo Go, which is what visitors are looking for here.
+    const acceptsHtml = (req?.headers?.accept ?? "").includes("text/html");
+    if (acceptsHtml) {
+      const target = (basePath || "") + "/";
+      res.writeHead(302, { location: target });
+      res.end();
+      return;
+    }
     res.writeHead(404);
     res.end("Not Found");
     return;
@@ -111,7 +121,10 @@ const server = http.createServer((req, res) => {
   const url = new URL(req.url || "/", `http://${req.headers.host}`);
   let pathname = url.pathname;
 
-  if (basePath && pathname.startsWith(basePath)) {
+  // Segment-aware basePath stripping: only strip when the URL starts with
+  // basePath followed by "/" (or is exactly basePath). Avoids incorrectly
+  // matching siblings like "/apple" when basePath is "/app".
+  if (basePath && (pathname === basePath || pathname.startsWith(basePath + "/"))) {
     pathname = pathname.slice(basePath.length) || "/";
   }
 
@@ -126,7 +139,7 @@ const server = http.createServer((req, res) => {
     }
   }
 
-  serveStaticFile(pathname, res);
+  serveStaticFile(pathname, res, req);
 });
 
 const port = parseInt(process.env.PORT || "3000", 10);
