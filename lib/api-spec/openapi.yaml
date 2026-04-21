@@ -30,6 +30,8 @@ tags:
     description: Rewards and loyalty operations
   - name: storage
     description: Object storage upload and serving endpoints
+  - name: backend
+    description: Backend dashboard operations (super_admin / admin / manager / merchant / employee)
 
 paths:
   /healthz:
@@ -823,6 +825,362 @@ paths:
                 items:
                   $ref: "#/components/schemas/Order"
 
+  # ===== BACKEND DASHBOARD =====
+  /backend/login:
+    post:
+      operationId: backendLogin
+      tags: [backend]
+      summary: Login to the backend dashboard (staff only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginBody"
+      responses:
+        "200":
+          description: Logged in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "401":
+          description: Unauthorized or insufficient role
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /backend/me:
+    get:
+      operationId: backendMe
+      tags: [backend]
+      summary: Get current backend user with permissions
+      responses:
+        "200":
+          description: Current backend user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BackendMe"
+        "401":
+          description: Not authenticated
+
+  /backend/dashboard:
+    get:
+      operationId: getBackendDashboard
+      tags: [backend]
+      summary: Aggregate stats for the backend dashboard
+      parameters:
+        - name: range
+          in: query
+          schema:
+            type: string
+            enum: [week, month, year]
+            default: month
+      responses:
+        "200":
+          description: Dashboard data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BackendDashboard"
+
+  /backend/orders:
+    get:
+      operationId: listBackendOrders
+      tags: [backend]
+      summary: List orders (filtered by role scope)
+      parameters:
+        - name: status
+          in: query
+          schema: { type: string }
+        - name: shopId
+          in: query
+          schema: { type: integer }
+        - name: search
+          in: query
+          schema: { type: string }
+        - name: limit
+          in: query
+          schema: { type: integer, default: 50 }
+      responses:
+        "200":
+          description: Orders
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Order"
+
+  /backend/products:
+    get:
+      operationId: listBackendProducts
+      tags: [backend]
+      summary: List products (menu items, filtered by role scope)
+      parameters:
+        - name: status
+          in: query
+          schema: { type: string }
+        - name: shopId
+          in: query
+          schema: { type: integer }
+        - name: search
+          in: query
+          schema: { type: string }
+      responses:
+        "200":
+          description: Products
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/MenuItem"
+
+  /backend/shops:
+    get:
+      operationId: listBackendShops
+      tags: [backend]
+      summary: List shops (filtered by role scope)
+      parameters:
+        - name: search
+          in: query
+          schema: { type: string }
+      responses:
+        "200":
+          description: Shops
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Restaurant"
+
+  /backend/staff:
+    get:
+      operationId: listBackendStaff
+      tags: [backend]
+      summary: List staff & admin users (admin only)
+      responses:
+        "200":
+          description: Staff users
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/User"
+    post:
+      operationId: createBackendStaff
+      tags: [backend]
+      summary: Create a staff/admin user (admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateStaffBody"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+
+  /backend/staff/{id}:
+    patch:
+      operationId: updateBackendStaff
+      tags: [backend]
+      summary: Update staff user
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateStaffBody"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+    delete:
+      operationId: deleteBackendStaff
+      tags: [backend]
+      summary: Delete staff user
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "204":
+          description: Deleted
+
+  /backend/customers:
+    get:
+      operationId: listBackendCustomers
+      tags: [backend]
+      summary: List customers
+      parameters:
+        - name: search
+          in: query
+          schema: { type: string }
+      responses:
+        "200":
+          description: Customers
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/User"
+
+  /backend/deliverymen:
+    get:
+      operationId: listBackendDeliverymen
+      tags: [backend]
+      summary: List delivery drivers
+      responses:
+        "200":
+          description: Drivers
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Driver"
+
+  /backend/reviews:
+    get:
+      operationId: listBackendReviews
+      tags: [backend]
+      summary: List shop reviews
+      parameters:
+        - name: shopId
+          in: query
+          schema: { type: integer }
+      responses:
+        "200":
+          description: Reviews
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Review"
+
+  /backend/categories:
+    get:
+      operationId: listBackendCategories
+      tags: [backend]
+      summary: List shop/restaurant categories (distinct values from shops)
+      responses:
+        "200":
+          description: Categories
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CategoryEntry"
+
+  /backend/roles:
+    get:
+      operationId: listBackendRoles
+      tags: [backend]
+      summary: List roles + permission matrix
+      responses:
+        "200":
+          description: Roles
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/RoleDef"
+
+  /backend/todos:
+    get:
+      operationId: listBackendTodos
+      tags: [backend]
+      summary: List dashboard todos for current user
+      responses:
+        "200":
+          description: Todos
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/DashboardTodo"
+    post:
+      operationId: createBackendTodo
+      tags: [backend]
+      summary: Create a todo
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateTodoBody"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardTodo"
+
+  /backend/todos/{id}:
+    patch:
+      operationId: toggleBackendTodo
+      tags: [backend]
+      summary: Toggle done status of a todo
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                done:
+                  type: boolean
+              required: [done]
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardTodo"
+    delete:
+      operationId: deleteBackendTodo
+      tags: [backend]
+      summary: Delete a todo
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "204":
+          description: Deleted
+
   # Storage
   /storage/uploads/request-url:
     post:
@@ -1515,6 +1873,115 @@ components:
         - revenue
         - ordersToday
         - newUsersToday
+
+    # Backend
+    BackendMe:
+      type: object
+      required: [user, permissions]
+      properties:
+        user:
+          $ref: "#/components/schemas/User"
+        permissions:
+          type: array
+          items:
+            type: string
+        scopedShopIds:
+          type: array
+          description: Restricts data to these shops (merchant + employee). Empty = no scope restriction.
+          items:
+            type: integer
+
+    BackendDashboard:
+      type: object
+      required:
+        - inProgressOrders
+        - cancelledOrders
+        - deliveredOrders
+        - outOfStockProducts
+        - totalProducts
+        - orderReviews
+        - totalEarned
+        - deliveryEarning
+        - totalOrderTax
+        - totalCommission
+        - ordersChart
+      properties:
+        inProgressOrders: { type: integer }
+        cancelledOrders: { type: integer }
+        deliveredOrders: { type: integer }
+        outOfStockProducts: { type: integer }
+        totalProducts: { type: integer }
+        orderReviews: { type: integer }
+        totalEarned: { type: number }
+        deliveryEarning: { type: number }
+        totalOrderTax: { type: number }
+        totalCommission: { type: number }
+        ordersChart:
+          type: array
+          items:
+            type: object
+            required: [label, value]
+            properties:
+              label: { type: string }
+              value: { type: integer }
+
+    CreateStaffBody:
+      type: object
+      required: [name, email, password, role]
+      properties:
+        name: { type: string }
+        email: { type: string }
+        password: { type: string }
+        role:
+          type: string
+          enum: [admin, super_admin, manager, restaurant_owner, employee]
+        phone: { type: ["string", "null"] }
+        assignedShopId: { type: ["integer", "null"] }
+
+    UpdateStaffBody:
+      type: object
+      properties:
+        name: { type: string }
+        email: { type: string }
+        password: { type: string }
+        role: { type: string }
+        phone: { type: string }
+        isActive: { type: boolean }
+        assignedShopId: { type: ["integer", "null"] }
+
+    CategoryEntry:
+      type: object
+      required: [name, count]
+      properties:
+        name: { type: string }
+        count: { type: integer }
+
+    RoleDef:
+      type: object
+      required: [key, label, permissions]
+      properties:
+        key: { type: string }
+        label: { type: string }
+        description: { type: string }
+        permissions:
+          type: array
+          items: { type: string }
+
+    DashboardTodo:
+      type: object
+      required: [id, userId, text, done, createdAt]
+      properties:
+        id: { type: integer }
+        userId: { type: integer }
+        text: { type: string }
+        done: { type: boolean }
+        createdAt: { type: string, format: date-time }
+
+    CreateTodoBody:
+      type: object
+      required: [text]
+      properties:
+        text: { type: string }
 
     # Storage
     UploadUrlRequest:

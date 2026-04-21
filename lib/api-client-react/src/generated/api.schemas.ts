@@ -356,6 +356,89 @@ export interface AdminStats {
   newUsersToday: number;
 }
 
+export interface BackendMe {
+  user: User;
+  permissions: string[];
+  /** Restricts data to these shops (merchant + employee). Empty = no scope restriction. */
+  scopedShopIds?: number[];
+}
+
+export type BackendDashboardOrdersChartItem = {
+  label: string;
+  value: number;
+};
+
+export interface BackendDashboard {
+  inProgressOrders: number;
+  cancelledOrders: number;
+  deliveredOrders: number;
+  outOfStockProducts: number;
+  totalProducts: number;
+  orderReviews: number;
+  totalEarned: number;
+  deliveryEarning: number;
+  totalOrderTax: number;
+  totalCommission: number;
+  ordersChart: BackendDashboardOrdersChartItem[];
+}
+
+export type CreateStaffBodyRole =
+  (typeof CreateStaffBodyRole)[keyof typeof CreateStaffBodyRole];
+
+export const CreateStaffBodyRole = {
+  admin: "admin",
+  super_admin: "super_admin",
+  manager: "manager",
+  restaurant_owner: "restaurant_owner",
+  employee: "employee",
+} as const;
+
+export interface CreateStaffBody {
+  name: string;
+  email: string;
+  password: string;
+  role: CreateStaffBodyRole;
+  /** @nullable */
+  phone?: string | null;
+  /** @nullable */
+  assignedShopId?: number | null;
+}
+
+export interface UpdateStaffBody {
+  name?: string;
+  email?: string;
+  password?: string;
+  role?: string;
+  phone?: string;
+  isActive?: boolean;
+  /** @nullable */
+  assignedShopId?: number | null;
+}
+
+export interface CategoryEntry {
+  name: string;
+  count: number;
+}
+
+export interface RoleDef {
+  key: string;
+  label: string;
+  description?: string;
+  permissions: string[];
+}
+
+export interface DashboardTodo {
+  id: number;
+  userId: number;
+  text: string;
+  done: boolean;
+  createdAt: string;
+}
+
+export interface CreateTodoBody {
+  text: string;
+}
+
 export interface UploadUrlRequest {
   /**
    * Original file name.
@@ -414,4 +497,46 @@ export type ListDriversParams = {
 export type ListReviewsParams = {
   restaurantId?: number;
   userId?: number;
+};
+
+export type GetBackendDashboardParams = {
+  range?: GetBackendDashboardRange;
+};
+
+export type GetBackendDashboardRange =
+  (typeof GetBackendDashboardRange)[keyof typeof GetBackendDashboardRange];
+
+export const GetBackendDashboardRange = {
+  week: "week",
+  month: "month",
+  year: "year",
+} as const;
+
+export type ListBackendOrdersParams = {
+  status?: string;
+  shopId?: number;
+  search?: string;
+  limit?: number;
+};
+
+export type ListBackendProductsParams = {
+  status?: string;
+  shopId?: number;
+  search?: string;
+};
+
+export type ListBackendShopsParams = {
+  search?: string;
+};
+
+export type ListBackendCustomersParams = {
+  search?: string;
+};
+
+export type ListBackendReviewsParams = {
+  shopId?: number;
+};
+
+export type ToggleBackendTodoBody = {
+  done: boolean;
 };

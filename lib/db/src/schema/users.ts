@@ -7,12 +7,15 @@ export const usersTable = pgTable("users", {
   name: text("name").notNull(),
   email: text("email").notNull().unique(),
   password: text("password").notNull(),
+  /** customer | driver | restaurant_owner | employee | manager | admin | super_admin */
   role: text("role").notNull().default("customer"),
   phone: text("phone"),
   address: text("address"),
   avatarUrl: text("avatar_url"),
   isActive: boolean("is_active").notNull().default(true),
   loyaltyPoints: integer("loyalty_points").notNull().default(0),
+  /** Set when role=employee — the shop they are assigned to. */
+  assignedShopId: integer("assigned_shop_id"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 });

@@ -19,14 +19,26 @@ import type {
 import type {
   AdminStats,
   AuthResponse,
+  BackendDashboard,
+  BackendMe,
+  CategoryEntry,
   CreateMenuItemBody,
   CreateOrderBody,
   CreateRestaurantBody,
   CreateReviewBody,
+  CreateStaffBody,
+  CreateTodoBody,
+  DashboardTodo,
   Driver,
   DriverEarnings,
   ErrorResponse,
+  GetBackendDashboardParams,
   HealthStatus,
+  ListBackendCustomersParams,
+  ListBackendOrdersParams,
+  ListBackendProductsParams,
+  ListBackendReviewsParams,
+  ListBackendShopsParams,
   ListDriversParams,
   ListMenuItemsParams,
   ListOrdersParams,
@@ -40,13 +52,16 @@ import type {
   Restaurant,
   RestaurantStats,
   Review,
+  RoleDef,
   SendOtpBody,
   SendOtpResponse,
   SuccessResponse,
+  ToggleBackendTodoBody,
   UpdateDriverBody,
   UpdateMenuItemBody,
   UpdateOrderStatusBody,
   UpdateRestaurantBody,
+  UpdateStaffBody,
   UpdateUserBody,
   UploadUrlRequest,
   UploadUrlResponse,
@@ -3299,6 +3314,1638 @@ export function useGetRecentOrders<
 
   return { ...query, queryKey: queryOptions.queryKey };
 }
+
+/**
+ * @summary Login to the backend dashboard (staff only)
+ */
+export const getBackendLoginUrl = () => {
+  return `/api/backend/login`;
+};
+
+export const backendLogin = async (
+  loginBody: LoginBody,
+  options?: RequestInit,
+): Promise<AuthResponse> => {
+  return customFetch<AuthResponse>(getBackendLoginUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(loginBody),
+  });
+};
+
+export const getBackendLoginMutationOptions = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof backendLogin>>,
+    TError,
+    { data: BodyType<LoginBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof backendLogin>>,
+  TError,
+  { data: BodyType<LoginBody> },
+  TContext
+> => {
+  const mutationKey = ["backendLogin"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof backendLogin>>,
+    { data: BodyType<LoginBody> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return backendLogin(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type BackendLoginMutationResult = NonNullable<
+  Awaited<ReturnType<typeof backendLogin>>
+>;
+export type BackendLoginMutationBody = BodyType<LoginBody>;
+export type BackendLoginMutationError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary Login to the backend dashboard (staff only)
+ */
+export const useBackendLogin = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof backendLogin>>,
+    TError,
+    { data: BodyType<LoginBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof backendLogin>>,
+  TError,
+  { data: BodyType<LoginBody> },
+  TContext
+> => {
+  return useMutation(getBackendLoginMutationOptions(options));
+};
+
+/**
+ * @summary Get current backend user with permissions
+ */
+export const getBackendMeUrl = () => {
+  return `/api/backend/me`;
+};
+
+export const backendMe = async (options?: RequestInit): Promise<BackendMe> => {
+  return customFetch<BackendMe>(getBackendMeUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getBackendMeQueryKey = () => {
+  return [`/api/backend/me`] as const;
+};
+
+export const getBackendMeQueryOptions = <
+  TData = Awaited<ReturnType<typeof backendMe>>,
+  TError = ErrorType<void>,
+>(options?: {
+  query?: UseQueryOptions<Awaited<ReturnType<typeof backendMe>>, TError, TData>;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getBackendMeQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof backendMe>>> = ({
+    signal,
+  }) => backendMe({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof backendMe>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type BackendMeQueryResult = NonNullable<
+  Awaited<ReturnType<typeof backendMe>>
+>;
+export type BackendMeQueryError = ErrorType<void>;
+
+/**
+ * @summary Get current backend user with permissions
+ */
+
+export function useBackendMe<
+  TData = Awaited<ReturnType<typeof backendMe>>,
+  TError = ErrorType<void>,
+>(options?: {
+  query?: UseQueryOptions<Awaited<ReturnType<typeof backendMe>>, TError, TData>;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getBackendMeQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Aggregate stats for the backend dashboard
+ */
+export const getGetBackendDashboardUrl = (
+  params?: GetBackendDashboardParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/backend/dashboard?${stringifiedParams}`
+    : `/api/backend/dashboard`;
+};
+
+export const getBackendDashboard = async (
+  params?: GetBackendDashboardParams,
+  options?: RequestInit,
+): Promise<BackendDashboard> => {
+  return customFetch<BackendDashboard>(getGetBackendDashboardUrl(params), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetBackendDashboardQueryKey = (
+  params?: GetBackendDashboardParams,
+) => {
+  return [`/api/backend/dashboard`, ...(params ? [params] : [])] as const;
+};
+
+export const getGetBackendDashboardQueryOptions = <
+  TData = Awaited<ReturnType<typeof getBackendDashboard>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: GetBackendDashboardParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getBackendDashboard>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getGetBackendDashboardQueryKey(params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getBackendDashboard>>
+  > = ({ signal }) =>
+    getBackendDashboard(params, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getBackendDashboard>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetBackendDashboardQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getBackendDashboard>>
+>;
+export type GetBackendDashboardQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Aggregate stats for the backend dashboard
+ */
+
+export function useGetBackendDashboard<
+  TData = Awaited<ReturnType<typeof getBackendDashboard>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: GetBackendDashboardParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getBackendDashboard>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetBackendDashboardQueryOptions(params, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary List orders (filtered by role scope)
+ */
+export const getListBackendOrdersUrl = (params?: ListBackendOrdersParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/backend/orders?${stringifiedParams}`
+    : `/api/backend/orders`;
+};
+
+export const listBackendOrders = async (
+  params?: ListBackendOrdersParams,
+  options?: RequestInit,
+): Promise<Order[]> => {
+  return customFetch<Order[]>(getListBackendOrdersUrl(params), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListBackendOrdersQueryKey = (
+  params?: ListBackendOrdersParams,
+) => {
+  return [`/api/backend/orders`, ...(params ? [params] : [])] as const;
+};
+
+export const getListBackendOrdersQueryOptions = <
+  TData = Awaited<ReturnType<typeof listBackendOrders>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: ListBackendOrdersParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listBackendOrders>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getListBackendOrdersQueryKey(params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof listBackendOrders>>
+  > = ({ signal }) => listBackendOrders(params, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listBackendOrders>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListBackendOrdersQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listBackendOrders>>
+>;
+export type ListBackendOrdersQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List orders (filtered by role scope)
+ */
+
+export function useListBackendOrders<
+  TData = Awaited<ReturnType<typeof listBackendOrders>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: ListBackendOrdersParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listBackendOrders>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListBackendOrdersQueryOptions(params, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary List products (menu items, filtered by role scope)
+ */
+export const getListBackendProductsUrl = (
+  params?: ListBackendProductsParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/backend/products?${stringifiedParams}`
+    : `/api/backend/products`;
+};
+
+export const listBackendProducts = async (
+  params?: ListBackendProductsParams,
+  options?: RequestInit,
+): Promise<MenuItem[]> => {
+  return customFetch<MenuItem[]>(getListBackendProductsUrl(params), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListBackendProductsQueryKey = (
+  params?: ListBackendProductsParams,
+) => {
+  return [`/api/backend/products`, ...(params ? [params] : [])] as const;
+};
+
+export const getListBackendProductsQueryOptions = <
+  TData = Awaited<ReturnType<typeof listBackendProducts>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: ListBackendProductsParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listBackendProducts>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getListBackendProductsQueryKey(params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof listBackendProducts>>
+  > = ({ signal }) =>
+    listBackendProducts(params, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listBackendProducts>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListBackendProductsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listBackendProducts>>
+>;
+export type ListBackendProductsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List products (menu items, filtered by role scope)
+ */
+
+export function useListBackendProducts<
+  TData = Awaited<ReturnType<typeof listBackendProducts>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: ListBackendProductsParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listBackendProducts>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListBackendProductsQueryOptions(params, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary List shops (filtered by role scope)
+ */
+export const getListBackendShopsUrl = (params?: ListBackendShopsParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/backend/shops?${stringifiedParams}`
+    : `/api/backend/shops`;
+};
+
+export const listBackendShops = async (
+  params?: ListBackendShopsParams,
+  options?: RequestInit,
+): Promise<Restaurant[]> => {
+  return customFetch<Restaurant[]>(getListBackendShopsUrl(params), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListBackendShopsQueryKey = (
+  params?: ListBackendShopsParams,
+) => {
+  return [`/api/backend/shops`, ...(params ? [params] : [])] as const;
+};
+
+export const getListBackendShopsQueryOptions = <
+  TData = Awaited<ReturnType<typeof listBackendShops>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: ListBackendShopsParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listBackendShops>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getListBackendShopsQueryKey(params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof listBackendShops>>
+  > = ({ signal }) => listBackendShops(params, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listBackendShops>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListBackendShopsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listBackendShops>>
+>;
+export type ListBackendShopsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List shops (filtered by role scope)
+ */
+
+export function useListBackendShops<
+  TData = Awaited<ReturnType<typeof listBackendShops>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: ListBackendShopsParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listBackendShops>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListBackendShopsQueryOptions(params, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary List staff & admin users (admin only)
+ */
+export const getListBackendStaffUrl = () => {
+  return `/api/backend/staff`;
+};
+
+export const listBackendStaff = async (
+  options?: RequestInit,
+): Promise<User[]> => {
+  return customFetch<User[]>(getListBackendStaffUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListBackendStaffQueryKey = () => {
+  return [`/api/backend/staff`] as const;
+};
+
+export const getListBackendStaffQueryOptions = <
+  TData = Awaited<ReturnType<typeof listBackendStaff>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listBackendStaff>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getListBackendStaffQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof listBackendStaff>>
+  > = ({ signal }) => listBackendStaff({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listBackendStaff>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListBackendStaffQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listBackendStaff>>
+>;
+export type ListBackendStaffQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List staff & admin users (admin only)
+ */
+
+export function useListBackendStaff<
+  TData = Awaited<ReturnType<typeof listBackendStaff>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listBackendStaff>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListBackendStaffQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Create a staff/admin user (admin only)
+ */
+export const getCreateBackendStaffUrl = () => {
+  return `/api/backend/staff`;
+};
+
+export const createBackendStaff = async (
+  createStaffBody: CreateStaffBody,
+  options?: RequestInit,
+): Promise<User> => {
+  return customFetch<User>(getCreateBackendStaffUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(createStaffBody),
+  });
+};
+
+export const getCreateBackendStaffMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createBackendStaff>>,
+    TError,
+    { data: BodyType<CreateStaffBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof createBackendStaff>>,
+  TError,
+  { data: BodyType<CreateStaffBody> },
+  TContext
+> => {
+  const mutationKey = ["createBackendStaff"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof createBackendStaff>>,
+    { data: BodyType<CreateStaffBody> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return createBackendStaff(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CreateBackendStaffMutationResult = NonNullable<
+  Awaited<ReturnType<typeof createBackendStaff>>
+>;
+export type CreateBackendStaffMutationBody = BodyType<CreateStaffBody>;
+export type CreateBackendStaffMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Create a staff/admin user (admin only)
+ */
+export const useCreateBackendStaff = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createBackendStaff>>,
+    TError,
+    { data: BodyType<CreateStaffBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof createBackendStaff>>,
+  TError,
+  { data: BodyType<CreateStaffBody> },
+  TContext
+> => {
+  return useMutation(getCreateBackendStaffMutationOptions(options));
+};
+
+/**
+ * @summary Update staff user
+ */
+export const getUpdateBackendStaffUrl = (id: number) => {
+  return `/api/backend/staff/${id}`;
+};
+
+export const updateBackendStaff = async (
+  id: number,
+  updateStaffBody: UpdateStaffBody,
+  options?: RequestInit,
+): Promise<User> => {
+  return customFetch<User>(getUpdateBackendStaffUrl(id), {
+    ...options,
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(updateStaffBody),
+  });
+};
+
+export const getUpdateBackendStaffMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateBackendStaff>>,
+    TError,
+    { id: number; data: BodyType<UpdateStaffBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof updateBackendStaff>>,
+  TError,
+  { id: number; data: BodyType<UpdateStaffBody> },
+  TContext
+> => {
+  const mutationKey = ["updateBackendStaff"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof updateBackendStaff>>,
+    { id: number; data: BodyType<UpdateStaffBody> }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return updateBackendStaff(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UpdateBackendStaffMutationResult = NonNullable<
+  Awaited<ReturnType<typeof updateBackendStaff>>
+>;
+export type UpdateBackendStaffMutationBody = BodyType<UpdateStaffBody>;
+export type UpdateBackendStaffMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Update staff user
+ */
+export const useUpdateBackendStaff = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateBackendStaff>>,
+    TError,
+    { id: number; data: BodyType<UpdateStaffBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof updateBackendStaff>>,
+  TError,
+  { id: number; data: BodyType<UpdateStaffBody> },
+  TContext
+> => {
+  return useMutation(getUpdateBackendStaffMutationOptions(options));
+};
+
+/**
+ * @summary Delete staff user
+ */
+export const getDeleteBackendStaffUrl = (id: number) => {
+  return `/api/backend/staff/${id}`;
+};
+
+export const deleteBackendStaff = async (
+  id: number,
+  options?: RequestInit,
+): Promise<void> => {
+  return customFetch<void>(getDeleteBackendStaffUrl(id), {
+    ...options,
+    method: "DELETE",
+  });
+};
+
+export const getDeleteBackendStaffMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteBackendStaff>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof deleteBackendStaff>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  const mutationKey = ["deleteBackendStaff"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof deleteBackendStaff>>,
+    { id: number }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return deleteBackendStaff(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type DeleteBackendStaffMutationResult = NonNullable<
+  Awaited<ReturnType<typeof deleteBackendStaff>>
+>;
+
+export type DeleteBackendStaffMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Delete staff user
+ */
+export const useDeleteBackendStaff = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteBackendStaff>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof deleteBackendStaff>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  return useMutation(getDeleteBackendStaffMutationOptions(options));
+};
+
+/**
+ * @summary List customers
+ */
+export const getListBackendCustomersUrl = (
+  params?: ListBackendCustomersParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/backend/customers?${stringifiedParams}`
+    : `/api/backend/customers`;
+};
+
+export const listBackendCustomers = async (
+  params?: ListBackendCustomersParams,
+  options?: RequestInit,
+): Promise<User[]> => {
+  return customFetch<User[]>(getListBackendCustomersUrl(params), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListBackendCustomersQueryKey = (
+  params?: ListBackendCustomersParams,
+) => {
+  return [`/api/backend/customers`, ...(params ? [params] : [])] as const;
+};
+
+export const getListBackendCustomersQueryOptions = <
+  TData = Awaited<ReturnType<typeof listBackendCustomers>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: ListBackendCustomersParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listBackendCustomers>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getListBackendCustomersQueryKey(params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof listBackendCustomers>>
+  > = ({ signal }) =>
+    listBackendCustomers(params, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listBackendCustomers>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListBackendCustomersQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listBackendCustomers>>
+>;
+export type ListBackendCustomersQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List customers
+ */
+
+export function useListBackendCustomers<
+  TData = Awaited<ReturnType<typeof listBackendCustomers>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: ListBackendCustomersParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listBackendCustomers>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListBackendCustomersQueryOptions(params, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary List delivery drivers
+ */
+export const getListBackendDeliverymenUrl = () => {
+  return `/api/backend/deliverymen`;
+};
+
+export const listBackendDeliverymen = async (
+  options?: RequestInit,
+): Promise<Driver[]> => {
+  return customFetch<Driver[]>(getListBackendDeliverymenUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListBackendDeliverymenQueryKey = () => {
+  return [`/api/backend/deliverymen`] as const;
+};
+
+export const getListBackendDeliverymenQueryOptions = <
+  TData = Awaited<ReturnType<typeof listBackendDeliverymen>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listBackendDeliverymen>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getListBackendDeliverymenQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof listBackendDeliverymen>>
+  > = ({ signal }) => listBackendDeliverymen({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listBackendDeliverymen>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListBackendDeliverymenQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listBackendDeliverymen>>
+>;
+export type ListBackendDeliverymenQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List delivery drivers
+ */
+
+export function useListBackendDeliverymen<
+  TData = Awaited<ReturnType<typeof listBackendDeliverymen>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listBackendDeliverymen>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListBackendDeliverymenQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary List shop reviews
+ */
+export const getListBackendReviewsUrl = (params?: ListBackendReviewsParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/backend/reviews?${stringifiedParams}`
+    : `/api/backend/reviews`;
+};
+
+export const listBackendReviews = async (
+  params?: ListBackendReviewsParams,
+  options?: RequestInit,
+): Promise<Review[]> => {
+  return customFetch<Review[]>(getListBackendReviewsUrl(params), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListBackendReviewsQueryKey = (
+  params?: ListBackendReviewsParams,
+) => {
+  return [`/api/backend/reviews`, ...(params ? [params] : [])] as const;
+};
+
+export const getListBackendReviewsQueryOptions = <
+  TData = Awaited<ReturnType<typeof listBackendReviews>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: ListBackendReviewsParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listBackendReviews>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getListBackendReviewsQueryKey(params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof listBackendReviews>>
+  > = ({ signal }) => listBackendReviews(params, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listBackendReviews>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListBackendReviewsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listBackendReviews>>
+>;
+export type ListBackendReviewsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List shop reviews
+ */
+
+export function useListBackendReviews<
+  TData = Awaited<ReturnType<typeof listBackendReviews>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: ListBackendReviewsParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listBackendReviews>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListBackendReviewsQueryOptions(params, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary List shop/restaurant categories (distinct values from shops)
+ */
+export const getListBackendCategoriesUrl = () => {
+  return `/api/backend/categories`;
+};
+
+export const listBackendCategories = async (
+  options?: RequestInit,
+): Promise<CategoryEntry[]> => {
+  return customFetch<CategoryEntry[]>(getListBackendCategoriesUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListBackendCategoriesQueryKey = () => {
+  return [`/api/backend/categories`] as const;
+};
+
+export const getListBackendCategoriesQueryOptions = <
+  TData = Awaited<ReturnType<typeof listBackendCategories>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listBackendCategories>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getListBackendCategoriesQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof listBackendCategories>>
+  > = ({ signal }) => listBackendCategories({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listBackendCategories>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListBackendCategoriesQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listBackendCategories>>
+>;
+export type ListBackendCategoriesQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List shop/restaurant categories (distinct values from shops)
+ */
+
+export function useListBackendCategories<
+  TData = Awaited<ReturnType<typeof listBackendCategories>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listBackendCategories>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListBackendCategoriesQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary List roles + permission matrix
+ */
+export const getListBackendRolesUrl = () => {
+  return `/api/backend/roles`;
+};
+
+export const listBackendRoles = async (
+  options?: RequestInit,
+): Promise<RoleDef[]> => {
+  return customFetch<RoleDef[]>(getListBackendRolesUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListBackendRolesQueryKey = () => {
+  return [`/api/backend/roles`] as const;
+};
+
+export const getListBackendRolesQueryOptions = <
+  TData = Awaited<ReturnType<typeof listBackendRoles>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listBackendRoles>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getListBackendRolesQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof listBackendRoles>>
+  > = ({ signal }) => listBackendRoles({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listBackendRoles>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListBackendRolesQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listBackendRoles>>
+>;
+export type ListBackendRolesQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List roles + permission matrix
+ */
+
+export function useListBackendRoles<
+  TData = Awaited<ReturnType<typeof listBackendRoles>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listBackendRoles>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListBackendRolesQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary List dashboard todos for current user
+ */
+export const getListBackendTodosUrl = () => {
+  return `/api/backend/todos`;
+};
+
+export const listBackendTodos = async (
+  options?: RequestInit,
+): Promise<DashboardTodo[]> => {
+  return customFetch<DashboardTodo[]>(getListBackendTodosUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListBackendTodosQueryKey = () => {
+  return [`/api/backend/todos`] as const;
+};
+
+export const getListBackendTodosQueryOptions = <
+  TData = Awaited<ReturnType<typeof listBackendTodos>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listBackendTodos>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getListBackendTodosQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof listBackendTodos>>
+  > = ({ signal }) => listBackendTodos({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listBackendTodos>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListBackendTodosQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listBackendTodos>>
+>;
+export type ListBackendTodosQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List dashboard todos for current user
+ */
+
+export function useListBackendTodos<
+  TData = Awaited<ReturnType<typeof listBackendTodos>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listBackendTodos>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListBackendTodosQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Create a todo
+ */
+export const getCreateBackendTodoUrl = () => {
+  return `/api/backend/todos`;
+};
+
+export const createBackendTodo = async (
+  createTodoBody: CreateTodoBody,
+  options?: RequestInit,
+): Promise<DashboardTodo> => {
+  return customFetch<DashboardTodo>(getCreateBackendTodoUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(createTodoBody),
+  });
+};
+
+export const getCreateBackendTodoMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createBackendTodo>>,
+    TError,
+    { data: BodyType<CreateTodoBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof createBackendTodo>>,
+  TError,
+  { data: BodyType<CreateTodoBody> },
+  TContext
+> => {
+  const mutationKey = ["createBackendTodo"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof createBackendTodo>>,
+    { data: BodyType<CreateTodoBody> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return createBackendTodo(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CreateBackendTodoMutationResult = NonNullable<
+  Awaited<ReturnType<typeof createBackendTodo>>
+>;
+export type CreateBackendTodoMutationBody = BodyType<CreateTodoBody>;
+export type CreateBackendTodoMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Create a todo
+ */
+export const useCreateBackendTodo = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createBackendTodo>>,
+    TError,
+    { data: BodyType<CreateTodoBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof createBackendTodo>>,
+  TError,
+  { data: BodyType<CreateTodoBody> },
+  TContext
+> => {
+  return useMutation(getCreateBackendTodoMutationOptions(options));
+};
+
+/**
+ * @summary Toggle done status of a todo
+ */
+export const getToggleBackendTodoUrl = (id: number) => {
+  return `/api/backend/todos/${id}`;
+};
+
+export const toggleBackendTodo = async (
+  id: number,
+  toggleBackendTodoBody: ToggleBackendTodoBody,
+  options?: RequestInit,
+): Promise<DashboardTodo> => {
+  return customFetch<DashboardTodo>(getToggleBackendTodoUrl(id), {
+    ...options,
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(toggleBackendTodoBody),
+  });
+};
+
+export const getToggleBackendTodoMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof toggleBackendTodo>>,
+    TError,
+    { id: number; data: BodyType<ToggleBackendTodoBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof toggleBackendTodo>>,
+  TError,
+  { id: number; data: BodyType<ToggleBackendTodoBody> },
+  TContext
+> => {
+  const mutationKey = ["toggleBackendTodo"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof toggleBackendTodo>>,
+    { id: number; data: BodyType<ToggleBackendTodoBody> }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return toggleBackendTodo(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type ToggleBackendTodoMutationResult = NonNullable<
+  Awaited<ReturnType<typeof toggleBackendTodo>>
+>;
+export type ToggleBackendTodoMutationBody = BodyType<ToggleBackendTodoBody>;
+export type ToggleBackendTodoMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Toggle done status of a todo
+ */
+export const useToggleBackendTodo = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof toggleBackendTodo>>,
+    TError,
+    { id: number; data: BodyType<ToggleBackendTodoBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof toggleBackendTodo>>,
+  TError,
+  { id: number; data: BodyType<ToggleBackendTodoBody> },
+  TContext
+> => {
+  return useMutation(getToggleBackendTodoMutationOptions(options));
+};
+
+/**
+ * @summary Delete a todo
+ */
+export const getDeleteBackendTodoUrl = (id: number) => {
+  return `/api/backend/todos/${id}`;
+};
+
+export const deleteBackendTodo = async (
+  id: number,
+  options?: RequestInit,
+): Promise<void> => {
+  return customFetch<void>(getDeleteBackendTodoUrl(id), {
+    ...options,
+    method: "DELETE",
+  });
+};
+
+export const getDeleteBackendTodoMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteBackendTodo>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof deleteBackendTodo>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  const mutationKey = ["deleteBackendTodo"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof deleteBackendTodo>>,
+    { id: number }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return deleteBackendTodo(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type DeleteBackendTodoMutationResult = NonNullable<
+  Awaited<ReturnType<typeof deleteBackendTodo>>
+>;
+
+export type DeleteBackendTodoMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Delete a todo
+ */
+export const useDeleteBackendTodo = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteBackendTodo>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof deleteBackendTodo>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  return useMutation(getDeleteBackendTodoMutationOptions(options));
+};
 
 /**
  * Returns a presigned GCS URL for direct upload. The client sends JSON
