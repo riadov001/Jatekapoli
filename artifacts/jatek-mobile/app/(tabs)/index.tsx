@@ -902,14 +902,16 @@ export default function HomeScreen() {
           ]}
         >
           <Text style={styles.freeBarScooter}>🛵</Text>
-          <Text style={styles.freeBarFreeText}>4 FREE</Text>
-          <Text style={styles.freeBarRest}> deliveries. Limited time!</Text>
+          <View style={styles.freeBarFreeBadge}>
+            <Text style={styles.freeBarFreeText}>4 FREE</Text>
+          </View>
+          <Text style={styles.freeBarRest}> livraisons. Durée limitée !</Text>
           <TouchableOpacity
             onPress={() => setFreeBarOpen(false)}
             style={styles.freeBarClose}
             activeOpacity={0.7}
           >
-            <Ionicons name="chevron-down" size={18} color="#fff" />
+            <Ionicons name="chevron-up" size={18} color="#fff" />
           </TouchableOpacity>
         </View>
       )}
@@ -1112,38 +1114,51 @@ const styles = StyleSheet.create({
   catGridWrap: {
     flexDirection: "row",
     flexWrap: "wrap",
-    paddingHorizontal: 16,
-    paddingTop: 10,
-    paddingBottom: 10,
+    paddingHorizontal: 10,
+    paddingTop: 14,
+    paddingBottom: 14,
     backgroundColor: "#fff",
+    gap: 8,
   },
   catGridCell: {
-    width: CAT_CELL_W,
+    width: (SCREEN_W - 20 - 24) / 4,
     paddingVertical: 10,
+    paddingHorizontal: 4,
     alignItems: "center",
-    gap: 5,
-    borderRadius: 12,
+    gap: 6,
+    borderRadius: 14,
     backgroundColor: "#fff",
+    shadowColor: "#000",
+    shadowOpacity: 0.07,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
   },
   catGridCellActive: {
     backgroundColor: PINK_SOFT,
+    shadowColor: PINK,
+    shadowOpacity: 0.18,
   },
   catGridEmojiBox: {
-    width: 52,
-    height: 52,
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: "#F6F6F6",
     alignItems: "center",
     justifyContent: "center",
     position: "relative",
   },
-  catGridEmoji: { fontSize: 30 },
+  catGridEmoji: { fontSize: 28 },
   catFastBadge: {
     position: "absolute",
-    top: -3,
-    right: -4,
-    backgroundColor: OLIVE,
+    top: -2,
+    right: -2,
+    backgroundColor: "#22C55E",
     paddingHorizontal: 4,
-    paddingVertical: 2,
+    paddingVertical: 1,
     borderRadius: 5,
+    borderWidth: 1.5,
+    borderColor: "#fff",
   },
   catFastTxt: {
     color: "#fff",
@@ -1152,9 +1167,10 @@ const styles = StyleSheet.create({
     letterSpacing: 0.2,
   },
   catGridLabel: {
-    fontSize: 11,
-    fontFamily: "Inter_500Medium",
+    fontSize: 10,
+    fontFamily: "Inter_600SemiBold",
     color: TEXT_DARK,
+    textAlign: "center",
   },
   catGridLabelActive: {
     color: PINK,
@@ -1193,33 +1209,37 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   proDayBadgesCol: {
-    flexDirection: "row",
+    flexDirection: "column",
     alignItems: "center",
-    gap: 4,
+    gap: 3,
   },
   proBadge: {
     backgroundColor: PINK,
-    paddingHorizontal: 6,
-    paddingVertical: 4,
-    borderRadius: 6,
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+    borderRadius: 5,
+    minWidth: 32,
+    alignItems: "center",
   },
   proBadgeTxt: {
     color: "#fff",
-    fontSize: 10,
+    fontSize: 9,
     fontFamily: "Inter_700Bold",
-    letterSpacing: 0.3,
+    letterSpacing: 0.5,
   },
   dayBadge: {
-    backgroundColor: YELLOW_PRO,
-    paddingHorizontal: 6,
-    paddingVertical: 4,
-    borderRadius: 6,
+    backgroundColor: ORANGE_FREE,
+    paddingHorizontal: 5,
+    paddingVertical: 3,
+    borderRadius: 5,
+    minWidth: 32,
+    alignItems: "center",
   },
   dayBadgeTxt: {
-    color: TEXT_DARK,
-    fontSize: 10,
+    color: "#fff",
+    fontSize: 9,
     fontFamily: "Inter_700Bold",
-    letterSpacing: 0.3,
+    letterSpacing: 0.5,
   },
   proDayTitleCol: { flex: 1 },
   proDayTitle: {
@@ -1256,19 +1276,22 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     backgroundColor: "#fff",
     borderRadius: 12,
-    borderWidth: 1.5,
-    borderColor: TURQUOISE,
-    padding: 8,
+    borderLeftWidth: 4,
+    borderLeftColor: TURQUOISE,
+    paddingTop: 8,
+    paddingBottom: 8,
+    paddingRight: 8,
+    paddingLeft: 10,
     gap: 8,
-    shadowColor: "rgba(34,211,238,0.15)",
-    shadowOpacity: 1,
+    shadowColor: "#000",
+    shadowOpacity: 0.07,
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 2 },
     elevation: 2,
   },
   pdImgWrap: {
-    width: 62,
-    height: 62,
+    width: 68,
+    height: 68,
     borderRadius: 8,
     overflow: "hidden",
     backgroundColor: PINK_SOFT,
@@ -1330,16 +1353,22 @@ const styles = StyleSheet.create({
     backgroundColor: ORANGE_FREE,
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 16,
-    gap: 6,
+    paddingHorizontal: 14,
+    gap: 8,
     zIndex: 99,
   },
   freeBarScooter: { fontSize: 20 },
+  freeBarFreeBadge: {
+    backgroundColor: "rgba(0,0,0,0.25)",
+    borderRadius: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+  },
   freeBarFreeText: {
-    fontSize: 14,
+    fontSize: 13,
     fontFamily: "Inter_700Bold",
     color: YELLOW_PRO,
-    letterSpacing: 0.3,
+    letterSpacing: 0.5,
   },
   freeBarRest: {
     flex: 1,
@@ -1348,12 +1377,12 @@ const styles = StyleSheet.create({
     color: "#fff",
   },
   freeBarClose: {
-    width: 28,
-    height: 28,
+    width: 30,
+    height: 30,
     alignItems: "center",
     justifyContent: "center",
-    borderRadius: 14,
-    backgroundColor: "rgba(255,255,255,0.2)",
+    borderRadius: 15,
+    backgroundColor: "rgba(255,255,255,0.22)",
   },
 
   // ---------- Promo banners (irregular corners) ----------

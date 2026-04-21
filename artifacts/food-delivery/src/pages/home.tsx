@@ -91,11 +91,11 @@ function FeaturedBanner({ businesses }: { businesses: any[] }) {
           <button
             key={`${r.id}-${i}`}
             onClick={() => setLocation(`/restaurants/${r.id}`)}
-            className="shrink-0 w-64 rounded-3xl overflow-hidden bg-card text-left transition-transform hover:-translate-y-0.5 shadow-md shadow-black/10"
+            className="shrink-0 w-64 rounded-3xl overflow-visible bg-card text-left transition-all duration-300 hover:-translate-y-1 active:scale-[0.98] active:translate-y-0 shadow-md shadow-black/10 group"
           >
-            <div className="h-36 bg-muted relative overflow-hidden">
+            <div className="h-36 bg-muted relative overflow-hidden rounded-3xl">
               {r.imageUrl ? (
-                <img src={r.imageUrl} alt={r.name} className="w-full h-full object-cover" />
+                <img src={r.imageUrl} alt={r.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
               ) : (
                 <div className="w-full h-full flex items-center justify-center text-5xl">
                   {r.category === "Pizza" ? "🍕" : r.category === "Burgers" ? "🍔" : r.category === "Sushi" ? "🍣" : "🍽️"}
@@ -114,7 +114,19 @@ function FeaturedBanner({ businesses }: { businesses: any[] }) {
                 </span>
               </div>
             </div>
-            <div className="p-3">
+            {/* Logo straddling image / content boundary */}
+            <div className="relative">
+              {r.logoUrl ? (
+                <div className="absolute -top-6 left-3 w-12 h-12 rounded-xl ring-4 ring-card overflow-hidden shadow-md shadow-black/20 bg-card transition-transform duration-300 group-hover:rotate-[-4deg] group-hover:scale-110">
+                  <img src={r.logoUrl} alt={`${r.name} logo`} className="w-full h-full object-cover" loading="lazy" />
+                </div>
+              ) : (
+                <div className="absolute -top-6 left-3 w-12 h-12 rounded-xl ring-4 ring-card overflow-hidden shadow-md shadow-black/20 bg-primary flex items-center justify-center text-white font-display font-extrabold text-lg transition-transform duration-300 group-hover:rotate-[-4deg] group-hover:scale-110">
+                  {r.name?.charAt(0)?.toUpperCase() ?? "?"}
+                </div>
+              )}
+            </div>
+            <div className="pt-8 px-3 pb-3">
               <p className="font-semibold text-sm leading-tight truncate">{r.name}</p>
               <p className="text-xs text-muted-foreground mt-0.5 truncate">{r.category}</p>
             </div>
