@@ -1,6 +1,6 @@
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import {
-  StyleSheet, Text, View, TouchableOpacity,
+  StyleSheet, Text, View, TouchableOpacity, Pressable, Animated,
   TextInput, ActivityIndicator, Platform, Alert,
 } from "react-native";
 import { router } from "expo-router";
@@ -245,37 +245,139 @@ export default function CartScreen() {
             <Text style={styles.zoneBlockerText}>{t("cart_address_out_of_zone_short")}</Text>
           </View>
         )}
-        <TouchableOpacity
-          style={[
-            styles.orderBtn,
-            {
-              backgroundColor: orderDisabled ? colors.muted : colors.primary,
-              shadowColor: orderDisabled ? "transparent" : "#E2006A",
-            },
-          ]}
-          onPress={handlePlaceOrder}
+        <ComicsCheckoutButton
           disabled={orderDisabled}
-          activeOpacity={0.85}
-        >
-          {createOrder.isPending ? (
-            <ActivityIndicator color="#fff" size="small" />
-          ) : (
-            <>
-              <Text style={[styles.orderBtnText, { color: orderDisabled ? colors.mutedForeground : "#fff" }]}>
-                {!!address && !selectedAddressInZone ? t("cart_address_out_zone_btn") : t("cart_place_order")}
-              </Text>
-              {!orderDisabled && (
-                <Text style={[styles.orderBtnPrice, { backgroundColor: "rgba(255,255,255,0.25)" }]}>
-                  {(subtotal + effectiveDeliveryFee).toFixed(0)} MAD
-                </Text>
-              )}
-            </>
-          )}
-        </TouchableOpacity>
+          loading={createOrder.isPending}
+          label={!!address && !selectedAddressInZone ? t("cart_address_out_zone_btn") : t("cart_place_order")}
+          price={`${(subtotal + effectiveDeliveryFee).toFixed(0)} MAD`}
+          color={colors.primary}
+          mutedColor={colors.muted}
+          mutedFg={colors.mutedForeground}
+          onPress={handlePlaceOrder}
+        />
       </View>
     </View>
   );
 }
+
+// Comics-style checkout button — chunky border + offset shadow + bouncy spring
+function ComicsCheckoutButton({
+  disabled,
+  loading,
+  label,
+  price,
+  color,
+  mutedColor,
+  mutedFg,
+  onPress,
+}: {
+  disabled: boolean;
+  loading: boolean;
+  label: string;
+  price: string;
+  color: string;
+  mutedColor: string;
+  mutedFg: string;
+  onPress: () => void;
+}) {
+  const scale = useRef(new Animated.Value(1)).current;
+  const rot = useRef(new Animated.Value(-1)).current;
+
+  const onIn = () => {
+    if (disabled) return;
+    Animated.spring(scale, { toValue: 0.93, useNativeDriver: true, friction: 5, tension: 200 }).start();
+    Animated.spring(rot, { toValue: 0, useNativeDriver: true, friction: 4 }).start();
+  };
+  const onOut = () => {
+    if (disabled) return;
+    Animated.spring(scale, { toValue: 1, useNativeDriver: true, friction: 3, tension: 240 }).start();
+    Animated.spring(rot, { toValue: -1, useNativeDriver: true, friction: 4 }).start();
+  };
+
+  const rotate = rot.interpolate({ inputRange: [-2, 0], outputRange: ["-1.5deg", "0deg"] });
+  const bg = disabled ? mutedColor : color;
+  const fg = disabled ? mutedFg : "#fff";
+
+  return (
+    <Pressable
+      onPress={onPress}
+      onPressIn={onIn}
+      onPressOut={onOut}
+      disabled={disabled}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      accessibilityState={{ disabled }}
+    >
+      <View style={[comicsStyles.shadow, disabled && { backgroundColor: "transparent" }]}>
+        <Animated.View
+          style={[
+            comicsStyles.btn,
+            {
+              backgroundColor: bg,
+              borderColor: disabled ? "transparent" : "#0a1b3d",
+              // Combine offset translate + animated scale/rotate in ONE transform array
+              // (RN does not merge transform across style entries — last one wins).
+              transform: [
+                { translateX: -4 },
+                { translateY: -4 },
+                { scale },
+                { rotate },
+              ],
+            },
+          ]}
+        >
+          {loading ? (
+            <ActivityIndicator color={fg} size="small" />
+          ) : (
+            <>
+              <Text style={[comicsStyles.label, { color: fg }]} numberOfLines={1}>{label}</Text>
+              {!disabled && (
+                <View style={comicsStyles.pricePill}>
+                  <Text style={comicsStyles.priceText}>{price}</Text>
+                </View>
+              )}
+            </>
+          )}
+        </Animated.View>
+      </View>
+    </Pressable>
+  );
+}
+
+const comicsStyles = StyleSheet.create({
+  shadow: {
+    backgroundColor: "#0a1b3d",
+    borderRadius: 18,
+    transform: [{ translateX: 4 }, { translateY: 4 }],
+  },
+  btn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    height: 56,
+    borderRadius: 18,
+    paddingHorizontal: 20,
+    borderWidth: 3,
+    transform: [{ translateX: -4 }, { translateY: -4 }],
+  },
+  label: {
+    fontSize: 15,
+    fontFamily: "Inter_700Bold",
+    letterSpacing: 0.5,
+    textTransform: "uppercase",
+    flex: 1,
+    textAlign: "left",
+  },
+  pricePill: {
+    backgroundColor: "rgba(255,255,255,0.28)",
+    borderWidth: 2,
+    borderColor: "#0a1b3d",
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 10,
+  },
+  priceText: { color: "#fff", fontSize: 13, fontFamily: "Inter_700Bold" },
+});
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },

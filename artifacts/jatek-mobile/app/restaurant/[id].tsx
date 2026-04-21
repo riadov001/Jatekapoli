@@ -272,12 +272,28 @@ function ComicsCartButton({
   const rotate = rot.interpolate({ inputRange: [-2, 0], outputRange: ["-2deg", "0deg"] });
 
   return (
-    <Pressable onPress={onPress} onPressIn={onIn} onPressOut={onOut}>
+    <Pressable
+      onPress={onPress}
+      onPressIn={onIn}
+      onPressOut={onOut}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+    >
       <View style={styles.comicsShadow}>
         <Animated.View
           style={[
             styles.comicsBtn,
-            { backgroundColor: color, transform: [{ scale }, { rotate }] },
+            {
+              backgroundColor: color,
+              // Combine offset translate + animated scale/rotate in ONE transform array
+              // (RN does not merge transform across style entries — last one wins).
+              transform: [
+                { translateX: -4 },
+                { translateY: -4 },
+                { scale },
+                { rotate },
+              ],
+            },
           ]}
         >
           <View style={styles.comicsQty}>

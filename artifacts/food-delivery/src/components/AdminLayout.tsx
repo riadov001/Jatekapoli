@@ -11,6 +11,23 @@ import {
   Menu as MenuIcon,
   X,
   ArrowLeft,
+  BarChart3,
+  TrendingUp,
+  Tag,
+  Ticket,
+  Bell,
+  Megaphone,
+  CreditCard,
+  Wallet,
+  MapPin,
+  Settings,
+  ShieldCheck,
+  FileText,
+  Activity,
+  Building2,
+  ListChecks,
+  Globe2,
+  AlertTriangle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -19,17 +36,73 @@ type NavItem = {
   label: string;
   href: string;
   icon: typeof LayoutDashboard;
+  badge?: string;
 };
 
-const navItems: NavItem[] = [
-  { label: "Tableau de bord", href: "/admin/dashboard", icon: LayoutDashboard },
-  { label: "Utilisateurs", href: "/admin/users", icon: Users },
-  { label: "Restaurants", href: "/admin/restaurants", icon: Store },
-  { label: "Livreurs", href: "/admin/drivers", icon: Truck },
-  { label: "Commandes", href: "/admin/orders", icon: Package },
-  { label: "Avis", href: "/admin/reviews", icon: Star },
-  { label: "Support", href: "/admin/support", icon: LifeBuoy },
+type NavGroup = {
+  label: string;
+  items: NavItem[];
+};
+
+const navGroups: NavGroup[] = [
+  {
+    label: "Vue d'ensemble",
+    items: [
+      { label: "Tableau de bord", href: "/admin/dashboard", icon: LayoutDashboard },
+      { label: "Statistiques", href: "/admin/stats", icon: BarChart3 },
+      { label: "Performances", href: "/admin/performance", icon: TrendingUp },
+      { label: "Activité en direct", href: "/admin/activity", icon: Activity },
+    ],
+  },
+  {
+    label: "Opérations",
+    items: [
+      { label: "Commandes", href: "/admin/orders", icon: Package },
+      { label: "Restaurants", href: "/admin/restaurants", icon: Store },
+      { label: "Livreurs", href: "/admin/drivers", icon: Truck },
+      { label: "Catégories", href: "/admin/categories", icon: ListChecks },
+      { label: "Zones de livraison", href: "/admin/zones", icon: MapPin },
+    ],
+  },
+  {
+    label: "Communauté",
+    items: [
+      { label: "Utilisateurs", href: "/admin/users", icon: Users },
+      { label: "Avis", href: "/admin/reviews", icon: Star },
+      { label: "Support", href: "/admin/support", icon: LifeBuoy },
+      { label: "Signalements", href: "/admin/reports", icon: AlertTriangle },
+    ],
+  },
+  {
+    label: "Marketing",
+    items: [
+      { label: "Promotions", href: "/admin/promotions", icon: Tag },
+      { label: "Coupons", href: "/admin/coupons", icon: Ticket },
+      { label: "Annonces", href: "/admin/announcements", icon: Megaphone },
+      { label: "Notifications", href: "/admin/notifications", icon: Bell },
+    ],
+  },
+  {
+    label: "Finance",
+    items: [
+      { label: "Paiements", href: "/admin/payments", icon: CreditCard },
+      { label: "Portefeuilles", href: "/admin/wallets", icon: Wallet },
+      { label: "Rapports", href: "/admin/reports-finance", icon: FileText },
+      { label: "Partenaires", href: "/admin/partners", icon: Building2 },
+    ],
+  },
+  {
+    label: "Système",
+    items: [
+      { label: "Paramètres", href: "/admin/settings", icon: Settings },
+      { label: "Sécurité & rôles", href: "/admin/security", icon: ShieldCheck },
+      { label: "Localisation", href: "/admin/i18n", icon: Globe2 },
+      { label: "Journal d'audit", href: "/admin/audit", icon: FileText },
+    ],
+  },
 ];
+
+const allNavItems: NavItem[] = navGroups.flatMap((g) => g.items);
 
 interface AdminLayoutProps {
   title?: string;
@@ -50,29 +123,38 @@ export function AdminLayout({ title, subtitle, actions, children }: AdminLayoutP
   return (
     <div className="flex min-h-[calc(100vh-4rem)] -mx-4 sm:-mx-6 lg:-mx-8">
       {/* Sidebar — desktop */}
-      <aside className="hidden md:flex w-60 shrink-0 flex-col border-e border-border bg-card/40">
+      <aside className="hidden md:flex w-64 shrink-0 flex-col border-e border-border bg-card/40">
         <div className="px-5 py-5 border-b border-border">
-          <p className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">
+          <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">
             Espace admin
           </p>
           <h2 className="font-display font-bold text-lg mt-0.5">Jatek</h2>
         </div>
-        <nav className="flex-1 p-3 space-y-1">
-          {navItems.map((item) => (
-            <Link key={item.href} href={item.href}>
-              <a
-                className={cn(
-                  "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors",
-                  isActive(item.href)
-                    ? "bg-primary text-primary-foreground shadow-sm shadow-primary/20"
-                    : "text-foreground/80 hover:bg-muted hover:text-foreground"
-                )}
-                data-testid={`nav-admin-${item.href.split("/").pop()}`}
-              >
-                <item.icon className="w-4 h-4" />
-                {item.label}
-              </a>
-            </Link>
+        <nav className="flex-1 px-3 py-4 space-y-5 overflow-y-auto">
+          {navGroups.map((group) => (
+            <div key={group.label}>
+              <p className="px-3 pb-1.5 text-[10px] uppercase tracking-wider font-semibold text-muted-foreground/80">
+                {group.label}
+              </p>
+              <div className="space-y-0.5">
+                {group.items.map((item) => (
+                  <Link key={item.href} href={item.href}>
+                    <a
+                      className={cn(
+                        "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
+                        isActive(item.href)
+                          ? "bg-primary text-primary-foreground shadow-sm shadow-primary/20"
+                          : "text-foreground/75 hover:bg-muted hover:text-foreground"
+                      )}
+                      data-testid={`nav-admin-${item.href.split("/").pop()}`}
+                    >
+                      <item.icon className="w-4 h-4 shrink-0" />
+                      <span className="truncate">{item.label}</span>
+                    </a>
+                  </Link>
+                ))}
+              </div>
+            </div>
           ))}
         </nav>
         <div className="p-3 border-t border-border">
@@ -91,10 +173,10 @@ export function AdminLayout({ title, subtitle, actions, children }: AdminLayoutP
             className="md:hidden fixed inset-0 bg-black/40 z-40"
             onClick={() => setMobileOpen(false)}
           />
-          <aside className="md:hidden fixed inset-y-0 left-0 w-64 z-50 bg-card border-e border-border flex flex-col">
+          <aside className="md:hidden fixed inset-y-0 left-0 w-72 z-50 bg-card border-e border-border flex flex-col">
             <div className="px-5 py-5 border-b border-border flex items-center justify-between">
               <div>
-                <p className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">
+                <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">
                   Espace admin
                 </p>
                 <h2 className="font-display font-bold text-lg mt-0.5">Jatek</h2>
@@ -103,22 +185,31 @@ export function AdminLayout({ title, subtitle, actions, children }: AdminLayoutP
                 <X className="w-4 h-4" />
               </Button>
             </div>
-            <nav className="flex-1 p-3 space-y-1">
-              {navItems.map((item) => (
-                <Link key={item.href} href={item.href}>
-                  <a
-                    onClick={() => setMobileOpen(false)}
-                    className={cn(
-                      "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors",
-                      isActive(item.href)
-                        ? "bg-primary text-primary-foreground"
-                        : "text-foreground/80 hover:bg-muted"
-                    )}
-                  >
-                    <item.icon className="w-4 h-4" />
-                    {item.label}
-                  </a>
-                </Link>
+            <nav className="flex-1 px-3 py-4 space-y-5 overflow-y-auto">
+              {navGroups.map((group) => (
+                <div key={group.label}>
+                  <p className="px-3 pb-1.5 text-[10px] uppercase tracking-wider font-semibold text-muted-foreground/80">
+                    {group.label}
+                  </p>
+                  <div className="space-y-0.5">
+                    {group.items.map((item) => (
+                      <Link key={item.href} href={item.href}>
+                        <a
+                          onClick={() => setMobileOpen(false)}
+                          className={cn(
+                            "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
+                            isActive(item.href)
+                              ? "bg-primary text-primary-foreground"
+                              : "text-foreground/75 hover:bg-muted"
+                          )}
+                        >
+                          <item.icon className="w-4 h-4 shrink-0" />
+                          <span className="truncate">{item.label}</span>
+                        </a>
+                      </Link>
+                    ))}
+                  </div>
+                </div>
               ))}
             </nav>
           </aside>
