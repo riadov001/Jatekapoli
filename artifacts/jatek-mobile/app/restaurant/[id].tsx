@@ -104,10 +104,10 @@ export default function RestaurantScreen() {
                 <Ionicons name={isFav ? "heart" : "heart-outline"} size={22} color={isFav ? "#E2006A" : "#fff"} />
               </TouchableOpacity>
               {/* Circular merchant logo overlapping hero bottom-left */}
-              {((restaurant as any).logoUrl || restaurant.imageUrl) ? (
+              {(restaurant.logoUrl || restaurant.imageUrl) ? (
                 <View style={[styles.heroLogoWrap, { borderColor: colors.card, shadowColor: colors.primary }]}>
                   <Image
-                    source={{ uri: (restaurant as any).logoUrl || restaurant.imageUrl }}
+                    source={{ uri: restaurant.logoUrl ?? restaurant.imageUrl! }}
                     style={styles.heroLogoImg}
                     resizeMode="cover"
                   />
