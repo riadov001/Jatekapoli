@@ -12,6 +12,7 @@ import {
   Image,
   Pressable,
   Animated,
+  Dimensions,
 } from "react-native";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -34,18 +35,25 @@ import { TornEdge } from "@/components/TornEdge";
 import { SideMenu } from "@/components/SideMenu";
 import { ShortPlayerModal } from "@/components/ShortPlayerModal";
 
-// Talabat-inspired palette
-const BG = "#FFF5F8";
+// Talabat-inspired palette — fuchsia redesign
+const BG = "#F8F8F8";
 const CARD_BG = "#FFFFFF";
-const PINK = "#FF4593";
-const PINK_DEEP = "#E91E63";
-const PINK_SOFT = "#FFE0EC";
-const TURQUOISE = "#00BFA6";
-const TURQUOISE_SOFT = "#E0F7F4";
+const PINK = "#C026D3";
+const PINK_DEEP = "#A21CAF";
+const PINK_SOFT = "#F9F0FF";
+const TURQUOISE = "#22D3EE";
+const TURQUOISE_SOFT = "#ECFEFF";
+const YELLOW_PRO = "#FACC15";
+const OLIVE = "#84CC16";
+const ORANGE_FREE = "#F97316";
+const PRO_DAY_BG = "#F3EEFF";
 const TEXT_DARK = "#0A1B3D";
 const TEXT_MUTED = "#6B7280";
-const BORDER = "#F1E0E8";
+const BORDER = "#EEE8FF";
 const STAR_YELLOW = "#FFC107";
+
+const { width: SCREEN_W } = Dimensions.get("window");
+const CAT_CELL_W = Math.floor((SCREEN_W - 32) / 4);
 
 // Each category gets an emoji and its own pastel background.
 const CATEGORIES = [
@@ -432,6 +440,67 @@ function ShortCard({
   );
 }
 
+// ---------- Pro Day card (Talabat-style split: image left + info right) ----------
+function ProDayCard({
+  restaurant,
+  index,
+  onPress,
+}: {
+  restaurant: Restaurant;
+  index: number;
+  onPress: () => void;
+}) {
+  const hasFreeDelivery = restaurant.deliveryFee === 0;
+  const showDiscount = index % 2 === 1;
+
+  return (
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => [styles.pdCard, pressed && { opacity: 0.86 }]}
+    >
+      {/* Left: square image */}
+      <View style={styles.pdImgWrap}>
+        {restaurant.imageUrl ? (
+          <Image source={{ uri: restaurant.imageUrl }} style={styles.pdImg} resizeMode="cover" />
+        ) : (
+          <View style={[styles.pdImg, styles.pdImgFallback]}>
+            <Ionicons name="restaurant" size={22} color={PINK} />
+          </View>
+        )}
+        {/* "pro" badge overlaid on image top-left */}
+        <View style={styles.pdProBadge}>
+          <Text style={styles.pdProTxt}>pro</Text>
+        </View>
+        {showDiscount && (
+          <View style={styles.pdDiscBadge}>
+            <Text style={styles.pdDiscTxt}>30% off</Text>
+          </View>
+        )}
+      </View>
+
+      {/* Right: info */}
+      <View style={styles.pdInfo}>
+        <Text style={styles.pdName} numberOfLines={2}>{restaurant.name}</Text>
+        {restaurant.rating != null && (
+          <View style={styles.pdRatingRow}>
+            <Ionicons name="star" size={11} color={STAR_YELLOW} />
+            <Text style={styles.pdRatingTxt}>{restaurant.rating.toFixed(1)}</Text>
+          </View>
+        )}
+        <Text style={styles.pdMeta} numberOfLines={1}>
+          {restaurant.deliveryTime != null ? `${restaurant.deliveryTime}-${restaurant.deliveryTime + 10} mins` : ""}
+          {hasFreeDelivery ? " · Free Delivery" : ""}
+        </Text>
+        {!showDiscount && (
+          <View style={styles.pdOffersBadge}>
+            <Text style={styles.pdOffersTxt}>Offers</Text>
+          </View>
+        )}
+      </View>
+    </Pressable>
+  );
+}
+
 export default function HomeScreen() {
   useColors();
   const insets = useSafeAreaInsets();
@@ -443,6 +512,7 @@ export default function HomeScreen() {
   const [showAddrPicker, setShowAddrPicker] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [shortsModal, setShortsModal] = useState<{ open: boolean; index: number }>({ open: false, index: 0 });
+  const [freeBarOpen, setFreeBarOpen] = useState(true);
   const webTopPad = Platform.OS === "web" ? 67 : 0;
   const promosScrollRef = useRef<ScrollView | null>(null);
   const promoAutoIdx = useRef(0);
@@ -527,44 +597,30 @@ export default function HomeScreen() {
 
   const ListHeader = (
     <View>
-      {/* Catégories */}
-      <View style={styles.sectionHeaderRow}>
-        <Text style={styles.sectionTitle}>Catégories</Text>
-      </View>
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.catRow}
-      >
-        {CATEGORIES.map((c) => {
+      {/* ── Categories: 2 × 4 grid ── */}
+      <View style={styles.catGridWrap}>
+        {CATEGORIES.slice(0, 8).map((c, idx) => {
           const active = activeCat === c.id;
           return (
             <Pressable
               key={c.id}
               onPress={() => setActiveCat(c.id)}
               style={({ pressed }) => [
-                styles.catCard,
-                active && styles.catCardActive,
-                pressed && styles.pressedScale,
+                styles.catGridCell,
+                active && styles.catGridCellActive,
+                pressed && { opacity: 0.78 },
               ]}
             >
-              <View
-                style={[
-                  styles.catIconWrap,
-                  {
-                    backgroundColor: active
-                      ? "rgba(255,255,255,0.22)"
-                      : c.bg,
-                  },
-                ]}
-              >
-                <Text style={styles.catEmoji}>{c.emoji}</Text>
+              <View style={styles.catGridEmojiBox}>
+                <Text style={styles.catGridEmoji}>{c.emoji}</Text>
+                {idx === 1 && (
+                  <View style={styles.catFastBadge}>
+                    <Text style={styles.catFastTxt}>Fast</Text>
+                  </View>
+                )}
               </View>
               <Text
-                style={[
-                  styles.catLabel,
-                  { color: active ? "#fff" : TEXT_DARK },
-                ]}
+                style={[styles.catGridLabel, active && styles.catGridLabelActive]}
                 numberOfLines={1}
               >
                 {c.label}
@@ -572,38 +628,41 @@ export default function HomeScreen() {
             </Pressable>
           );
         })}
-      </ScrollView>
+      </View>
 
-      {/* Promotions */}
+      {/* ── Pro Day Deals section ── */}
       {promoRestaurants.length > 0 ? (
-        <View style={{ marginTop: 18 }}>
-          <View style={styles.sectionHeaderRow}>
-            <Text style={styles.sectionTitle}>🔥 Promotions</Text>
-            <Text style={styles.sectionLink}>Tout voir</Text>
+        <View style={styles.proDaySection}>
+          {/* Header row */}
+          <View style={styles.proDayHeader}>
+            <View style={styles.proDayBadgesCol}>
+              <View style={styles.proBadge}>
+                <Text style={styles.proBadgeTxt}>pro</Text>
+              </View>
+              <View style={styles.dayBadge}>
+                <Text style={styles.dayBadgeTxt}>DAY</Text>
+              </View>
+            </View>
+            <View style={styles.proDayTitleCol}>
+              <Text style={styles.proDayTitle}>Pro day deals!</Text>
+              <Text style={styles.proDaySub}>Up to 50% off, only for pros</Text>
+            </View>
+            <TouchableOpacity style={styles.proDayArrow} activeOpacity={0.75}>
+              <Ionicons name="arrow-forward" size={15} color={TEXT_DARK} />
+            </TouchableOpacity>
           </View>
-          <ScrollView
-            ref={promosScrollRef}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.promoRow}
-            decelerationRate="fast"
-            snapToInterval={296}
-            onTouchStart={() => { promoUserPaused.current = true; }}
-            onMomentumScrollEnd={(e) => {
-              const x = e.nativeEvent.contentOffset.x;
-              promoAutoIdx.current = Math.round(x / 296);
-              setTimeout(() => { promoUserPaused.current = false; }, 4000);
-            }}
-          >
-            {promoRestaurants.map((r, i) => (
-              <PromoCard
+
+          {/* 2 × 2 card grid */}
+          <View style={styles.proDayGrid}>
+            {promoRestaurants.slice(0, 4).map((r, i) => (
+              <ProDayCard
                 key={r.id}
                 restaurant={r}
-                scheme={PROMO_SCHEMES[i % PROMO_SCHEMES.length]}
+                index={i}
                 onPress={() => goRestaurant(r.id)}
               />
             ))}
-          </ScrollView>
+          </View>
         </View>
       ) : null}
 
@@ -698,32 +757,45 @@ export default function HomeScreen() {
     </View>
   );
 
+  const freeBarH = freeBarOpen ? 48 : 0;
+
   return (
     <View style={[styles.flex, { backgroundColor: BG }]}>
-      {/* Gradient header (rose → turquoise) with torn paper edge */}
+      {/* ── Solid fuchsia header ── */}
       <View style={styles.headerWrap}>
-        <LinearGradient
-          colors={[PINK, PINK_DEEP, TURQUOISE]}
-          locations={[0, 0.55, 1]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
+        <View
           style={[
             styles.headerBg,
-            { paddingTop: insets.top + 12 + webTopPad },
+            { paddingTop: insets.top + 10 + webTopPad },
           ]}
         >
-          {/* Brand bar — always visible (sticky during scroll) */}
+          {/* Top bar: hamburger | address | avatar */}
           <View style={styles.brandBar}>
-            <TouchableOpacity onPress={() => setMenuOpen(true)} hitSlop={10} style={styles.hamburgerBtn} activeOpacity={0.8}>
+            <TouchableOpacity
+              onPress={() => setMenuOpen(true)}
+              hitSlop={10}
+              style={styles.hamburgerBtn}
+              activeOpacity={0.8}
+            >
               <Ionicons name="menu" size={22} color="#fff" />
             </TouchableOpacity>
 
-            <View style={styles.brandCenter}>
-              <View style={styles.brandLogoBadge}>
-                <Text style={styles.brandLogoBadgeText}>J.</Text>
-              </View>
-              <Text style={styles.brandWordmark}>Jatek</Text>
-            </View>
+            {/* Address block — collapses on scroll */}
+            <Animated.View
+              style={[styles.addrBlock, { opacity: addressOpacity }]}
+            >
+              <Text style={styles.deliverToLabel}>Livrer à</Text>
+              <TouchableOpacity
+                activeOpacity={0.7}
+                onPress={() => setShowAddrPicker(true)}
+                style={styles.addressRow}
+              >
+                <Text style={styles.addressText} numberOfLines={1}>
+                  {selectedAddress || t("home_choose_address")}
+                </Text>
+                <Ionicons name="chevron-down" size={14} color="#fff" />
+              </TouchableOpacity>
+            </Animated.View>
 
             {user ? (
               <TouchableOpacity
@@ -740,71 +812,48 @@ export default function HomeScreen() {
                 )}
               </TouchableOpacity>
             ) : (
-              <View style={{ width: 36 }} />
+              <View style={{ width: 34 }} />
             )}
           </View>
 
-          {/* Address row — collapses on scroll */}
-          <Animated.View style={[styles.headerTopRow, { opacity: addressOpacity, maxHeight: addressMaxH, overflow: "hidden", marginTop: 10 }]}>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.deliverToLabel}>Livrer à</Text>
-              <TouchableOpacity
-                activeOpacity={0.7}
-                onPress={() => setShowAddrPicker(true)}
-                style={styles.addressRow}
-              >
-                <Ionicons name="location" size={16} color="#fff" />
-                <Text style={styles.addressText} numberOfLines={1}>
-                  {selectedAddress || t("home_choose_address")}
-                </Text>
-                <Ionicons name="chevron-down" size={16} color="#fff" />
-              </TouchableOpacity>
+          {/* Search bar — inside header, fake placeholder */}
+          <View style={styles.headerSearchBox}>
+            <Ionicons name="search" size={17} color="#9CA3AF" />
+            <View style={{ flex: 1, position: "relative", justifyContent: "center" }}>
+              <TextInput
+                style={styles.headerSearchInput}
+                value={search}
+                onChangeText={setSearch}
+                returnKeyType="search"
+                placeholderTextColor="transparent"
+                placeholder=" "
+              />
+              {!search && (
+                <View style={styles.headerSearchPhWrap} pointerEvents="none">
+                  <Text style={styles.headerSearchPh}>{t("home_search_ph")}</Text>
+                </View>
+              )}
             </View>
-          </Animated.View>
+            {search ? (
+              <TouchableOpacity onPress={() => setSearch("")}>
+                <Ionicons name="close-circle" size={17} color="#9CA3AF" />
+              </TouchableOpacity>
+            ) : null}
+          </View>
 
+          {/* "With you" tagline */}
           <Animated.View style={{ opacity: greetingOpacity, maxHeight: greetingMaxH, overflow: "hidden" }}>
-            <Text style={styles.greeting}>
-              {user
-                ? `Hey ${user.name?.split(" ")[0] ?? ""} 🍔`
-                : "Salut, prêt à te régaler ? 🍔"}
-            </Text>
-            <Text style={styles.greetingSub}>
-              {user
-                ? "Qu'est-ce qui te ferait plaisir aujourd'hui ?"
-                : "Découvre les meilleurs spots autour de toi"}
-            </Text>
+            <Text style={styles.withYouText}>With you, Oujda 🇲🇦</Text>
           </Animated.View>
-        </LinearGradient>
-        <TornEdge
-          color={TURQUOISE}
-          position="bottom"
-          height={10}
-          gradientStops={[
-            { offset: 0, color: PINK },
-            { offset: 0.55, color: PINK_DEEP },
-            { offset: 1, color: TURQUOISE },
-          ]}
-        />
-      </View>
-
-      {/* Floating search bar (overlaps the torn edge) */}
-      <View style={styles.searchFloatWrap}>
-        <View style={styles.searchBox}>
-          <Ionicons name="search" size={18} color={TEXT_MUTED} />
-          <TextInput
-            style={styles.searchInput}
-            placeholder={t("home_search_ph")}
-            placeholderTextColor={TEXT_MUTED}
-            value={search}
-            onChangeText={setSearch}
-            returnKeyType="search"
-          />
-          {search ? (
-            <TouchableOpacity onPress={() => setSearch("")}>
-              <Ionicons name="close-circle" size={18} color={TEXT_MUTED} />
-            </TouchableOpacity>
-          ) : null}
         </View>
+
+        {/* Invisible TornEdge — kept in tree, height = 0 */}
+        <TornEdge
+          color={PINK}
+          position="bottom"
+          height={0}
+          gradientStops={[{ offset: 0, color: PINK }, { offset: 1, color: PINK }]}
+        />
       </View>
 
       {isLoading ? (
@@ -820,7 +869,7 @@ export default function HomeScreen() {
             {
               paddingTop: 8,
               paddingBottom:
-                insets.bottom + (Platform.OS === "web" ? 34 : 90),
+                insets.bottom + (Platform.OS === "web" ? 34 : 90) + freeBarH,
             },
           ]}
           showsVerticalScrollIndicator={false}
@@ -868,6 +917,27 @@ export default function HomeScreen() {
         initialIndex={shortsModal.index}
         onClose={() => setShortsModal({ open: false, index: 0 })}
       />
+
+      {/* ── 4 FREE deliveries sticky bar (above bottom nav) ── */}
+      {freeBarOpen && (
+        <View
+          style={[
+            styles.freeBar,
+            { bottom: insets.bottom + (Platform.OS === "web" ? 0 : 58) },
+          ]}
+        >
+          <Text style={styles.freeBarScooter}>🛵</Text>
+          <Text style={styles.freeBarFreeText}>4 FREE</Text>
+          <Text style={styles.freeBarRest}> deliveries. Limited time!</Text>
+          <TouchableOpacity
+            onPress={() => setFreeBarOpen(false)}
+            style={styles.freeBarClose}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="chevron-down" size={18} color="#fff" />
+          </TouchableOpacity>
+        </View>
+      )}
     </View>
   );
 }
@@ -878,8 +948,9 @@ const styles = StyleSheet.create({
   // ---------- Header ----------
   headerWrap: { position: "relative" },
   headerBg: {
+    backgroundColor: PINK,
     paddingHorizontal: 16,
-    paddingBottom: 26,
+    paddingBottom: 16,
   },
   headerTopRow: {
     flexDirection: "row",
@@ -890,48 +961,38 @@ const styles = StyleSheet.create({
   deliverToLabel: {
     fontSize: 11,
     fontFamily: "Inter_500Medium",
-    color: "rgba(255,255,255,0.85)",
-    marginBottom: 2,
-    letterSpacing: 0.4,
-    textTransform: "uppercase",
+    color: "rgba(255,255,255,0.8)",
+    marginBottom: 1,
+    letterSpacing: 0.2,
+  },
+  addrBlock: {
+    flex: 1,
+    alignItems: "center",
   },
   addressRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
+    gap: 4,
   },
   addressText: {
-    flex: 1,
-    fontSize: 15,
+    fontSize: 14,
     fontFamily: "Inter_700Bold",
     color: "#fff",
-    letterSpacing: -0.2,
+    letterSpacing: -0.1,
+    maxWidth: SCREEN_W - 110,
   },
-  avatarBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: "rgba(255,255,255,0.2)",
-    borderWidth: 2,
-    borderColor: "rgba(255,255,255,0.6)",
-    alignItems: "center",
-    justifyContent: "center",
-    overflow: "hidden",
-  },
-  avatarImg: { width: "100%", height: "100%" },
-  avatarLetter: { color: "#fff", fontFamily: "Inter_700Bold", fontSize: 16 },
   // Brand bar (always visible at top of header)
   brandBar: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    gap: 10,
+    marginBottom: 12,
   },
   hamburgerBtn: {
-    width: 36,
-    height: 36,
+    width: 34,
+    height: 34,
     borderRadius: 10,
-    backgroundColor: "rgba(255,255,255,0.14)",
+    backgroundColor: "rgba(255,255,255,0.18)",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -951,7 +1012,7 @@ const styles = StyleSheet.create({
   brandLogoBadgeText: {
     fontFamily: "Inter_700Bold",
     fontSize: 13,
-    color: "#E91E63",
+    color: PINK,
     fontStyle: "italic",
   },
   brandWordmark: {
@@ -965,13 +1026,62 @@ const styles = StyleSheet.create({
     width: 34,
     height: 34,
     borderRadius: 17,
-    backgroundColor: "rgba(255,255,255,0.16)",
+    backgroundColor: "rgba(255,255,255,0.18)",
     alignItems: "center",
     justifyContent: "center",
     overflow: "hidden",
   },
   brandAvatarImg: { width: "100%", height: "100%" },
   brandAvatarLetter: { color: "#fff", fontFamily: "Inter_700Bold", fontSize: 14 },
+
+  // Search bar inside header
+  headerSearchBox: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: "#fff",
+    paddingHorizontal: 16,
+    shadowColor: "rgba(0,0,0,0.15)",
+    shadowOpacity: 1,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 4,
+    marginBottom: 10,
+  },
+  headerSearchInput: {
+    flex: 1,
+    fontSize: 14,
+    fontFamily: "Inter_400Regular",
+    color: TEXT_DARK,
+    height: 40,
+  },
+  headerSearchPhWrap: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
+    justifyContent: "center",
+  },
+  headerSearchPh: {
+    fontSize: 14,
+    fontFamily: "Inter_400Regular",
+    color: TEXT_MUTED,
+  },
+
+  // "With you" tagline
+  withYouText: {
+    textAlign: "center",
+    fontSize: 19,
+    fontFamily: "Inter_700Bold",
+    color: "#fff",
+    letterSpacing: -0.3,
+    paddingBottom: 4,
+  },
+
+  // Greeting (used for animated collapse — keep for compat)
   greeting: {
     fontSize: 22,
     fontFamily: "Inter_700Bold",
@@ -985,14 +1095,8 @@ const styles = StyleSheet.create({
     color: "rgba(255,255,255,0.9)",
     marginTop: 2,
   },
-
-  // ---------- Floating search ----------
-  searchFloatWrap: {
-    paddingHorizontal: 16,
-    marginTop: -28,
-    marginBottom: 4,
-    zIndex: 5,
-  },
+  // Legacy floating search — kept to avoid undefined style refs
+  searchFloatWrap: { display: "none" },
   searchBox: {
     flexDirection: "row",
     alignItems: "center",
@@ -1001,11 +1105,6 @@ const styles = StyleSheet.create({
     borderRadius: 26,
     backgroundColor: "#fff",
     paddingHorizontal: 18,
-    shadowColor: "#000",
-    shadowOpacity: 0.14,
-    shadowRadius: 18,
-    shadowOffset: { width: 0, height: 8 },
-    elevation: 8,
   },
   searchInput: {
     flex: 1,
@@ -1045,13 +1144,60 @@ const styles = StyleSheet.create({
     gap: 6,
   },
 
-  // ---------- Categories ----------
-  catRow: {
+  // ---------- Categories grid (2 × 4) ----------
+  catGridWrap: {
+    flexDirection: "row",
+    flexWrap: "wrap",
     paddingHorizontal: 16,
-    gap: 12,
-    paddingBottom: 6,
-    paddingTop: 2,
+    paddingTop: 10,
+    paddingBottom: 10,
+    backgroundColor: "#fff",
   },
+  catGridCell: {
+    width: CAT_CELL_W,
+    paddingVertical: 10,
+    alignItems: "center",
+    gap: 5,
+    borderRadius: 12,
+    backgroundColor: "#fff",
+  },
+  catGridCellActive: {
+    backgroundColor: PINK_SOFT,
+  },
+  catGridEmojiBox: {
+    width: 52,
+    height: 52,
+    alignItems: "center",
+    justifyContent: "center",
+    position: "relative",
+  },
+  catGridEmoji: { fontSize: 30 },
+  catFastBadge: {
+    position: "absolute",
+    top: -3,
+    right: -4,
+    backgroundColor: OLIVE,
+    paddingHorizontal: 4,
+    paddingVertical: 2,
+    borderRadius: 5,
+  },
+  catFastTxt: {
+    color: "#fff",
+    fontSize: 7,
+    fontFamily: "Inter_700Bold",
+    letterSpacing: 0.2,
+  },
+  catGridLabel: {
+    fontSize: 11,
+    fontFamily: "Inter_500Medium",
+    color: TEXT_DARK,
+  },
+  catGridLabelActive: {
+    color: PINK,
+    fontFamily: "Inter_700Bold",
+  },
+  // Legacy catRow/catCard — kept to avoid undefined style refs
+  catRow: { paddingHorizontal: 16, gap: 12, paddingBottom: 6, paddingTop: 2 },
   catCard: {
     width: 88,
     paddingVertical: 14,
@@ -1062,30 +1208,188 @@ const styles = StyleSheet.create({
     backgroundColor: CARD_BG,
     borderWidth: 1,
     borderColor: BORDER,
-    shadowColor: "#FF4593",
-    shadowOpacity: 0.08,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 3 },
-    elevation: 2,
   },
-  catCardActive: {
+  catCardActive: { backgroundColor: PINK, borderColor: PINK },
+  catIconWrap: { width: 50, height: 50, borderRadius: 25, alignItems: "center", justifyContent: "center" },
+  catEmoji: { fontSize: 26 },
+  catLabel: { fontSize: 12, fontFamily: "Inter_600SemiBold" },
+
+  // ---------- Pro Day Deals section ----------
+  proDaySection: {
+    backgroundColor: PRO_DAY_BG,
+    marginTop: 0,
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 16,
+  },
+  proDayHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginBottom: 12,
+  },
+  proDayBadgesCol: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  proBadge: {
     backgroundColor: PINK,
-    borderColor: PINK,
-    shadowOpacity: 0.28,
-    shadowRadius: 14,
-    elevation: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 4,
+    borderRadius: 6,
   },
-  catIconWrap: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
+  proBadgeTxt: {
+    color: "#fff",
+    fontSize: 10,
+    fontFamily: "Inter_700Bold",
+    letterSpacing: 0.3,
+  },
+  dayBadge: {
+    backgroundColor: YELLOW_PRO,
+    paddingHorizontal: 6,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  dayBadgeTxt: {
+    color: TEXT_DARK,
+    fontSize: 10,
+    fontFamily: "Inter_700Bold",
+    letterSpacing: 0.3,
+  },
+  proDayTitleCol: { flex: 1 },
+  proDayTitle: {
+    fontSize: 16,
+    fontFamily: "Inter_700Bold",
+    color: TEXT_DARK,
+    letterSpacing: -0.2,
+  },
+  proDaySub: {
+    fontSize: 11,
+    fontFamily: "Inter_400Regular",
+    color: TEXT_MUTED,
+    marginTop: 1,
+  },
+  proDayArrow: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    borderWidth: 1.5,
+    borderColor: BORDER,
+    backgroundColor: "#fff",
     alignItems: "center",
     justifyContent: "center",
   },
-  catEmoji: { fontSize: 26 },
-  catLabel: {
+  proDayGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+  },
+
+  // ---------- ProDayCard ----------
+  pdCard: {
+    width: (SCREEN_W - 32 - 8) / 2,
+    flexDirection: "row",
+    backgroundColor: "#fff",
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: TURQUOISE,
+    padding: 8,
+    gap: 8,
+    shadowColor: "rgba(34,211,238,0.15)",
+    shadowOpacity: 1,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
+  },
+  pdImgWrap: {
+    width: 62,
+    height: 62,
+    borderRadius: 8,
+    overflow: "hidden",
+    backgroundColor: PINK_SOFT,
+    position: "relative",
+  },
+  pdImg: { width: "100%", height: "100%" },
+  pdImgFallback: {
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: PINK_SOFT,
+  },
+  pdProBadge: {
+    position: "absolute",
+    top: 4,
+    left: 4,
+    backgroundColor: PINK,
+    paddingHorizontal: 4,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  pdProTxt: { color: "#fff", fontSize: 7, fontFamily: "Inter_700Bold" },
+  pdDiscBadge: {
+    position: "absolute",
+    bottom: 4,
+    left: 0,
+    right: 0,
+    backgroundColor: PINK_DEEP,
+    paddingVertical: 2,
+    alignItems: "center",
+  },
+  pdDiscTxt: { color: "#fff", fontSize: 8, fontFamily: "Inter_700Bold" },
+  pdInfo: { flex: 1, justifyContent: "center", gap: 3 },
+  pdName: {
     fontSize: 12,
+    fontFamily: "Inter_700Bold",
+    color: TEXT_DARK,
+    letterSpacing: -0.1,
+    lineHeight: 16,
+  },
+  pdRatingRow: { flexDirection: "row", alignItems: "center", gap: 3 },
+  pdRatingTxt: { fontSize: 11, fontFamily: "Inter_600SemiBold", color: TEXT_DARK },
+  pdMeta: { fontSize: 10, fontFamily: "Inter_400Regular", color: TEXT_MUTED },
+  pdOffersBadge: {
+    backgroundColor: OLIVE,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    alignSelf: "flex-start",
+    marginTop: 2,
+  },
+  pdOffersTxt: { color: "#fff", fontSize: 9, fontFamily: "Inter_700Bold" },
+
+  // ---------- 4 FREE deliveries bar ----------
+  freeBar: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    height: 48,
+    backgroundColor: ORANGE_FREE,
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    gap: 6,
+    zIndex: 99,
+  },
+  freeBarScooter: { fontSize: 20 },
+  freeBarFreeText: {
+    fontSize: 14,
+    fontFamily: "Inter_700Bold",
+    color: YELLOW_PRO,
+    letterSpacing: 0.3,
+  },
+  freeBarRest: {
+    flex: 1,
+    fontSize: 13,
     fontFamily: "Inter_600SemiBold",
+    color: "#fff",
+  },
+  freeBarClose: {
+    width: 28,
+    height: 28,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 14,
+    backgroundColor: "rgba(255,255,255,0.2)",
   },
 
   // ---------- Promo banners (irregular corners) ----------
