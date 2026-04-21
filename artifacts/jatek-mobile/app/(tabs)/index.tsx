@@ -950,7 +950,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   addressText: {
-    fontSize: 14,
+    fontSize: 15,
     fontFamily: "Inter_700Bold",
     color: "#fff",
     letterSpacing: -0.1,
@@ -1005,8 +1005,8 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
-    height: 48,
-    borderRadius: 24,
+    height: 44,
+    borderRadius: 22,
     backgroundColor: "#fff",
     paddingHorizontal: 16,
     shadowColor: "rgba(0,0,0,0.15)",
@@ -1040,10 +1040,10 @@ const styles = StyleSheet.create({
   // "With you" tagline
   withYouText: {
     textAlign: "center",
-    fontSize: 19,
+    fontSize: 14,
     fontFamily: "Inter_700Bold",
     color: "#fff",
-    letterSpacing: -0.3,
+    letterSpacing: 0.1,
     paddingBottom: 4,
   },
 
@@ -1135,9 +1135,9 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   catGridCellActive: {
-    backgroundColor: PINK_SOFT,
-    shadowColor: PINK,
-    shadowOpacity: 0.18,
+    backgroundColor: "#fff",
+    shadowColor: "#000",
+    shadowOpacity: 0.1,
   },
   catGridEmojiBox: {
     width: 50,
@@ -1367,7 +1367,7 @@ const styles = StyleSheet.create({
   freeBarFreeText: {
     fontSize: 13,
     fontFamily: "Inter_700Bold",
-    color: YELLOW_PRO,
+    color: "#fff",
     letterSpacing: 0.5,
   },
   freeBarRest: {
