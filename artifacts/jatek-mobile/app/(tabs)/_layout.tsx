@@ -1,121 +1,98 @@
-import { BlurView } from "expo-blur";
 import { Tabs } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import React from "react";
 import { Platform, StyleSheet, View, Text } from "react-native";
 
-const ORANGE = "#F97316";
-const INACTIVE = "#9CA3AF";
+const PINK = "#E91E63";
+const INACTIVE = "#B5B5B5";
 const TAB_H = Platform.OS === "web" ? 84 : 72;
 
-function HomeTabIcon({ focused }: { focused: boolean }) {
-  if (focused) {
-    return (
-      <View style={s.jBadge}>
-        <Text style={s.jBadgeText}>J</Text>
-      </View>
-    );
-  }
-  return <Ionicons name="home-outline" size={22} color={INACTIVE} />;
+function JatekTabIcon({ focused }: { focused: boolean }) {
+  return (
+    <View style={s.jWrap}>
+      <Text style={[s.jWordmark, { color: focused ? PINK : INACTIVE }]}>
+        Jatek
+      </Text>
+    </View>
+  );
 }
 
 export default function TabLayout() {
-  const isIOS = Platform.OS === "ios";
-
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: ORANGE,
+        tabBarActiveTintColor: PINK,
         tabBarInactiveTintColor: INACTIVE,
         headerShown: false,
+        tabBarShowLabel: true,
         tabBarLabelStyle: {
-          fontFamily: "Inter_600SemiBold",
+          fontFamily: "Inter_500Medium",
           fontSize: 11,
-          letterSpacing: 0.1,
           marginTop: 2,
         },
         tabBarItemStyle: { paddingTop: 6 },
         tabBarStyle: {
-          position: "absolute",
-          backgroundColor: isIOS ? "transparent" : "#FFFFFF",
+          backgroundColor: "#FFFFFF",
           borderTopWidth: StyleSheet.hairlineWidth,
           borderTopColor: "#EBEBEB",
-          elevation: 8,
           height: TAB_H,
         },
-        tabBarBackground: () =>
-          isIOS ? (
-            <BlurView
-              intensity={100}
-              tint="light"
-              style={StyleSheet.absoluteFill}
-            />
-          ) : null,
       }}
     >
       <Tabs.Screen
         name="index"
         options={{
-          title: "Accueil",
-          tabBarIcon: ({ focused }) => <HomeTabIcon focused={focused} />,
+          title: "",
+          tabBarLabel: () => null,
+          tabBarIcon: ({ focused }) => <JatekTabIcon focused={focused} />,
+        }}
+      />
+      <Tabs.Screen
+        name="restaurants"
+        options={{
+          title: "Restaurants",
+          tabBarIcon: ({ color }) => (
+            <Ionicons name="fast-food-outline" size={24} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="favoris"
+        options={{
+          title: "Favoris",
+          tabBarIcon: ({ color }) => (
+            <Ionicons name="heart-outline" size={24} color={color} />
+          ),
         }}
       />
       <Tabs.Screen
         name="orders"
         options={{
           title: "Commandes",
-          tabBarIcon: ({ color, focused }) => (
-            <Ionicons
-              name={focused ? "bag-handle" : "bag-handle-outline"}
-              size={22}
-              color={color}
-            />
+          tabBarIcon: ({ color }) => (
+            <Ionicons name="bag-outline" size={24} color={color} />
           ),
         }}
       />
-      <Tabs.Screen
-        name="deliver"
-        options={{ href: null }}
-      />
-      <Tabs.Screen
-        name="manage"
-        options={{ href: null }}
-      />
-      <Tabs.Screen
-        name="profile"
-        options={{
-          title: "Compte",
-          tabBarIcon: ({ color, focused }) => (
-            <Ionicons
-              name={focused ? "person" : "person-outline"}
-              size={22}
-              color={color}
-            />
-          ),
-        }}
-      />
+      {/* Hidden screens — kept for navigation but excluded from the tab bar */}
+      <Tabs.Screen name="deliver" options={{ href: null }} />
+      <Tabs.Screen name="manage" options={{ href: null }} />
+      <Tabs.Screen name="profile" options={{ href: null }} />
     </Tabs>
   );
 }
 
 const s = StyleSheet.create({
-  jBadge: {
-    width: 32,
-    height: 32,
-    borderRadius: 10,
-    backgroundColor: ORANGE,
-    alignItems: "center",
+  jWrap: {
+    height: 26,
     justifyContent: "center",
-    shadowColor: ORANGE,
-    shadowOpacity: 0.35,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 4,
+    alignItems: "center",
   },
-  jBadgeText: {
-    color: "#fff",
-    fontSize: 16,
-    fontFamily: "Inter_700Bold",
-    lineHeight: 20,
+  jWordmark: {
+    fontFamily: "Inter_900Black",
+    fontSize: 18,
+    fontStyle: "italic",
+    letterSpacing: -0.5,
+    lineHeight: 22,
   },
 });
