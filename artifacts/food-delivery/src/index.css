@@ -385,21 +385,20 @@
 
   /* Wave hero collapse animation — CSS only transition */
   .wave-hero {
-    transition: max-height 480ms cubic-bezier(0.4, 0, 0.2, 1),
-                opacity 380ms ease,
-                transform 380ms cubic-bezier(0.4, 0, 0.2, 1);
-    will-change: max-height, opacity, transform;
+    transition: max-height 420ms cubic-bezier(0.4, 0, 0.2, 1),
+                opacity 320ms ease;
+    will-change: max-height, opacity;
     overflow: hidden;
   }
   .wave-hero.wave-visible {
-    max-height: 200px;
+    max-height: 220px;
     opacity: 1;
-    transform: translateY(0);
+    pointer-events: auto;
   }
   .wave-hero.wave-collapsed {
     max-height: 0;
     opacity: 0;
-    transform: translateY(-8px);
+    pointer-events: none;
   }
 
   /* Mobile search slide panel */

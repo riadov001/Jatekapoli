@@ -55,7 +55,7 @@ function WaveHero({ collapsed }: { collapsed: boolean }) {
   return (
     <div
       aria-hidden={collapsed}
-      className={`wave-hero -mx-4 sm:-mx-6 -mt-6 mb-2 ${collapsed ? "wave-collapsed" : "wave-visible"}`}
+      className={`wave-hero -mx-4 sm:-mx-6 mb-2 ${collapsed ? "wave-collapsed" : "wave-visible"}`}
     >
       {/* Pink gradient body */}
       <div className="px-5 sm:px-8 pt-5 pb-0 bg-gradient-to-br from-primary via-[hsl(340_90%_42%)] to-[hsl(320_100%_38%)]">
