@@ -64,4 +64,4 @@ EXPO_PUBLIC_DOMAIN = "jatek.straight-path.eu"
 EXPO_PUBLIC_DOMAIN = "jatek.straight-path.eu"
 
 [objectStorage]
-defaultBucketID = "replit-objstore-cd21f4ce-13e0-4818-8170-69da69f35b1b"
+defaultBucketID = "replit-objstore-da72a41c-10aa-4e77-9354-01883c790dff"

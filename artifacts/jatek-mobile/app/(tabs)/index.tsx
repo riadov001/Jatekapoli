@@ -523,6 +523,7 @@ export default function HomeScreen() {
   const [shortsModal, setShortsModal] = useState<{ open: boolean; index: number }>({ open: false, index: 0 });
   const [freeBarOpen, setFreeBarOpen] = useState(true);
   const [favoriteIds, setFavoriteIds] = useState<Set<number>>(new Set());
+  const [reorderShuffle, setReorderShuffle] = useState(0);
 
   useEffect(() => {
     getFavoriteIds().then((ids) => setFavoriteIds(new Set(ids)));
@@ -585,8 +586,14 @@ export default function HomeScreen() {
       if (r) { list.push(r); seen.add(rid); }
       if (list.length >= 6) break;
     }
+    if (reorderShuffle > 0) {
+      const seed = reorderShuffle;
+      return [...list].sort(
+        (a, b) => ((a.id * seed * 2654435761) % 1000) - ((b.id * seed * 2654435761) % 1000),
+      );
+    }
     return list;
-  }, [pastOrders, allRestaurants]);
+  }, [pastOrders, allRestaurants, reorderShuffle]);
 
   const promoRestaurants = useMemo<Restaurant[]>(() => {
     if (!allRestaurants) return [];
@@ -676,9 +683,13 @@ export default function HomeScreen() {
             </TouchableOpacity>
           </View>
 
-          {/* 2 × 2 card grid */}
-          <View style={styles.proDayGrid}>
-            {promoRestaurants.slice(0, 4).map((r, i) => (
+          {/* Horizontal scrollable cards */}
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.proDayScroll}
+          >
+            {promoRestaurants.map((r, i) => (
               <ProDayCard
                 key={r.id}
                 restaurant={r}
@@ -686,7 +697,7 @@ export default function HomeScreen() {
                 onPress={() => goRestaurant(r.id)}
               />
             ))}
-          </View>
+          </ScrollView>
         </View>
       ) : null}
 
@@ -721,7 +732,14 @@ export default function HomeScreen() {
         <View style={styles.reorderSection}>
           <View style={styles.sectionHeaderRow}>
             <Text style={styles.sectionTitle}>Recommandés pour vous</Text>
-            <Ionicons name="refresh" size={16} color={TURQUOISE} />
+            <TouchableOpacity
+              onPress={() => setReorderShuffle((s) => s + 1)}
+              hitSlop={10}
+              accessibilityLabel="Actualiser les recommandations"
+              activeOpacity={0.7}
+            >
+              <Ionicons name="refresh" size={18} color={TURQUOISE} />
+            </TouchableOpacity>
           </View>
           <ScrollView
             horizontal
@@ -869,7 +887,7 @@ export default function HomeScreen() {
           contentContainerStyle={[
             styles.list,
             {
-              paddingTop: 22,
+              paddingTop: 36,
               paddingBottom:
                 insets.bottom + (Platform.OS === "web" ? 34 : 90) + freeBarH,
             },
@@ -1296,10 +1314,15 @@ const styles = StyleSheet.create({
     flexWrap: "wrap",
     gap: 8,
   },
+  proDayScroll: {
+    flexDirection: "row",
+    gap: 10,
+    paddingRight: 16,
+  },
 
   // ---------- ProDayCard ----------
   pdCard: {
-    width: (SCREEN_W - 32 - 8) / 2,
+    width: 260,
     flexDirection: "row",
     backgroundColor: "#fff",
     borderRadius: 12,
