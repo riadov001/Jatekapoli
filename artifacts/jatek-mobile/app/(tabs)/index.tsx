@@ -205,7 +205,7 @@ function RestaurantCard({
           </View>
         )}
 
-        {/* Merchant logo overlay (top-left) */}
+        {/* Merchant logo overlay — circular, bottom-left */}
         <View style={styles.bigLogoWrap}>
           {restaurant.logoUrl ? (
             <Image source={{ uri: restaurant.logoUrl }} style={styles.bigLogoImg} resizeMode="cover" />
@@ -1609,7 +1609,7 @@ const styles = StyleSheet.create({
     left: 14,
     width: 48,
     height: 48,
-    borderRadius: 14,
+    borderRadius: 24,
     backgroundColor: "#fff",
     padding: 3,
     shadowColor: "#000",
@@ -1619,7 +1619,7 @@ const styles = StyleSheet.create({
     elevation: 7,
     zIndex: 4,
   },
-  bigLogoImg: { width: "100%", height: "100%", borderRadius: 11 },
+  bigLogoImg: { width: "100%", height: "100%", borderRadius: 24 },
   bigLogoFallback: {
     backgroundColor: PINK,
     alignItems: "center",
