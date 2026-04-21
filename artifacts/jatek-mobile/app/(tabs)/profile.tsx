@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { StyleSheet, Text, View, TouchableOpacity, Alert, ScrollView, Platform, Modal, ActivityIndicator } from "react-native";
+import { StyleSheet, Text, View, TouchableOpacity, Alert, ScrollView, Platform, Modal, ActivityIndicator, TextInput } from "react-native";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import Animated, { FadeInDown } from "react-native-reanimated";
@@ -9,8 +9,10 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { apiBase } from "@/lib/api";
 import { WaveEdge } from "@/components/WaveEdge";
 import { LinearGradient } from "expo-linear-gradient";
+import { useCart } from "@/contexts/CartContext";
+import { AddressQuickPicker } from "@/components/AddressQuickPicker";
 
-const PINK = "#E91E8C";
+const PINK = "#E91E63";
 const PINK_LIGHT = "#FF5FAD";
 const PINK_DEEP = "#C81877";
 
@@ -51,9 +53,11 @@ export default function ProfileScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { user, logout, token } = useAuth();
+  const { selectedAddress } = useCart();
   const webTopPad = Platform.OS === "web" ? 67 : 0;
   const [deleteModal, setDeleteModal] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [addressPickerOpen, setAddressPickerOpen] = useState(false);
 
   const handleLogout = () => {
     Alert.alert("Déconnexion", "Êtes-vous sûr de vouloir vous déconnecter ?", [
@@ -83,23 +87,39 @@ export default function ProfileScreen() {
         style={{ flex: 1, backgroundColor: "#F8F8F8" }}
         contentContainerStyle={{ paddingBottom: insets.bottom + (Platform.OS === "web" ? 34 : 90) }}
       >
-        {/* Gradient hero — invité */}
-        <View style={{ position: "relative" }}>
-          <LinearGradient
-            colors={[PINK_LIGHT, PINK, PINK_DEEP]}
-            locations={[0, 0.55, 1]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 0, y: 1 }}
-            style={[styles.guestHero, { paddingTop: insets.top + 24 + webTopPad }]}
-          >
-            <Text style={styles.guestEmoji}>🛍️</Text>
+        <View style={styles.guestHeaderWrap}>
+          <View style={[styles.guestHomeHeader, { paddingTop: insets.top + 12 + webTopPad }]}>
+            <View style={styles.guestTopRow}>
+              <TouchableOpacity activeOpacity={0.8} style={styles.guestLocRow} onPress={() => setAddressPickerOpen(true)}>
+                <Ionicons name="location-sharp" size={18} color="#fff" />
+                <Text style={styles.guestLocText} numberOfLines={1}>
+                  Livraison en <Text style={styles.guestLocBold}>{selectedAddress || "5R22+CVC2"}</Text>
+                </Text>
+                <Ionicons name="chevron-down" size={16} color="#fff" />
+              </TouchableOpacity>
+              <TouchableOpacity activeOpacity={0.85} style={styles.guestAvatar} onPress={() => router.push("/(auth)/login")}>
+                <Ionicons name="person" size={18} color={PINK} />
+              </TouchableOpacity>
+            </View>
+            <TouchableOpacity activeOpacity={0.85} style={styles.guestSearchBox} onPress={() => router.push("/(auth)/login")}>
+              <Ionicons name="search" size={18} color="#9CA3AF" />
+              <TextInput
+                style={styles.guestSearchInput}
+                editable={false}
+                placeholder="Connectez-vous pour personnaliser Jatek"
+                placeholderTextColor="#9CA3AF"
+              />
+            </TouchableOpacity>
+            <View style={styles.guestMessage}>
+              <Ionicons name="bag-handle" size={36} color="#fff" />
+            </View>
             <Text style={styles.guestTitle}>
               Inscris-toi maintenant et fais-toi livrer tes favoris.
             </Text>
-          </LinearGradient>
-          <WaveEdge color={PINK_DEEP} height={28}
-            gradientStops={[{ offset: 0, color: PINK }, { offset: 1, color: PINK_DEEP }]} />
+          </View>
+          <WaveEdge color={PINK} height={28} />
         </View>
+        <AddressQuickPicker visible={addressPickerOpen} onClose={() => setAddressPickerOpen(false)} />
 
         <View style={styles.guestCtaWrap}>
           <TouchableOpacity
@@ -289,6 +309,16 @@ const styles = StyleSheet.create({
   heroHello: { fontSize: 20, fontFamily: "Inter_700Bold", lineHeight: 26, letterSpacing: -0.3, color: "#fff", textAlign: "center" },
   heroEmail: { fontSize: 12, fontFamily: "Inter_400Regular", color: "rgba(255,255,255,0.75)", textAlign: "center" },
   guestHero: { paddingHorizontal: 24, paddingBottom: 28, alignItems: "center" },
+  guestHeaderWrap: { backgroundColor: PINK, position: "relative", marginBottom: 28 },
+  guestHomeHeader: { paddingHorizontal: 16, paddingBottom: 30, backgroundColor: PINK },
+  guestTopRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 14 },
+  guestLocRow: { flex: 1, flexDirection: "row", alignItems: "center", gap: 6, paddingRight: 10 },
+  guestLocText: { flex: 1, color: "#fff", fontSize: 14, fontFamily: "Inter_500Medium" },
+  guestLocBold: { color: "#fff", fontFamily: "Inter_700Bold" },
+  guestAvatar: { width: 38, height: 38, borderRadius: 19, backgroundColor: "#FFB6CC", alignItems: "center", justifyContent: "center" },
+  guestSearchBox: { height: 48, borderRadius: 26, backgroundColor: "#fff", flexDirection: "row", alignItems: "center", paddingHorizontal: 16, gap: 10, shadowColor: "#000", shadowOpacity: 0.08, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 2 },
+  guestSearchInput: { flex: 1, fontSize: 14, color: "#0A1B3D", fontFamily: "Inter_400Regular", height: 44, padding: 0 },
+  guestMessage: { alignSelf: "center", marginTop: 20, marginBottom: 10 },
   guestEmoji: { fontSize: 64, marginBottom: 12 },
   guestTitle: { fontSize: 20, fontFamily: "Inter_700Bold", textAlign: "center", lineHeight: 26, color: "#fff", paddingHorizontal: 8 },
   guestCtaWrap: { paddingHorizontal: 16, marginTop: 16, gap: 10 },

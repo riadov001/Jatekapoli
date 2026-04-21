@@ -82,8 +82,8 @@ export default function RestaurantScreen() {
           <>
             {/* Hero image */}
             <View style={styles.heroWrap}>
-              {restaurant.imageUrl ? (
-                <Image source={{ uri: restaurant.imageUrl }} style={styles.hero} resizeMode="cover" />
+              {(restaurant.coverImageUrl || restaurant.imageUrl) ? (
+                <Image source={{ uri: restaurant.coverImageUrl || restaurant.imageUrl! }} style={styles.hero} resizeMode="cover" />
               ) : (
                 <View style={[styles.heroPlaceholder, { backgroundColor: colors.muted }]}>
                   <Ionicons name="restaurant" size={48} color={colors.mutedForeground} />
@@ -109,7 +109,7 @@ export default function RestaurantScreen() {
                   <Image
                     source={{ uri: restaurant.logoUrl ?? restaurant.imageUrl! }}
                     style={styles.heroLogoImg}
-                    resizeMode="cover"
+                    resizeMode="contain"
                   />
                 </View>
               ) : (
@@ -329,18 +329,19 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   center: { flex: 1, alignItems: "center", justifyContent: "center" },
   heroWrap: { position: "relative" },
-  hero: { width: "100%", height: 200 },
-  heroPlaceholder: { width: "100%", height: 200, alignItems: "center", justifyContent: "center" },
+  hero: { width: "100%", height: 220 },
+  heroPlaceholder: { width: "100%", height: 220, alignItems: "center", justifyContent: "center" },
   heroLogoWrap: {
     position: "absolute",
-    bottom: -30,
+    bottom: -34,
     left: 16,
-    width: 60,
-    height: 60,
-    borderRadius: 30,
+    width: 72,
+    height: 72,
+    borderRadius: 36,
     borderWidth: 3,
     backgroundColor: "#fff",
     overflow: "hidden",
+    padding: 6,
     shadowColor: "#000",
     shadowOpacity: 0.22,
     shadowRadius: 8,

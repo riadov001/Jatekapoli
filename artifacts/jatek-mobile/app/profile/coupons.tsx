@@ -1,12 +1,14 @@
 import React, { useEffect, useState } from "react";
 import { View, Text, StyleSheet, TouchableOpacity, TextInput, Alert, ScrollView, ActivityIndicator } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { useLocalSearchParams } from "expo-router";
 import ProfileScreenLayout from "@/components/ProfileScreenLayout";
 import { useColors } from "@/hooks/useColors";
 import { fetchMe } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
 
 const AVAILABLE = [
+  { code: "WELCOME10", label: "10% sur votre prochaine commande", desc: "Code de bienvenue Jatek." },
   { code: "JATEK10", label: "10% sur la première commande", desc: "Valide jusqu'au 31 déc." },
   { code: "FREESHIP", label: "Livraison gratuite", desc: "À partir de 80 MAD d'achat" },
   { code: "WEEKEND15", label: "-15% le week-end", desc: "Sam. & dim. uniquement" },
@@ -15,6 +17,7 @@ const AVAILABLE = [
 export default function CouponsScreen() {
   const colors = useColors();
   const { user } = useAuth();
+  const { code: initialCode } = useLocalSearchParams<{ code?: string }>();
   const [code, setCode] = useState("");
   const [loyalty, setLoyalty] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
@@ -22,6 +25,10 @@ export default function CouponsScreen() {
   useEffect(() => {
     fetchMe().then((u) => setLoyalty(u?.loyaltyPoints ?? user?.loyaltyPoints ?? 0)).catch(() => setLoyalty(user?.loyaltyPoints ?? 0)).finally(() => setLoading(false));
   }, [user]);
+
+  useEffect(() => {
+    if (initialCode) setCode(String(initialCode).toUpperCase());
+  }, [initialCode]);
 
   const apply = () => {
     const found = AVAILABLE.find((c) => c.code.toLowerCase() === code.trim().toLowerCase());
@@ -66,7 +73,7 @@ export default function CouponsScreen() {
                 <Text style={[styles.couponLabel, { color: colors.heading }]}>{c.label}</Text>
                 <Text style={[styles.couponDesc, { color: colors.mutedForeground }]}>{c.desc}</Text>
               </View>
-              <TouchableOpacity onPress={() => { setCode(c.code); apply(); }} hitSlop={10} style={{ paddingRight: 12 }}>
+              <TouchableOpacity onPress={() => { setCode(c.code); Alert.alert("Code sélectionné", `${c.code} est prêt à être appliqué.`); }} hitSlop={10} style={{ paddingRight: 12 }}>
                 <Ionicons name="copy-outline" size={20} color={colors.primary} />
               </TouchableOpacity>
             </View>

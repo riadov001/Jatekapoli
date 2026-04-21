@@ -24,6 +24,8 @@ import {
 import { useAuth } from "@/contexts/AuthContext";
 import { useCart } from "@/contexts/CartContext";
 import { WaveEdge } from "@/components/WaveEdge";
+import { ShortPlayerModal } from "@/components/ShortPlayerModal";
+import { AddressQuickPicker } from "@/components/AddressQuickPicker";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Brand palette — Jatek (matches Figma prototype)
@@ -40,23 +42,20 @@ const CARD_BORDER = "#F0F0F0";
 
 // Service squares (Service Coursier / Boutiques / Offers / Parapharm)
 const SERVICES = [
-  { key: "courier",  label: "Service Coursier", bg: "#D7F6FA", icon: "bicycle"   as const, color: "#0AA5C0" },
-  { key: "shops",    label: "Boutiques",        bg: "#FFC9D8", icon: "storefront" as const, color: "#C2185B" },
-  { key: "offers",   label: "Offers",           bg: "#A8F08A", icon: "pricetag"  as const, color: "#3A7D1B" },
-  { key: "pharm",    label: "Parapharm",        bg: "#E5A3F0", icon: "medkit"    as const, color: "#7A2A8C" },
+  { key: "courier",  label: "Service Coursier", bg: "#D7F6FA", icon: "bicycle"   as const, color: "#0AA5C0", businessType: "services" },
+  { key: "shops",    label: "Boutiques",        bg: "#FFC9D8", icon: "storefront" as const, color: "#C2185B", businessType: "shop" },
+  { key: "offers",   label: "Offers",           bg: "#A8F08A", icon: "pricetag"  as const, color: "#3A7D1B", businessType: "restaurant", isOpen: true },
+  { key: "pharm",    label: "Parapharm",        bg: "#E5A3F0", icon: "medkit"    as const, color: "#7A2A8C", businessType: "parapharmacy" },
 ];
 
 // Pink pill categories (version B)
 const CATEGORIES = [
-  { id: "Burger",   label: "Burger" },
-  { id: "Tacos",    label: "Tacos" },
-  { id: "Pizza",    label: "Pizza" },
-  { id: "shawarma", label: "shawarma" },
-  { id: "Couscous", label: "Couscous" },
+  { id: "Burgers",   label: "Burger", icon: "fast-food" as const, color: "#F97316" },
+  { id: "Tacos",    label: "Tacos", icon: "restaurant" as const, color: "#22C55E" },
+  { id: "Pizza",    label: "Pizza", icon: "pizza" as const, color: "#EF4444" },
+  { id: "Sandwiches", label: "shawarma", icon: "nutrition" as const, color: "#A855F7" },
+  { id: "Moroccan", label: "Couscous", icon: "leaf" as const, color: "#0AA5C0" },
 ];
-
-// Discovery videos (gray placeholders with play icon — Figma style)
-const VIDEO_PLACEHOLDERS = [0, 1, 2, 3];
 
 // Default fallback image used when a restaurant has no imageUrl.
 // Picsum food-style placeholder (always reachable, no auth needed).
@@ -72,15 +71,15 @@ const GRID_CARD_W = (SCREEN_W - GRID_SIDE * 2 - GRID_GAP) / 2;
 // Sub-components
 // ─────────────────────────────────────────────────────────────────────────────
 
-function PromoBanner() {
+function PromoBanner({ onPress }: { onPress: () => void }) {
   return (
-    <View style={s.promoBanner}>
+    <Pressable onPress={onPress} style={({ pressed }) => [s.promoBanner, pressed && { opacity: 0.9 }]}>
       <View style={{ flex: 1 }}>
         <Text style={s.promoMinus}>-10%</Text>
         <Text style={s.promoCode}>WELCOME10</Text>
       </View>
       <Text style={s.promoBrand}>Jatek</Text>
-    </View>
+    </Pressable>
   );
 }
 
@@ -136,8 +135,13 @@ function RestaurantTile({
             <Text style={[s.tileBadgeTxt, { color: "#fff" }]}>Promo</Text>
           </View>
         )}
-        {/* Circular grey logo placeholder, like the Figma cards */}
-        <View style={s.tileLogo} />
+        <View style={s.tileLogo}>
+          {restaurant.logoUrl ? (
+            <Image source={{ uri: restaurant.logoUrl }} style={s.tileLogoImg} resizeMode="contain" />
+          ) : (
+            <Text style={s.tileLogoText}>{restaurant.name.charAt(0).toUpperCase()}</Text>
+          )}
+        </View>
         <View style={s.tileRatingPill}>
           <Ionicons name="star" size={11} color={STAR} />
           <Text style={s.tileRatingTxt}>
@@ -189,21 +193,51 @@ export default function HomeScreen() {
 
   const [search, setSearch] = useState("");
   const [activeCat, setActiveCat] = useState<string | null>(null);
+  const [activeBusinessType, setActiveBusinessType] = useState("restaurant");
+  const [activeLabel, setActiveLabel] = useState("Tous les Restaurants");
+  const [onlyOpen, setOnlyOpen] = useState<boolean | undefined>(undefined);
+  const [addressPickerOpen, setAddressPickerOpen] = useState(false);
+  const [shortsVisible, setShortsVisible] = useState(false);
+  const [initialShort, setInitialShort] = useState(0);
 
   const params = useMemo<ListRestaurantsParams>(() => {
-    const p: ListRestaurantsParams = { businessType: "restaurant" };
+    const p: ListRestaurantsParams = { businessType: activeBusinessType };
     if (activeCat) p.category = activeCat;
     if (search.trim()) p.search = search.trim();
+    if (onlyOpen !== undefined) p.isOpen = onlyOpen;
     return p;
-  }, [activeCat, search]);
+  }, [activeBusinessType, activeCat, onlyOpen, search]);
 
   const { data: restaurants, isLoading } = useListRestaurants(params);
+  const shorts = useMemo(
+    () => (restaurants ?? []).filter((r) => r.imageUrl || r.coverImageUrl).slice(0, 8),
+    [restaurants],
+  );
 
   const goRestaurant = (id: number) =>
     router.push({ pathname: "/restaurant/[id]", params: { id: String(id) } });
 
   const addressLabel = selectedAddress || "Livraison en 5R22+CVC2";
-  const userInitial = (user?.name || user?.email || "J").charAt(0).toUpperCase();
+  const currentLabel = activeLabel;
+
+  const showRestaurants = () => {
+    setActiveBusinessType("restaurant");
+    setActiveCat(null);
+    setOnlyOpen(undefined);
+    setActiveLabel("Tous les Restaurants");
+  };
+
+  const applyService = (sv: typeof SERVICES[number]) => {
+    setActiveBusinessType(sv.businessType);
+    setActiveCat(null);
+    setOnlyOpen(sv.isOpen);
+    setActiveLabel(sv.label);
+  };
+
+  const openShort = (index: number) => {
+    setInitialShort(index);
+    setShortsVisible(true);
+  };
 
   // Tab bar leaves ~84pt of empty space at the bottom — pad accordingly.
   const tabBarPad = (Platform.OS === "web" ? 84 : 72) + insets.bottom;
@@ -225,7 +259,7 @@ export default function HomeScreen() {
           >
             {/* Top row: location + avatar */}
             <View style={s.headerTopRow}>
-              <TouchableOpacity activeOpacity={0.8} style={s.locRow}>
+              <TouchableOpacity activeOpacity={0.8} style={s.locRow} onPress={() => setAddressPickerOpen(true)}>
                 <Ionicons name="location-sharp" size={18} color="#fff" />
                 <Text style={s.locTxt} numberOfLines={1}>
                   Livraison en{" "}
@@ -271,7 +305,7 @@ export default function HomeScreen() {
         {/* ─── Top categories: 2 big cards (Restaurants / Supermarche) ─── */}
         <View style={s.topCardsRow}>
           <Pressable
-            onPress={() => setActiveCat(null)}
+            onPress={showRestaurants}
             style={({ pressed }) => [
               s.topCard,
               { backgroundColor: "#FFE3EC" },
@@ -292,6 +326,12 @@ export default function HomeScreen() {
           </Pressable>
 
           <Pressable
+            onPress={() => {
+              setActiveBusinessType("shop");
+              setActiveCat("Supermarket");
+              setOnlyOpen(undefined);
+              setActiveLabel("Supermarche");
+            }}
             style={({ pressed }) => [
               s.topCard,
               { backgroundColor: "#FBE7CF" },
@@ -312,14 +352,18 @@ export default function HomeScreen() {
         {/* ─── 4 service squares ─── */}
         <View style={s.servicesRow}>
           {SERVICES.map((sv) => (
-            <View key={sv.key} style={s.serviceItem}>
+            <Pressable
+              key={sv.key}
+              onPress={() => applyService(sv)}
+              style={({ pressed }) => [s.serviceItem, pressed && { opacity: 0.85, transform: [{ scale: 0.98 }] }]}
+            >
               <View style={[s.serviceSquare, { backgroundColor: sv.bg }]}>
                 <Ionicons name={sv.icon} size={26} color={sv.color} />
               </View>
               <Text style={s.serviceLabel} numberOfLines={1}>
                 {sv.label}
               </Text>
-            </View>
+            </Pressable>
           ))}
         </View>
 
@@ -334,11 +378,18 @@ export default function HomeScreen() {
             return (
               <Pressable
                 key={c.id}
-                onPress={() => setActiveCat(active ? null : c.id)}
+                onPress={() => {
+                  setActiveBusinessType("restaurant");
+                  setOnlyOpen(undefined);
+                  setActiveCat(active ? null : c.id);
+                  setActiveLabel(active ? "Tous les Restaurants" : c.label);
+                }}
                 style={({ pressed }) => [pressed && { opacity: 0.85 }]}
               >
                 <View style={s.pillStack}>
-                  <View style={[s.pillCircle, active && s.pillCircleActive]} />
+                  <View style={[s.pillCircle, active && s.pillCircleActive]}>
+                    <Ionicons name={c.icon} size={26} color={active ? "#fff" : c.color} />
+                  </View>
                   <Text style={s.pillLabel}>{c.label}</Text>
                 </View>
               </Pressable>
@@ -348,7 +399,7 @@ export default function HomeScreen() {
 
         {/* ─── Promo banner -10% Jatek WELCOME10 ─── */}
         <View style={{ paddingHorizontal: 16, marginTop: 18 }}>
-          <PromoBanner />
+          <PromoBanner onPress={() => router.push("/profile/coupons?code=WELCOME10" as any)} />
         </View>
 
         {/* ─── Découvrir en vidéo ─── */}
@@ -358,13 +409,23 @@ export default function HomeScreen() {
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={s.videosRow}
         >
-          {VIDEO_PLACEHOLDERS.map((i) => (
-            <View key={i} style={s.videoCard}>
+          {shorts.map((restaurant, i) => (
+            <Pressable key={restaurant.id} onPress={() => openShort(i)} style={({ pressed }) => [s.videoCard, pressed && { opacity: 0.9 }]}>
+              <Image
+                source={{ uri: restaurant.imageUrl || restaurant.coverImageUrl || FALLBACK_FOOD }}
+                style={s.videoImg}
+                resizeMode="cover"
+              />
+              <View style={s.videoScrim} />
               <View style={s.videoPlay}>
                 <Ionicons name="play-circle-outline" size={26} color="#fff" />
               </View>
-            </View>
+              <Text style={s.videoTitle} numberOfLines={2}>{restaurant.name}</Text>
+            </Pressable>
           ))}
+          {shorts.length === 0 && !isLoading && (
+            <Text style={s.emptyTxt}>Aucune vidéo disponible pour le moment</Text>
+          )}
         </ScrollView>
 
         {/* ─── Pres de chez vous (horizontal scroll) ─── */}
@@ -395,12 +456,12 @@ export default function HomeScreen() {
 
         {/* ─── Big promotional banner (lower position) ─── */}
         <View style={{ paddingHorizontal: 16, marginTop: 18 }}>
-          <PromoBanner />
+          <PromoBanner onPress={() => router.push("/profile/coupons?code=WELCOME10" as any)} />
         </View>
 
         {/* ─── Tous les Restaurants (2-column grid) ─── */}
         <View style={s.gridSection}>
-          <Text style={s.gridSectionTitle}>Tous les Restaurants</Text>
+          <Text style={s.gridSectionTitle}>{currentLabel}</Text>
           {isLoading ? (
             <ActivityIndicator color={PINK} style={{ marginVertical: 24 }} />
           ) : (
@@ -418,6 +479,13 @@ export default function HomeScreen() {
           )}
         </View>
       </ScrollView>
+      <AddressQuickPicker visible={addressPickerOpen} onClose={() => setAddressPickerOpen(false)} />
+      <ShortPlayerModal
+        visible={shortsVisible}
+        shorts={shorts}
+        initialIndex={Math.min(initialShort, Math.max(shorts.length - 1, 0))}
+        onClose={() => setShortsVisible(false)}
+      />
     </View>
   );
 }
@@ -577,6 +645,13 @@ const s = StyleSheet.create({
     height: 64,
     borderRadius: 22,
     backgroundColor: PINK_SOFT,
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: PINK,
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
   },
   pillCircleActive: {
     backgroundColor: PINK,
@@ -660,6 +735,17 @@ const s = StyleSheet.create({
     alignItems: "flex-start",
     justifyContent: "flex-end",
     padding: 8,
+    overflow: "hidden",
+    position: "relative",
+  },
+  videoImg: {
+    ...StyleSheet.absoluteFillObject,
+    width: undefined,
+    height: undefined,
+  },
+  videoScrim: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(10,27,61,0.28)",
   },
   videoPlay: {
     width: 28,
@@ -667,6 +753,15 @@ const s = StyleSheet.create({
     borderRadius: 14,
     alignItems: "center",
     justifyContent: "center",
+    zIndex: 1,
+  },
+  videoTitle: {
+    color: "#fff",
+    fontSize: 11,
+    fontFamily: "Inter_700Bold",
+    lineHeight: 14,
+    marginTop: 6,
+    zIndex: 1,
   },
 
   // ── Restaurant tiles (shared) ──
@@ -710,10 +805,15 @@ const s = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: "#D1D5DB",
+    backgroundColor: "#fff",
     borderWidth: 3,
     borderColor: "#fff",
+    alignItems: "center",
+    justifyContent: "center",
+    overflow: "hidden",
   },
+  tileLogoImg: { width: "86%", height: "86%" },
+  tileLogoText: { color: PINK, fontFamily: "Inter_700Bold", fontSize: 18 },
   tileRatingPill: {
     position: "absolute",
     right: 8,

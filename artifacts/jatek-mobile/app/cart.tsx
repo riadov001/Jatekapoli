@@ -13,6 +13,9 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useT } from "@/contexts/LanguageContext";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
+import { WaveEdge } from "@/components/WaveEdge";
+
+const PINK = "#E91E63";
 
 type PaymentMethodId = "cash" | "card";
 interface PaymentMethodOption {
@@ -29,7 +32,7 @@ export default function CartScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const t = useT();
-  const { items, restaurantId, restaurantName, updateQuantity, removeItem, clearCart, subtotal, itemCount, selectedAddress, selectedAddressInZone, deliveryFee, freeDeliveryThreshold } = useCart();
+  const { items, restaurantId, restaurantName, updateQuantity, clearCart, subtotal, itemCount, selectedAddress, selectedAddressInZone, deliveryFee, freeDeliveryThreshold } = useCart();
   const effectiveDeliveryFee = subtotal >= freeDeliveryThreshold ? 0 : deliveryFee;
   const { token } = useAuth();
   const createOrder = useCreateOrder();
@@ -91,18 +94,21 @@ export default function CartScreen() {
 
   if (itemCount === 0) {
     return (
-      <View style={[styles.flex, styles.center, { backgroundColor: colors.background }]}>
-        <View style={[styles.emptyIcon, { backgroundColor: colors.muted }]}>
-          <Ionicons name="bag-outline" size={40} color={colors.mutedForeground} />
+      <View style={[styles.flex, { backgroundColor: colors.background }]}>
+        <CartHeader title={t("cart_title")} insetsTop={insets.top} onBack={() => router.back()} />
+        <View style={styles.center}>
+          <View style={[styles.emptyIcon, { backgroundColor: colors.primary + "12" }]}>
+            <Ionicons name="bag-outline" size={40} color={colors.primary} />
+          </View>
+          <Text style={[styles.emptyTitle, { color: colors.foreground }]}>{t("cart_empty_title")}</Text>
+          <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>{t("cart_empty_text")}</Text>
+          <TouchableOpacity
+            style={[styles.browseBtn, { backgroundColor: PINK }]}
+            onPress={() => router.push("/(tabs)")}
+          >
+            <Text style={styles.browseBtnText}>{t("cart_browse")}</Text>
+          </TouchableOpacity>
         </View>
-        <Text style={[styles.emptyTitle, { color: colors.foreground }]}>{t("cart_empty_title")}</Text>
-        <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>{t("cart_empty_text")}</Text>
-        <TouchableOpacity
-          style={[styles.browseBtn, { backgroundColor: colors.primary }]}
-          onPress={() => router.push("/(tabs)")}
-        >
-          <Text style={styles.browseBtnText}>{t("cart_browse")}</Text>
-        </TouchableOpacity>
       </View>
     );
   }
@@ -111,21 +117,16 @@ export default function CartScreen() {
 
   return (
     <View style={[styles.flex, { backgroundColor: colors.background }]}>
-      {/* Header */}
-      <View style={[styles.header, { paddingTop: insets.top + (Platform.OS === "web" ? 67 : 16) + 8, borderBottomColor: colors.border }]}>
-        <TouchableOpacity onPress={() => router.back()}>
-          <Ionicons name="arrow-back" size={24} color={colors.foreground} />
-        </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: colors.foreground }]}>{t("cart_title")}</Text>
+      <CartHeader title={t("cart_title")} insetsTop={insets.top} onBack={() => router.back()} right={(
         <TouchableOpacity onPress={() => {
           Alert.alert(t("cart_clear_q"), t("cart_clear_text"), [
             { text: t("cancel") },
             { text: t("cart_clear"), style: "destructive", onPress: clearCart },
           ]);
         }}>
-          <Ionicons name="trash-outline" size={22} color={colors.destructive} />
+          <Ionicons name="trash-outline" size={22} color="#fff" />
         </TouchableOpacity>
-      </View>
+      )} />
 
       <KeyboardAwareScrollView
         style={styles.flex}
@@ -157,7 +158,7 @@ export default function CartScreen() {
                 <View style={styles.qtyRow}>
                   <TouchableOpacity
                     onPress={() => updateQuantity(item.menuItemId, item.quantity - 1)}
-                    style={[styles.qtyBtn, { backgroundColor: colors.muted }]}
+                    style={[styles.qtyBtn, styles.qtyBtnSoft]}
                   >
                     <Ionicons
                       name={item.quantity === 1 ? "trash-outline" : "remove"}
@@ -168,7 +169,7 @@ export default function CartScreen() {
                   <Text style={[styles.qty, { color: colors.foreground }]}>{item.quantity}</Text>
                   <TouchableOpacity
                     onPress={() => updateQuantity(item.menuItemId, item.quantity + 1)}
-                    style={[styles.qtyBtn, { backgroundColor: colors.primary }]}
+                    style={[styles.qtyBtn, { backgroundColor: PINK }]}
                   >
                     <Ionicons name="add" size={16} color="#fff" />
                   </TouchableOpacity>
@@ -213,17 +214,17 @@ export default function CartScreen() {
                 style={[
                   styles.paymentOption,
                   {
-                    backgroundColor: selected ? colors.primary + "15" : colors.card,
-                    borderColor: selected ? colors.primary : colors.border,
+                    backgroundColor: selected ? "#FFE3EF" : colors.card,
+                    borderColor: selected ? PINK : colors.border,
                   },
                 ]}
                 activeOpacity={0.7}
               >
-                <Ionicons name={method.icon} size={22} color={selected ? colors.primary : colors.mutedForeground} />
-                <Text style={[styles.paymentLabel, { color: selected ? colors.primary : colors.foreground }]}>
+                <Ionicons name={method.icon} size={22} color={selected ? PINK : colors.mutedForeground} />
+                <Text style={[styles.paymentLabel, { color: selected ? PINK : colors.foreground }]}>
                   {method.label}
                 </Text>
-                {selected && <Ionicons name="checkmark-circle" size={18} color={colors.primary} />}
+                {selected && <Ionicons name="checkmark-circle" size={18} color={PINK} />}
               </TouchableOpacity>
             );
           })}
@@ -299,7 +300,7 @@ export default function CartScreen() {
           loading={createOrder.isPending}
           label={!!address && !selectedAddressInZone ? t("cart_address_out_zone_btn") : t("cart_place_order")}
           price={`${(subtotal + effectiveDeliveryFee).toFixed(0)} MAD`}
-          color={colors.primary}
+          color={PINK}
           mutedColor={colors.muted}
           mutedFg={colors.mutedForeground}
           onPress={handlePlaceOrder}
@@ -309,7 +310,32 @@ export default function CartScreen() {
   );
 }
 
-// Comics-style checkout button — chunky border + offset shadow + bouncy spring
+function CartHeader({
+  title,
+  insetsTop,
+  onBack,
+  right,
+}: {
+  title: string;
+  insetsTop: number;
+  onBack: () => void;
+  right?: React.ReactNode;
+}) {
+  return (
+    <View style={styles.headerWrap}>
+      <View style={[styles.header, { paddingTop: insetsTop + (Platform.OS === "web" ? 67 : 16) + 8 }]}>
+        <TouchableOpacity onPress={onBack} style={styles.headerIcon}>
+          <Ionicons name="arrow-back" size={24} color="#fff" />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>{title}</Text>
+        <View style={styles.headerIcon}>{right ?? null}</View>
+      </View>
+      <WaveEdge color={PINK} height={28} />
+    </View>
+  );
+}
+
+// Light checkout button matching the Home cards/buttons.
 function ComicsCheckoutButton({
   disabled,
   loading,
@@ -358,18 +384,13 @@ function ComicsCheckoutButton({
       accessibilityLabel={label}
       accessibilityState={{ disabled }}
     >
-      <View style={[comicsStyles.shadow, disabled && { backgroundColor: "transparent" }]}>
+      <View style={[comicsStyles.shadow, disabled && { shadowOpacity: 0 }]}>
         <Animated.View
           style={[
             comicsStyles.btn,
             {
               backgroundColor: bg,
-              borderColor: disabled ? "transparent" : "#0a1b3d",
-              // Combine offset translate + animated scale/rotate in ONE transform array
-              // (RN does not merge transform across style entries — last one wins).
               transform: [
-                { translateX: -4 },
-                { translateY: -4 },
                 { scale },
                 { rotate },
               ],
@@ -396,32 +417,30 @@ function ComicsCheckoutButton({
 
 const comicsStyles = StyleSheet.create({
   shadow: {
-    backgroundColor: "#0a1b3d",
-    borderRadius: 18,
-    transform: [{ translateX: 4 }, { translateY: 4 }],
+    borderRadius: 26,
+    shadowColor: PINK,
+    shadowOpacity: 0.24,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 5,
   },
   btn: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     height: 56,
-    borderRadius: 18,
+    borderRadius: 26,
     paddingHorizontal: 20,
-    borderWidth: 3,
-    transform: [{ translateX: -4 }, { translateY: -4 }],
   },
   label: {
     fontSize: 15,
     fontFamily: "Inter_700Bold",
-    letterSpacing: 0.5,
-    textTransform: "uppercase",
+    letterSpacing: 0.1,
     flex: 1,
     textAlign: "left",
   },
   pricePill: {
     backgroundColor: "rgba(255,255,255,0.28)",
-    borderWidth: 2,
-    borderColor: "#0a1b3d",
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 10,
@@ -431,12 +450,14 @@ const comicsStyles = StyleSheet.create({
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
-  center: { alignItems: "center", justifyContent: "center", padding: 32, gap: 10 },
+  center: { flex: 1, alignItems: "center", justifyContent: "center", padding: 32, gap: 10 },
+  headerWrap: { backgroundColor: PINK, position: "relative", marginBottom: 28 },
   header: {
     flexDirection: "row", alignItems: "center", justifyContent: "space-between",
-    paddingHorizontal: 16, paddingBottom: 12, borderBottomWidth: 1,
+    paddingHorizontal: 16, paddingBottom: 26, backgroundColor: PINK,
   },
-  headerTitle: { fontSize: 18, fontFamily: "Inter_600SemiBold" },
+  headerTitle: { fontSize: 18, fontFamily: "Inter_700Bold", color: "#fff" },
+  headerIcon: { width: 34, height: 34, alignItems: "center", justifyContent: "center" },
   fromText: { fontSize: 13, fontFamily: "Inter_500Medium", paddingHorizontal: 16, paddingVertical: 10 },
   section: { marginHorizontal: 16, borderRadius: 14, borderWidth: 1, overflow: "hidden", marginBottom: 16 },
   cartItem: { flexDirection: "row", alignItems: "center", gap: 10, padding: 14 },
@@ -445,6 +466,7 @@ const styles = StyleSheet.create({
   cartItemPrice: { fontSize: 12, fontFamily: "Inter_400Regular" },
   qtyRow: { flexDirection: "row", alignItems: "center", gap: 10 },
   qtyBtn: { width: 30, height: 30, borderRadius: 15, alignItems: "center", justifyContent: "center" },
+  qtyBtnSoft: { backgroundColor: "#FFE3EF", borderWidth: 1, borderColor: "#FFD0E2" },
   qty: { fontSize: 15, fontFamily: "Inter_600SemiBold", minWidth: 20, textAlign: "center" },
   cartItemTotal: { fontSize: 14, fontFamily: "Inter_600SemiBold", minWidth: 56, textAlign: "right" },
   divider: { height: StyleSheet.hairlineWidth, marginHorizontal: 14 },
@@ -486,8 +508,8 @@ const styles = StyleSheet.create({
   emptyTitle: { fontSize: 20, fontFamily: "Inter_600SemiBold" },
   emptyText: { fontSize: 14, fontFamily: "Inter_400Regular", textAlign: "center" },
   browseBtn: {
-    paddingHorizontal: 28, paddingVertical: 14, borderRadius: 14, marginTop: 8,
-    shadowColor: "#E2006A", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 12, elevation: 6,
+    paddingHorizontal: 28, paddingVertical: 14, borderRadius: 24, marginTop: 8,
+    shadowColor: PINK, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.22, shadowRadius: 12, elevation: 5,
   },
   browseBtnText: { color: "#fff", fontSize: 15, fontFamily: "Inter_600SemiBold" },
   promo: {
@@ -508,8 +530,13 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 8,
     padding: 14,
-    borderRadius: 14,
+    borderRadius: 18,
     borderWidth: 1.5,
+    shadowColor: "#000",
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 1,
   },
   paymentLabel: { fontSize: 14, fontFamily: "Inter_600SemiBold", flex: 1 },
 });

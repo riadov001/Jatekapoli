@@ -12,6 +12,7 @@ import {
   Animated,
   Easing,
   Platform,
+  Share,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
@@ -146,6 +147,16 @@ function ShortFrame({
     Animated.timing(heartBurst, { toValue: 1, duration: 700, useNativeDriver: true }).start();
   };
 
+  const onShare = async () => {
+    try {
+      await Share.share({
+        message: `Découvre ${restaurant.name} sur Jatek`,
+      });
+    } catch {
+      onOpen();
+    }
+  };
+
   const burstOpacity = heartBurst.interpolate({ inputRange: [0, 0.5, 1], outputRange: [0, 1, 0] });
   const burstScale = heartBurst.interpolate({ inputRange: [0, 1], outputRange: [0.6, 1.6] });
 
@@ -185,11 +196,11 @@ function ShortFrame({
           </Animated.View>
           <Text style={styles.sideBtnText}>{Math.floor(((restaurant.rating ?? 4) - 3) * 280 + (liked ? 121 : 120))}</Text>
         </Pressable>
-        <Pressable style={styles.sideBtn}>
+        <Pressable onPress={onOpen} style={styles.sideBtn}>
           <Ionicons name="chatbubble-ellipses-outline" size={30} color="#fff" />
           <Text style={styles.sideBtnText}>{Math.floor(((restaurant.id * 13) % 90) + 12)}</Text>
         </Pressable>
-        <Pressable style={styles.sideBtn}>
+        <Pressable onPress={onShare} style={styles.sideBtn}>
           <Ionicons name="share-social-outline" size={30} color="#fff" />
           <Text style={styles.sideBtnText}>Partage</Text>
         </Pressable>
