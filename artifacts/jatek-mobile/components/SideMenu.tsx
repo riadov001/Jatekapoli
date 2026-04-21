@@ -38,6 +38,7 @@ interface MenuEntry {
 }
 
 const ENTRIES: MenuEntry[] = [
+  { id: "cart", label: "Mon panier", icon: "cart", color: PINK_DEEP, route: "/cart", emoji: "🛒" },
   { id: "fav", label: "Mes favoris", icon: "heart", color: PINK, route: "/profile/favorites", emoji: "❤️" },
   { id: "promo", label: "Promos & coupons", icon: "pricetag", color: ORANGE, route: "/profile/coupons", emoji: "🔥" },
   { id: "orders", label: "Mes commandes", icon: "bag-handle", color: TURQUOISE, route: "/(tabs)/orders", emoji: "🛍️" },

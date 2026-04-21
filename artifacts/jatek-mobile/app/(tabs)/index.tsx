@@ -542,6 +542,10 @@ export default function HomeScreen() {
   const promosScrollRef = useRef<ScrollView | null>(null);
   const promoAutoIdx = useRef(0);
   const promoUserPaused = useRef(false);
+  const proDayScrollRef = useRef<ScrollView | null>(null);
+  const proDayAutoIdx = useRef(0);
+  const shortsScrollRef = useRef<ScrollView | null>(null);
+  const shortsAutoIdx = useRef(0);
 
   const params = useMemo<ListRestaurantsParams>(() => {
     const p: ListRestaurantsParams = { businessType: "restaurant" };
@@ -558,6 +562,8 @@ export default function HomeScreen() {
   const greetingMaxH = scrollY.interpolate({ inputRange: [0, 80], outputRange: [60, 0], extrapolate: "clamp" });
   const addressOpacity = scrollY.interpolate({ inputRange: [40, 110], outputRange: [1, 0], extrapolate: "clamp" });
   const addressMaxH = scrollY.interpolate({ inputRange: [40, 130], outputRange: [44, 0], extrapolate: "clamp" });
+  // Fade out the magenta wave under the header as the user scrolls.
+  const waveOpacity = scrollY.interpolate({ inputRange: [0, 40], outputRange: [1, 0], extrapolate: "clamp" });
 
   const allRestaurantsParams: ListRestaurantsParams = useMemo(
     () => ({ businessType: "restaurant" }),
@@ -626,6 +632,28 @@ export default function HomeScreen() {
     return () => clearInterval(interval);
   }, [promoRestaurants.length]);
 
+  // Auto-scroll Pro Day Deals every 3s
+  React.useEffect(() => {
+    if (!promoRestaurants.length) return;
+    const interval = setInterval(() => {
+      const next = (proDayAutoIdx.current + 1) % promoRestaurants.length;
+      proDayAutoIdx.current = next;
+      proDayScrollRef.current?.scrollTo({ x: next * 270, y: 0, animated: true });
+    }, 3000);
+    return () => clearInterval(interval);
+  }, [promoRestaurants.length]);
+
+  // Auto-scroll Shorts every 2.8s
+  React.useEffect(() => {
+    if (!shortsRestaurants.length) return;
+    const interval = setInterval(() => {
+      const next = (shortsAutoIdx.current + 1) % shortsRestaurants.length;
+      shortsAutoIdx.current = next;
+      shortsScrollRef.current?.scrollTo({ x: next * 130, y: 0, animated: true });
+    }, 2800);
+    return () => clearInterval(interval);
+  }, [shortsRestaurants.length]);
+
   const ListHeader = (
     <View>
       {/* ── Categories: 2 × 4 grid ── */}
@@ -685,6 +713,7 @@ export default function HomeScreen() {
 
           {/* Horizontal scrollable cards */}
           <ScrollView
+            ref={proDayScrollRef}
             horizontal
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.proDayScroll}
@@ -712,6 +741,7 @@ export default function HomeScreen() {
             <Text style={styles.sectionLink}>Voir tout</Text>
           </View>
           <ScrollView
+            ref={shortsScrollRef}
             horizontal
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.shortsRow}
@@ -865,15 +895,20 @@ export default function HomeScreen() {
           </Animated.View>
         </LinearGradient>
 
-        {/* Organic wave at bottom of header */}
-        <WaveEdge
-          color={PINK_DEEP}
-          height={28}
-          gradientStops={[
-            { offset: 0, color: PINK },
-            { offset: 1, color: PINK_DEEP },
-          ]}
-        />
+        {/* Organic wave at bottom of header — fades out as user scrolls */}
+        <Animated.View
+          style={{ position: "absolute", left: 0, right: 0, bottom: 0, opacity: waveOpacity }}
+          pointerEvents="none"
+        >
+          <WaveEdge
+            color={PINK_DEEP}
+            height={28}
+            gradientStops={[
+              { offset: 0, color: PINK },
+              { offset: 1, color: PINK_DEEP },
+            ]}
+          />
+        </Animated.View>
       </View>
 
       {isLoading ? (

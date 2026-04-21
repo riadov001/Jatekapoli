@@ -217,10 +217,24 @@ export default function RestaurantScreen() {
         </View>
       )}
 
-      {/* Cart CTA — comics style with bouncy press */}
+      {/* Floating bottom back button (no overlap with hero content) */}
+      <View
+        pointerEvents="box-none"
+        style={[styles.bottomBackWrap, { bottom: insets.bottom + (itemCount > 0 ? 80 : 24) + (Platform.OS === "web" ? 34 : 0) }]}
+      >
+        <TouchableOpacity
+          onPress={() => router.back()}
+          style={[styles.bottomBackBtn, { backgroundColor: colors.card, borderColor: colors.border }]}
+          activeOpacity={0.8}
+        >
+          <Ionicons name="chevron-back" size={20} color={colors.foreground} />
+        </TouchableOpacity>
+      </View>
+
+      {/* Cart CTA — light gradient pill matching "+" style, with bouncy add animation */}
       {!isServices && itemCount > 0 && (
         <View style={[styles.cartBar, { paddingBottom: insets.bottom + (Platform.OS === "web" ? 34 : 10) }]}>
-          <ComicsCartButton
+          <CartPillButton
             count={itemCount}
             label={t("view_cart")}
             onPress={() => router.push("/cart")}
@@ -252,8 +266,9 @@ export default function RestaurantScreen() {
   );
 }
 
-// Comics-style "Voir panier" button — chunky border + offset shadow + bouncy spring
-function ComicsCartButton({
+// Light "Voir panier" pill — same minimal style as the round "+" buttons,
+// no chunky shadow. Bounces softly each time the cart count grows.
+function CartPillButton({
   count,
   label,
   onPress,
@@ -265,19 +280,29 @@ function ComicsCartButton({
   color: string;
 }) {
   const scale = useRef(new Animated.Value(1)).current;
-  const rot = useRef(new Animated.Value(-1)).current;
+  const bounce = useRef(new Animated.Value(0)).current;
+  const prevCount = useRef(count);
+
+  // Bounce/pulse whenever the cart count increases (item added)
+  useEffect(() => {
+    if (count > prevCount.current) {
+      if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      Animated.sequence([
+        Animated.spring(bounce, { toValue: 1, useNativeDriver: true, friction: 4, tension: 220 }),
+        Animated.spring(bounce, { toValue: 0, useNativeDriver: true, friction: 5, tension: 180 }),
+      ]).start();
+    }
+    prevCount.current = count;
+  }, [count, bounce]);
 
   const onIn = () => {
-    if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    Animated.spring(scale, { toValue: 0.92, useNativeDriver: true, friction: 5, tension: 200 }).start();
-    Animated.spring(rot, { toValue: 0, useNativeDriver: true, friction: 4 }).start();
+    Animated.spring(scale, { toValue: 0.96, useNativeDriver: true, friction: 6 }).start();
   };
   const onOut = () => {
-    Animated.spring(scale, { toValue: 1, useNativeDriver: true, friction: 3, tension: 240 }).start();
-    Animated.spring(rot, { toValue: -1, useNativeDriver: true, friction: 4 }).start();
+    Animated.spring(scale, { toValue: 1, useNativeDriver: true, friction: 5 }).start();
   };
 
-  const rotate = rot.interpolate({ inputRange: [-2, 0], outputRange: ["-2deg", "0deg"] });
+  const bumpScale = bounce.interpolate({ inputRange: [0, 1], outputRange: [1, 1.08] });
 
   return (
     <Pressable
@@ -287,30 +312,15 @@ function ComicsCartButton({
       accessibilityRole="button"
       accessibilityLabel={label}
     >
-      <View style={styles.comicsShadow}>
-        <Animated.View
-          style={[
-            styles.comicsBtn,
-            {
-              backgroundColor: color,
-              // Combine offset translate + animated scale/rotate in ONE transform array
-              // (RN does not merge transform across style entries — last one wins).
-              transform: [
-                { translateX: -4 },
-                { translateY: -4 },
-                { scale },
-                { rotate },
-              ],
-            },
-          ]}
-        >
-          <View style={styles.comicsQty}>
-            <Text style={styles.comicsQtyText}>{count}</Text>
+      <Animated.View style={{ transform: [{ scale }, { scale: bumpScale }] }}>
+        <View style={[styles.pillCartBtn, { backgroundColor: color }]}>
+          <View style={styles.pillCartQty}>
+            <Text style={[styles.pillCartQtyText, { color }]}>{count}</Text>
           </View>
-          <Text style={styles.comicsBtnText} numberOfLines={1}>{label}</Text>
-          <Ionicons name="arrow-forward" size={18} color="#fff" />
-        </Animated.View>
-      </View>
+          <Text style={styles.pillCartLabel} numberOfLines={1}>{label}</Text>
+          <Ionicons name="arrow-forward" size={16} color="#fff" />
+        </View>
+      </Animated.View>
     </Pressable>
   );
 }
@@ -378,32 +388,32 @@ const styles = StyleSheet.create({
   cartQtyText: { color: "#fff", fontSize: 12, fontFamily: "Inter_700Bold" },
   cartBtnText: { color: "#fff", fontSize: 14, fontFamily: "Inter_700Bold", textAlign: "center" },
   warning: { color: "#F59E0B" },
-  // Comics-style cart button
-  comicsShadow: {
-    backgroundColor: "#0a1b3d",
-    borderRadius: 18,
-    alignSelf: "center",
-    transform: [{ translateX: 4 }, { translateY: 4 }],
-  },
-  comicsBtn: {
+  // Light pill cart button — matches the "+" minimal style, no chunky shadow
+  pillCartBtn: {
     flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10,
-    height: 52, borderRadius: 18,
-    paddingHorizontal: 22,
-    minWidth: 220,
-    maxWidth: 360,
-    borderWidth: 3,
-    borderColor: "#0a1b3d",
-    transform: [{ translateX: -4 }, { translateY: -4 }],
+    height: 46, borderRadius: 23,
+    paddingLeft: 8, paddingRight: 18,
+    minWidth: 220, maxWidth: 360, alignSelf: "center",
   },
-  comicsQty: {
-    minWidth: 28, height: 28, paddingHorizontal: 8, borderRadius: 14,
-    backgroundColor: "rgba(255,255,255,0.28)",
-    borderWidth: 2, borderColor: "#0a1b3d",
+  pillCartQty: {
+    minWidth: 30, height: 30, paddingHorizontal: 9, borderRadius: 15,
+    backgroundColor: "#fff",
     alignItems: "center", justifyContent: "center",
   },
-  comicsQtyText: { color: "#fff", fontSize: 13, fontFamily: "Inter_700Bold" },
-  comicsBtnText: {
-    color: "#fff", fontSize: 15, fontFamily: "Inter_700Bold",
-    textAlign: "center", letterSpacing: 0.5, textTransform: "uppercase",
+  pillCartQtyText: { fontSize: 13, fontFamily: "Inter_700Bold" },
+  pillCartLabel: {
+    color: "#fff", fontSize: 14, fontFamily: "Inter_700Bold",
+    textAlign: "center", letterSpacing: 0.2,
+  },
+  // Floating bottom-left back button on restaurant screen
+  bottomBackWrap: {
+    position: "absolute",
+    left: 16,
+  },
+  bottomBackBtn: {
+    width: 44, height: 44, borderRadius: 22,
+    alignItems: "center", justifyContent: "center",
+    borderWidth: 1,
+    shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.12, shadowRadius: 6, elevation: 4,
   },
 });
