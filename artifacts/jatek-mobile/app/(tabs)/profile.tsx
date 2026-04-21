@@ -7,6 +7,9 @@ import { useColors } from "@/hooks/useColors";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { apiBase } from "@/lib/api";
+import { TornEdge } from "@/components/TornEdge";
+
+const PINK = "#C026D3";
 
 interface RowProps { icon: string; label: string; onPress: () => void; danger?: boolean; subtitle?: string; }
 
@@ -70,19 +73,23 @@ export default function ProfileScreen() {
     finally { setDeleting(false); }
   };
 
-  // GUEST / LOGGED-OUT VIEW (Flink style)
+  // GUEST / LOGGED-OUT VIEW
   if (!token) {
     return (
       <ScrollView
-        style={{ flex: 1, backgroundColor: colors.background }}
+        style={{ flex: 1, backgroundColor: "#F8F8F8" }}
         contentContainerStyle={{ paddingBottom: insets.bottom + (Platform.OS === "web" ? 34 : 90) }}
       >
-        {/* Pink hero card with "Sign up" promo */}
-        <View style={[styles.guestHero, { backgroundColor: colors.pinkBg, paddingTop: insets.top + 24 + webTopPad }]}>
-          <Text style={styles.guestEmoji}>🛍️</Text>
-          <Text style={[styles.guestTitle, { color: colors.heading }]}>
-            Inscris-toi maintenant et fais-toi livrer tes favoris.
-          </Text>
+        {/* Fuchsia hero */}
+        <View style={{ position: "relative" }}>
+          <View style={[styles.guestHero, { paddingTop: insets.top + 24 + webTopPad }]}>
+            <Text style={styles.guestEmoji}>🛍️</Text>
+            <Text style={styles.guestTitle}>
+              Inscris-toi maintenant et fais-toi livrer tes favoris.
+            </Text>
+          </View>
+          <TornEdge color={PINK} position="bottom" height={12}
+            gradientStops={[{ offset: 0, color: PINK }, { offset: 1, color: PINK }]} />
         </View>
 
         <View style={styles.guestCtaWrap}>
@@ -119,25 +126,32 @@ export default function ProfileScreen() {
     );
   }
 
-  // LOGGED-IN VIEW (Flink "Welcome back" style)
+  // LOGGED-IN VIEW
   return (
     <ScrollView
-      style={{ flex: 1, backgroundColor: colors.background }}
+      style={{ flex: 1, backgroundColor: "#F8F8F8" }}
       contentContainerStyle={{ paddingBottom: insets.bottom + (Platform.OS === "web" ? 34 : 90) }}
       showsVerticalScrollIndicator={false}
     >
-      {/* Pink hero "Welcome back" with avatar */}
-      <View style={[styles.heroPink, { backgroundColor: colors.pinkBg, paddingTop: insets.top + 28 + webTopPad }]}>
-        <View style={styles.heroTopRow}>
-          <View style={[styles.avatar, { backgroundColor: colors.primary }]}>
-            <Text style={styles.avatarText}>{(user?.name ?? "J").charAt(0).toUpperCase()}</Text>
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={[styles.heroHello, { color: colors.primary }]}>
-              Bon retour,{"\n"}{user?.name?.split(" ")[0] ?? "vous"}
-            </Text>
+      {/* Fuchsia hero — style Talabat Account */}
+      <View style={{ position: "relative" }}>
+        <View style={[styles.heroPink, { paddingTop: insets.top + 28 + webTopPad }]}>
+          <View style={styles.heroTopRow}>
+            <View style={styles.avatar}>
+              <Text style={styles.avatarText}>{(user?.name ?? "J").charAt(0).toUpperCase()}</Text>
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.heroHello}>
+                Bon retour,{"\n"}{user?.name?.split(" ")[0] ?? "vous"}
+              </Text>
+              {user?.email ? (
+                <Text style={styles.heroEmail}>{user.email}</Text>
+              ) : null}
+            </View>
           </View>
         </View>
+        <TornEdge color={PINK} position="bottom" height={12}
+          gradientStops={[{ offset: 0, color: PINK }, { offset: 1, color: PINK }]} />
       </View>
 
       {/* Floating quick-action cards row */}
@@ -241,14 +255,15 @@ export default function ProfileScreen() {
 
 const styles = StyleSheet.create({
   // Hero
-  heroPink: { paddingHorizontal: 24, paddingBottom: 56, borderBottomLeftRadius: 24, borderBottomRightRadius: 24 },
+  heroPink: { paddingHorizontal: 24, paddingBottom: 28, backgroundColor: PINK },
   heroTopRow: { flexDirection: "row", alignItems: "center", gap: 14 },
-  avatar: { width: 56, height: 56, borderRadius: 28, alignItems: "center", justifyContent: "center", shadowColor: "#E2006A", shadowOpacity: 0.3, shadowRadius: 10, shadowOffset: { width: 0, height: 4 }, elevation: 4 },
+  avatar: { width: 58, height: 58, borderRadius: 29, backgroundColor: "rgba(255,255,255,0.25)", alignItems: "center", justifyContent: "center", borderWidth: 2, borderColor: "rgba(255,255,255,0.6)" },
   avatarText: { color: "#fff", fontSize: 22, fontFamily: "Inter_700Bold" },
-  heroHello: { fontSize: 24, fontFamily: "Inter_700Bold", lineHeight: 30, letterSpacing: -0.5 },
-  guestHero: { paddingHorizontal: 24, paddingBottom: 32, alignItems: "center", borderBottomLeftRadius: 24, borderBottomRightRadius: 24 },
+  heroHello: { fontSize: 20, fontFamily: "Inter_700Bold", lineHeight: 26, letterSpacing: -0.3, color: "#fff" },
+  heroEmail: { fontSize: 12, fontFamily: "Inter_400Regular", color: "rgba(255,255,255,0.75)", marginTop: 3 },
+  guestHero: { paddingHorizontal: 24, paddingBottom: 28, alignItems: "center", backgroundColor: PINK },
   guestEmoji: { fontSize: 64, marginBottom: 12 },
-  guestTitle: { fontSize: 22, fontFamily: "Inter_700Bold", textAlign: "center", lineHeight: 28, paddingHorizontal: 8 },
+  guestTitle: { fontSize: 20, fontFamily: "Inter_700Bold", textAlign: "center", lineHeight: 26, color: "#fff", paddingHorizontal: 8 },
   guestCtaWrap: { paddingHorizontal: 16, marginTop: 16, gap: 10 },
 
   // Quick action cards
@@ -275,7 +290,7 @@ const styles = StyleSheet.create({
   rowSub: { fontSize: 12, fontFamily: "Inter_400Regular", marginTop: 2 },
 
   // Buttons
-  btnPrimary: { height: 52, borderRadius: 26, alignItems: "center", justifyContent: "center", shadowColor: "#E2006A", shadowOpacity: 0.25, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 4 },
+  btnPrimary: { height: 52, borderRadius: 26, alignItems: "center", justifyContent: "center", shadowColor: PINK, shadowOpacity: 0.25, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 4 },
   btnPrimaryText: { color: "#fff", fontSize: 16, fontFamily: "Inter_700Bold" },
   btnSoft: { height: 52, borderRadius: 26, alignItems: "center", justifyContent: "center" },
   btnSoftText: { fontSize: 16, fontFamily: "Inter_700Bold" },

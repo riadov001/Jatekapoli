@@ -3,19 +3,19 @@
 const colors = {
   light: {
     text: "#0A1B3D",
-    tint: "#E2006A",
+    tint: "#C026D3",
     background: "#FFFFFF",
     foreground: "#0A1B3D",
     heading: "#0A1B3D",
     card: "#FFFFFF",
     cardForeground: "#0A1B3D",
 
-    // Primary — hot pink
-    primary: "#E2006A",
+    // Primary — fuchsia (Talabat-inspired)
+    primary: "#C026D3",
     primaryForeground: "#FFFFFF",
-    primarySoft: "#FFE5F0",
-    primarySoftForeground: "#E2006A",
-    pinkBg: "#FFD9E8",
+    primarySoft: "#F5E0FB",
+    primarySoftForeground: "#C026D3",
+    pinkBg: "#F3EEFF",
 
     // Yellow — promos, ratings, discount pills
     yellow: "#FFD400",

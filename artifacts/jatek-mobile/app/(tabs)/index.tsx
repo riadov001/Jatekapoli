@@ -32,7 +32,6 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { AddressQuickPicker } from "@/components/AddressQuickPicker";
 import { useT } from "@/contexts/LanguageContext";
 import { TornEdge } from "@/components/TornEdge";
-import { SideMenu } from "@/components/SideMenu";
 import { ShortPlayerModal } from "@/components/ShortPlayerModal";
 
 // Talabat-inspired palette — fuchsia redesign
@@ -510,7 +509,6 @@ export default function HomeScreen() {
   const [search, setSearch] = useState("");
   const [activeCat, setActiveCat] = useState("all");
   const [showAddrPicker, setShowAddrPicker] = useState(false);
-  const [menuOpen, setMenuOpen] = useState(false);
   const [shortsModal, setShortsModal] = useState<{ open: boolean; index: number }>({ open: false, index: 0 });
   const [freeBarOpen, setFreeBarOpen] = useState(true);
   const webTopPad = Platform.OS === "web" ? 67 : 0;
@@ -769,18 +767,8 @@ export default function HomeScreen() {
             { paddingTop: insets.top + 10 + webTopPad },
           ]}
         >
-          {/* Top bar: hamburger | address | avatar */}
+          {/* Top bar: address block centré (style Talabat) */}
           <View style={styles.brandBar}>
-            <TouchableOpacity
-              onPress={() => setMenuOpen(true)}
-              hitSlop={10}
-              style={styles.hamburgerBtn}
-              activeOpacity={0.8}
-            >
-              <Ionicons name="menu" size={22} color="#fff" />
-            </TouchableOpacity>
-
-            {/* Address block — collapses on scroll */}
             <Animated.View
               style={[styles.addrBlock, { opacity: addressOpacity }]}
             >
@@ -796,24 +784,6 @@ export default function HomeScreen() {
                 <Ionicons name="chevron-down" size={14} color="#fff" />
               </TouchableOpacity>
             </Animated.View>
-
-            {user ? (
-              <TouchableOpacity
-                onPress={() => router.push("/(tabs)/profile" as any)}
-                style={styles.brandAvatarBtn}
-                activeOpacity={0.8}
-              >
-                {user.avatarUrl ? (
-                  <Image source={{ uri: user.avatarUrl }} style={styles.brandAvatarImg} />
-                ) : (
-                  <Text style={styles.brandAvatarLetter}>
-                    {(user.name ?? "J").charAt(0).toUpperCase()}
-                  </Text>
-                )}
-              </TouchableOpacity>
-            ) : (
-              <View style={{ width: 34 }} />
-            )}
           </View>
 
           {/* Search bar — inside header, fake placeholder */}
@@ -829,7 +799,7 @@ export default function HomeScreen() {
                 placeholder=" "
               />
               {!search && (
-                <View style={styles.headerSearchPhWrap} pointerEvents="none">
+                <View style={[styles.headerSearchPhWrap, { pointerEvents: "none" }]}>
                   <Text style={styles.headerSearchPh}>{t("home_search_ph")}</Text>
                 </View>
               )}
@@ -847,11 +817,11 @@ export default function HomeScreen() {
           </Animated.View>
         </View>
 
-        {/* Invisible TornEdge — kept in tree, height = 0 */}
+        {/* Zigzag fuchsia torn edge at bottom of header */}
         <TornEdge
           color={PINK}
           position="bottom"
-          height={0}
+          height={12}
           gradientStops={[{ offset: 0, color: PINK }, { offset: 1, color: PINK }]}
         />
       </View>
@@ -909,8 +879,6 @@ export default function HomeScreen() {
         onClose={() => setShowAddrPicker(false)}
       />
 
-      <SideMenu visible={menuOpen} onClose={() => setMenuOpen(false)} />
-
       <ShortPlayerModal
         visible={shortsModal.open}
         shorts={shortsRestaurants}
@@ -966,7 +934,6 @@ const styles = StyleSheet.create({
     letterSpacing: 0.2,
   },
   addrBlock: {
-    flex: 1,
     alignItems: "center",
   },
   addressRow: {
@@ -981,20 +948,11 @@ const styles = StyleSheet.create({
     letterSpacing: -0.1,
     maxWidth: SCREEN_W - 110,
   },
-  // Brand bar (always visible at top of header)
+  // Brand bar — address centré (style Talabat, pas de hamburger)
   brandBar: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 12,
-  },
-  hamburgerBtn: {
-    width: 34,
-    height: 34,
-    borderRadius: 10,
-    backgroundColor: "rgba(255,255,255,0.18)",
     alignItems: "center",
     justifyContent: "center",
+    marginBottom: 12,
   },
   brandCenter: {
     flexDirection: "row",

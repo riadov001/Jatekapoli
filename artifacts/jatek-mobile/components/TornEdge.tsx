@@ -60,11 +60,10 @@ export function TornEdge({ color, gradientStops, height = 12, position = "bottom
 
   return (
     <View
-      pointerEvents="none"
       style={[
         styles.wrap,
         position === "bottom" ? { bottom: -height + 1 } : { top: -height + 1 },
-        { height },
+        { height, pointerEvents: "none" },
       ]}
     >
       <Svg
