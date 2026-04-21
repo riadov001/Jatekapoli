@@ -1290,8 +1290,8 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   pdImgWrap: {
-    width: 68,
-    height: 68,
+    width: 72,
+    height: 72,
     borderRadius: 8,
     overflow: "hidden",
     backgroundColor: PINK_SOFT,

@@ -3,6 +3,7 @@ import {
   StyleSheet, Text, View, FlatList, TouchableOpacity,
   Image, ActivityIndicator, Platform, ScrollView, Animated, Pressable,
 } from "react-native";
+import * as Haptics from "expo-haptics";
 import { router, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useGetRestaurant, useListMenuItems } from "@workspace/api-client-react";
@@ -103,15 +104,21 @@ export default function RestaurantScreen() {
                 <Ionicons name={isFav ? "heart" : "heart-outline"} size={22} color={isFav ? "#E2006A" : "#fff"} />
               </TouchableOpacity>
               {/* Circular merchant logo overlapping hero bottom-left */}
-              {(restaurant as any).logoUrl || restaurant.imageUrl ? (
-                <View style={[styles.heroLogoWrap, { borderColor: colors.background }]}>
+              {((restaurant as any).logoUrl || restaurant.imageUrl) ? (
+                <View style={[styles.heroLogoWrap, { borderColor: colors.card, shadowColor: colors.primary }]}>
                   <Image
                     source={{ uri: (restaurant as any).logoUrl || restaurant.imageUrl }}
                     style={styles.heroLogoImg}
                     resizeMode="cover"
                   />
                 </View>
-              ) : null}
+              ) : (
+                <View style={[styles.heroLogoWrap, { borderColor: colors.card, backgroundColor: colors.primary, shadowColor: colors.primary, alignItems: "center", justifyContent: "center" }]}>
+                  <Text style={{ fontSize: 32, color: "#fff", fontFamily: "Inter_700Bold" }}>
+                    {restaurant.name?.charAt(0)?.toUpperCase() ?? "?"}
+                  </Text>
+                </View>
+              )}
             </View>
 
             {/* Info */}
@@ -261,6 +268,7 @@ function ComicsCartButton({
   const rot = useRef(new Animated.Value(-1)).current;
 
   const onIn = () => {
+    if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     Animated.spring(scale, { toValue: 0.92, useNativeDriver: true, friction: 5, tension: 200 }).start();
     Animated.spring(rot, { toValue: 0, useNativeDriver: true, friction: 4 }).start();
   };

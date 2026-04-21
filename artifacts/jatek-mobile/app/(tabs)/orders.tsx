@@ -175,18 +175,27 @@ const styles = StyleSheet.create({
   // Filters
   filterRow: { flexDirection: "row", gap: 8 },
   filterPill: {
-    paddingHorizontal: 16,
-    paddingVertical: 7,
+    paddingHorizontal: 18,
+    paddingVertical: 8,
     borderRadius: 20,
-    backgroundColor: "rgba(255,255,255,0.2)",
+    backgroundColor: "rgba(255,255,255,0.15)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.3)",
   },
   filterPillActive: {
     backgroundColor: "#fff",
+    borderColor: "#fff",
+    shadowColor: "#000",
+    shadowOpacity: 0.12,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 3,
   },
   filterLabel: {
     fontSize: 13,
     fontFamily: "Inter_600SemiBold",
     color: "rgba(255,255,255,0.9)",
+    letterSpacing: 0.2,
   },
   filterLabelActive: {
     color: PINK,
