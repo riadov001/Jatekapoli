@@ -601,6 +601,16 @@ export default function HomeScreen() {
     return list;
   }, [pastOrders, allRestaurants, reorderShuffle]);
 
+  // Pick the most recent active order so we can surface a "track order" banner.
+  const activeOrder = useMemo<Order | null>(() => {
+    if (!pastOrders) return null;
+    const active = ["pending", "accepted", "preparing", "ready", "picked_up"];
+    const list = (pastOrders as Order[])
+      .filter((o) => active.includes(String(o.status ?? "")))
+      .sort((a, b) => new Date((b as any).createdAt).getTime() - new Date((a as any).createdAt).getTime());
+    return list[0] ?? null;
+  }, [pastOrders]);
+
   const promoRestaurants = useMemo<Restaurant[]>(() => {
     if (!allRestaurants) return [];
     return [...allRestaurants]
@@ -656,6 +666,28 @@ export default function HomeScreen() {
 
   const ListHeader = (
     <View>
+      {/* ── Active order tracking banner ── */}
+      {activeOrder ? (
+        <Pressable
+          onPress={() => router.push({ pathname: "/order/[id]", params: { id: String(activeOrder.id) } })}
+          style={({ pressed }) => [styles.activeOrderBanner, pressed && { opacity: 0.85 }]}
+        >
+          <View style={styles.activeOrderIcon}>
+            <Ionicons name="bicycle" size={22} color="#fff" />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.activeOrderLabel}>Commande en cours</Text>
+            <Text style={styles.activeOrderTitle} numberOfLines={1}>
+              {(activeOrder as any).restaurantName ?? "Suivez votre livraison"}
+            </Text>
+          </View>
+          <View style={styles.activeOrderCta}>
+            <Text style={styles.activeOrderCtaText}>Suivre</Text>
+            <Ionicons name="arrow-forward" size={14} color={PINK_DEEP} />
+          </View>
+        </Pressable>
+      ) : null}
+
       {/* ── Categories: 2 × 4 grid ── */}
       <View style={styles.catGridWrap}>
         {CATEGORIES.slice(0, 8).map((c, idx) => {
@@ -1188,6 +1220,56 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
+  },
+
+  // ---------- Active order banner ----------
+  activeOrderBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    marginHorizontal: 12,
+    marginTop: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    backgroundColor: "#FFF1F8",
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: "#FBD0E5",
+  },
+  activeOrderIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: PINK,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  activeOrderLabel: {
+    fontFamily: "Inter_600SemiBold",
+    fontSize: 11,
+    letterSpacing: 0.4,
+    textTransform: "uppercase",
+    color: PINK_DEEP,
+    marginBottom: 2,
+  },
+  activeOrderTitle: {
+    fontFamily: "Inter_700Bold",
+    fontSize: 14,
+    color: "#1F1230",
+  },
+  activeOrderCta: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    backgroundColor: "#fff",
+    borderRadius: 999,
+  },
+  activeOrderCtaText: {
+    fontFamily: "Inter_700Bold",
+    fontSize: 12,
+    color: PINK_DEEP,
   },
 
   // ---------- Categories grid (2 × 4) ----------
