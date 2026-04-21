@@ -775,7 +775,7 @@ export default function HomeScreen() {
           {/* Top bar: address block centré (style Talabat) */}
           <View style={styles.brandBar}>
             <Animated.View
-              style={[styles.addrBlock, { opacity: addressOpacity }]}
+              style={[styles.addrBlock, { opacity: addressOpacity, maxHeight: addressMaxH, overflow: "hidden" }]}
             >
               <Text style={styles.deliverToLabel}>Livrer à</Text>
               <TouchableOpacity
