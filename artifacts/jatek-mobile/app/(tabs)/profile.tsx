@@ -155,14 +155,12 @@ export default function ProfileScreen() {
             <View style={styles.avatar}>
               <Text style={styles.avatarText}>{(user?.name ?? "J").charAt(0).toUpperCase()}</Text>
             </View>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.heroHello}>
-                Bon retour,{"\n"}{user?.name?.split(" ")[0] ?? "vous"}
-              </Text>
-              {user?.email ? (
-                <Text style={styles.heroEmail}>{user.email}</Text>
-              ) : null}
-            </View>
+            <Text style={styles.heroHello}>
+              {user?.name?.split(" ")[0] ?? "Vous"}
+            </Text>
+            {user?.email ? (
+              <Text style={styles.heroEmail}>{user.email}</Text>
+            ) : null}
           </View>
         </LinearGradient>
         <WaveEdge color={PINK_DEEP} height={28}
@@ -270,8 +268,8 @@ export default function ProfileScreen() {
 
 const styles = StyleSheet.create({
   // Hero
-  heroPink: { paddingHorizontal: 24, paddingBottom: 28 },
-  heroTopRow: { flexDirection: "row", alignItems: "center", gap: 14 },
+  heroPink: { paddingHorizontal: 24, paddingBottom: 28, alignItems: "center" },
+  heroTopRow: { alignItems: "center", gap: 10 },
   avatar: {
     width: 64,
     height: 64,
@@ -288,8 +286,8 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   avatarText: { color: "#fff", fontSize: 24, fontFamily: "Inter_700Bold" },
-  heroHello: { fontSize: 20, fontFamily: "Inter_700Bold", lineHeight: 26, letterSpacing: -0.3, color: "#fff" },
-  heroEmail: { fontSize: 12, fontFamily: "Inter_400Regular", color: "rgba(255,255,255,0.75)", marginTop: 3 },
+  heroHello: { fontSize: 20, fontFamily: "Inter_700Bold", lineHeight: 26, letterSpacing: -0.3, color: "#fff", textAlign: "center" },
+  heroEmail: { fontSize: 12, fontFamily: "Inter_400Regular", color: "rgba(255,255,255,0.75)", textAlign: "center" },
   guestHero: { paddingHorizontal: 24, paddingBottom: 28, alignItems: "center" },
   guestEmoji: { fontSize: 64, marginBottom: 12 },
   guestTitle: { fontSize: 20, fontFamily: "Inter_700Bold", textAlign: "center", lineHeight: 26, color: "#fff", paddingHorizontal: 8 },

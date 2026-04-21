@@ -122,7 +122,7 @@ export default function RestaurantScreen() {
             </View>
 
             {/* Info */}
-            <View style={[styles.infoSection, { backgroundColor: colors.background, paddingTop: 36 }]}>
+            <View style={[styles.infoSection, { backgroundColor: colors.background, paddingTop: 40 }]}>
               <Text style={[styles.rName, { color: colors.foreground }]}>{restaurant.name}</Text>
               {restaurant.description && (
                 <Text style={[styles.rDesc, { color: colors.mutedForeground }]}>{restaurant.description}</Text>
@@ -319,23 +319,23 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   center: { flex: 1, alignItems: "center", justifyContent: "center" },
   heroWrap: { position: "relative" },
-  hero: { width: "100%", height: 220 },
-  heroPlaceholder: { width: "100%", height: 220, alignItems: "center", justifyContent: "center" },
+  hero: { width: "100%", height: 200 },
+  heroPlaceholder: { width: "100%", height: 200, alignItems: "center", justifyContent: "center" },
   heroLogoWrap: {
     position: "absolute",
-    bottom: -26,
+    bottom: -30,
     left: 16,
-    width: 78,
-    height: 78,
-    borderRadius: 22,
-    borderWidth: 4,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    borderWidth: 3,
     backgroundColor: "#fff",
     overflow: "hidden",
     shadowColor: "#000",
-    shadowOpacity: 0.25,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 8,
+    shadowOpacity: 0.22,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 6,
   },
   heroLogoImg: { width: "100%", height: "100%" },
   backBtn: {
