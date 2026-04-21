@@ -143,32 +143,6 @@ export function Layout({ children }: LayoutProps) {
                 </Button>
               )}
 
-              {/* Role switcher */}
-              {isAuthenticated && (
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="sm" className="gap-1.5 text-sm h-9 rounded-xl bg-white/60 hover:bg-white/80 border-white/70" data-testid="button-role-switcher">
-                      <span className="capitalize hidden sm:inline">{user?.role?.replace("_", " ")}</span>
-                      <ChevronDown className="w-3 h-3" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-52 rounded-2xl p-1">
-                    <DropdownMenuItem onClick={() => setLocation("/")} className="rounded-xl gap-2.5 py-2.5" data-testid="menu-item-customer">
-                      <Home className="w-4 h-4 text-primary" /> {t("nav.customerView")}
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => setLocation("/restaurant/dashboard")} className="rounded-xl gap-2.5 py-2.5" data-testid="menu-item-restaurant">
-                      <Store className="w-4 h-4 text-primary" /> {t("nav.restaurantPanel")}
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => setLocation("/driver/dashboard")} className="rounded-xl gap-2.5 py-2.5" data-testid="menu-item-driver">
-                      <Truck className="w-4 h-4 text-primary" /> {t("nav.driverApp")}
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => setLocation("/admin/dashboard")} className="rounded-xl gap-2.5 py-2.5" data-testid="menu-item-admin">
-                      <LayoutDashboard className="w-4 h-4 text-primary" /> {t("nav.adminPanel")}
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              )}
-
               {/* User menu */}
               {isAuthenticated ? (
                 <DropdownMenu>

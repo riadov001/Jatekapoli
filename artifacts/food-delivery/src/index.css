@@ -367,24 +367,24 @@
     overflow: hidden;
   }
 
-  /* Native zigzag bottom border for the wood-cut header */
+  /* Subtle zigzag bottom border that continues the wood-cut header.
+     Uses the same bottom color as the header gradient so it reads as one. */
   .zigzag-bottom {
     position: absolute;
     left: 0;
     right: 0;
-    bottom: -10px;
-    height: 12px;
-    background-color: hsl(28 35% 90%);
-    -webkit-mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 12' preserveAspectRatio='none'><polygon fill='black' points='0,0 24,0 24,2 22,12 18,2 14,12 10,2 6,12 2,2 0,2'/></svg>");
-            mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 12' preserveAspectRatio='none'><polygon fill='black' points='0,0 24,0 24,2 22,12 18,2 14,12 10,2 6,12 2,2 0,2'/></svg>");
-    -webkit-mask-size: 24px 12px;
-            mask-size: 24px 12px;
+    bottom: -7px;
+    height: 8px;
+    background: linear-gradient(180deg, hsl(28 30% 86%), hsl(28 30% 86%));
+    -webkit-mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8' preserveAspectRatio='none'><polygon fill='black' points='0,0 12,0 12,0 11,8 9,0 7,8 5,0 3,8 1,0 0,0'/></svg>");
+            mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8' preserveAspectRatio='none'><polygon fill='black' points='0,0 12,0 12,0 11,8 9,0 7,8 5,0 3,8 1,0 0,0'/></svg>");
+    -webkit-mask-size: 12px 8px;
+            mask-size: 12px 8px;
     -webkit-mask-repeat: repeat-x;
             mask-repeat: repeat-x;
     pointer-events: none;
-    filter: drop-shadow(0 2px 1px hsl(24 30% 30% / 0.18));
   }
-  .dark .zigzag-bottom { background-color: hsl(24 18% 14%); }
+  .dark .zigzag-bottom { background: linear-gradient(180deg, hsl(24 18% 12%), hsl(24 18% 12%)); }
 
   /* Comics-style chunky button: thick black border + offset shadow + bouncy press */
   .comics-btn {

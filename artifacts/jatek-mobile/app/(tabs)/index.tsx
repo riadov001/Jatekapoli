@@ -775,7 +775,16 @@ export default function HomeScreen() {
             </Text>
           </Animated.View>
         </LinearGradient>
-        <TornEdge color={TURQUOISE} position="bottom" height={20} />
+        <TornEdge
+          color={TURQUOISE}
+          position="bottom"
+          height={10}
+          gradientStops={[
+            { offset: 0, color: PINK },
+            { offset: 0.55, color: PINK_DEEP },
+            { offset: 1, color: TURQUOISE },
+          ]}
+        />
       </View>
 
       {/* Floating search bar (overlaps the torn edge) */}
@@ -919,51 +928,44 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   hamburgerBtn: {
-    width: 38,
-    height: 38,
-    borderRadius: 12,
-    backgroundColor: "rgba(255,255,255,0.18)",
-    borderWidth: 2,
-    borderColor: "rgba(255,255,255,0.45)",
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    backgroundColor: "rgba(255,255,255,0.14)",
     alignItems: "center",
     justifyContent: "center",
   },
   brandCenter: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
+    gap: 7,
   },
   brandLogoBadge: {
-    width: 32,
-    height: 32,
-    borderRadius: 10,
-    backgroundColor: "#fff",
+    width: 26,
+    height: 26,
+    borderRadius: 8,
+    backgroundColor: "rgba(255,255,255,0.95)",
     alignItems: "center",
     justifyContent: "center",
-    borderWidth: 2.5,
-    borderColor: "#0A1B3D",
-    transform: [{ rotate: "-6deg" }],
   },
   brandLogoBadgeText: {
-    fontFamily: "Inter_900Black",
-    fontSize: 16,
+    fontFamily: "Inter_700Bold",
+    fontSize: 13,
     color: "#E91E63",
     fontStyle: "italic",
   },
   brandWordmark: {
     color: "#fff",
-    fontFamily: "Inter_900Black",
-    fontSize: 19,
-    letterSpacing: -0.5,
+    fontFamily: "Inter_700Bold",
+    fontSize: 17,
+    letterSpacing: -0.4,
     fontStyle: "italic",
   },
   brandAvatarBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: "rgba(255,255,255,0.2)",
-    borderWidth: 2,
-    borderColor: "rgba(255,255,255,0.6)",
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: "rgba(255,255,255,0.16)",
     alignItems: "center",
     justifyContent: "center",
     overflow: "hidden",

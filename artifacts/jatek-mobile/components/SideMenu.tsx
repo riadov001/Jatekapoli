@@ -117,26 +117,23 @@ export function SideMenu({ visible, onClose }: Props) {
             },
           ]}
         >
-          {/* Brand header */}
-          <LinearGradient
-            colors={[PINK, PINK_DEEP, TURQUOISE]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.brandHeader}
-          >
+          {/* Brand header — lighter, no thick border */}
+          <View style={styles.brandHeader}>
             <View style={styles.brandRow}>
               <View style={styles.brandBadge}>
                 <Text style={styles.brandBadgeText}>J.</Text>
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={styles.brandName}>Jatek</Text>
-                <Text style={styles.brandTag}>{user ? `Hey ${user.name?.split(" ")[0] ?? ""} 🍔` : "Bienvenue !"}</Text>
+                <Text style={[styles.brandName, { color: colors.heading }]}>Jatek</Text>
+                <Text style={[styles.brandTag, { color: colors.mutedForeground }]}>
+                  {user ? `Hey ${user.name?.split(" ")[0] ?? ""}` : "Bienvenue"}
+                </Text>
               </View>
-              <TouchableOpacity onPress={onClose} hitSlop={10} style={styles.closeBtn}>
-                <Ionicons name="close" size={20} color="#fff" />
+              <TouchableOpacity onPress={onClose} hitSlop={10} style={[styles.closeBtn, { borderColor: colors.border }]}>
+                <Ionicons name="close" size={18} color={colors.mutedForeground} />
               </TouchableOpacity>
             </View>
-          </LinearGradient>
+          </View>
 
           {/* Items */}
           <View style={styles.itemsWrap}>
@@ -230,17 +227,13 @@ function DrawerItem({
         <Animated.View
           style={[
             styles.iconChip,
-            { backgroundColor: entry.color, transform: [{ rotate }] },
+            { backgroundColor: entry.color + "1F", transform: [{ rotate }] },
           ]}
         >
-          <Text style={styles.iconEmoji}>{entry.emoji}</Text>
-          <View style={styles.iconRing} />
+          <Ionicons name={entry.icon} size={18} color={entry.color} />
         </Animated.View>
-        <View style={{ flex: 1 }}>
-          <Text style={[styles.itemLabel, { color: textColor }]}>{entry.label}</Text>
-          <Text style={[styles.itemSub, { color: subColor }]}>Touche pour ouvrir</Text>
-        </View>
-        <Ionicons name="chevron-forward" size={18} color={subColor} />
+        <Text style={[styles.itemLabel, { color: textColor }]}>{entry.label}</Text>
+        <Ionicons name="chevron-forward" size={16} color={subColor} />
       </Animated.View>
     </Pressable>
   );
@@ -264,91 +257,64 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
   brandHeader: {
-    margin: 14,
-    borderRadius: 22,
-    padding: 16,
-    borderWidth: 3,
-    borderColor: INK,
+    paddingHorizontal: 18,
+    paddingTop: 4,
+    paddingBottom: 18,
   },
   brandRow: { flexDirection: "row", alignItems: "center", gap: 12 },
   brandBadge: {
-    width: 48,
-    height: 48,
-    borderRadius: 14,
-    backgroundColor: "#fff",
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    backgroundColor: PINK + "15",
     alignItems: "center",
     justifyContent: "center",
-    borderWidth: 3,
-    borderColor: INK,
-    transform: [{ rotate: "-6deg" }],
   },
   brandBadgeText: {
-    fontFamily: "Inter_900Black",
-    fontSize: 22,
+    fontFamily: "Inter_700Bold",
+    fontSize: 16,
     color: PINK_DEEP,
     fontStyle: "italic",
   },
-  brandName: { color: "#fff", fontFamily: "Inter_900Black", fontSize: 22, letterSpacing: -0.5 },
-  brandTag: { color: "rgba(255,255,255,0.92)", fontFamily: "Inter_600SemiBold", fontSize: 13, marginTop: 2 },
+  brandName: { fontFamily: "Inter_700Bold", fontSize: 18, letterSpacing: -0.4 },
+  brandTag: { fontFamily: "Inter_400Regular", fontSize: 12, marginTop: 1 },
   closeBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: "rgba(255,255,255,0.22)",
+    width: 30,
+    height: 30,
+    borderRadius: 15,
     alignItems: "center",
     justifyContent: "center",
-    borderWidth: 2,
-    borderColor: "rgba(255,255,255,0.6)",
+    borderWidth: 1,
   },
 
-  itemsWrap: { paddingHorizontal: 12, paddingTop: 6, gap: 4 },
+  itemsWrap: { paddingHorizontal: 10, paddingTop: 4, gap: 2 },
   itemRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
-    paddingVertical: 10,
-    paddingHorizontal: 8,
-    borderRadius: 16,
+    gap: 14,
+    paddingVertical: 11,
+    paddingHorizontal: 10,
+    borderRadius: 12,
   },
   iconChip: {
-    width: 44,
-    height: 44,
-    borderRadius: 14,
+    width: 34,
+    height: 34,
+    borderRadius: 10,
     alignItems: "center",
     justifyContent: "center",
-    borderWidth: 2.5,
-    borderColor: INK,
-    shadowColor: INK,
-    shadowOpacity: 0.25,
-    shadowOffset: { width: 2, height: 3 },
-    shadowRadius: 0,
-    elevation: 4,
   },
-  iconEmoji: { fontSize: 22 },
-  iconRing: {
-    position: "absolute",
-    top: -3,
-    right: -3,
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: "#fff",
-    borderWidth: 2,
-    borderColor: INK,
-  },
-  itemLabel: { fontFamily: "Inter_700Bold", fontSize: 15, letterSpacing: -0.2 },
-  itemSub: { fontFamily: "Inter_400Regular", fontSize: 11, marginTop: 1 },
+  itemLabel: { fontFamily: "Inter_500Medium", fontSize: 14, letterSpacing: -0.1, flex: 1 },
 
   footer: { marginTop: "auto", paddingHorizontal: 18, gap: 10 },
   footerBtn: {
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
-    paddingVertical: 12,
+    paddingVertical: 11,
     paddingHorizontal: 14,
-    borderRadius: 14,
+    borderRadius: 12,
     borderWidth: 1,
   },
-  footerBtnText: { fontFamily: "Inter_600SemiBold", fontSize: 13 },
-  versionText: { fontFamily: "Inter_400Regular", fontSize: 11, textAlign: "center" },
+  footerBtnText: { fontFamily: "Inter_500Medium", fontSize: 13 },
+  versionText: { fontFamily: "Inter_400Regular", fontSize: 10.5, textAlign: "center", opacity: 0.7 },
 });
