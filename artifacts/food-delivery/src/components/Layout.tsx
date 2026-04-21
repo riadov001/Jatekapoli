@@ -2,7 +2,7 @@ import { Link, useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ShoppingBag, Home, UtensilsCrossed, Package, Gift, User, LogOut,
-  ChevronDown, MapPin, Truck, LayoutDashboard, Store, Globe, FileText
+  ChevronDown, MapPin, Truck, LayoutDashboard, Store, Globe, FileText, Search, X
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCart } from "@/contexts/CartContext";
@@ -23,6 +23,7 @@ export function Layout({ children }: LayoutProps) {
   const [location, setLocation] = useLocation();
   const { t, i18n } = useTranslation();
   const [collapsed, setCollapsed] = useState(false);
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
 
   const isCustomer = !user?.role || user.role === "customer";
   const isRTL = i18n.language === "ar";
@@ -195,8 +196,31 @@ export function Layout({ children }: LayoutProps) {
               </div>
               <span className="tracking-tighter italic text-foreground hidden xs:inline sm:inline">Jatek.</span>
             </Link>
-            {/* Pages can render their search input into this slot via #header-search-slot. */}
-            <div id="header-search-slot" className="flex-1 min-w-0" />
+            {/* Desktop search slot — hidden on mobile */}
+            <div id="header-search-slot" className="flex-1 min-w-0 hidden sm:block" />
+            {/* Mobile search icon toggle */}
+            <button
+              className="sm:hidden ml-auto w-9 h-9 rounded-xl flex items-center justify-center bg-primary/10 hover:bg-primary/20 transition-colors text-primary"
+              onClick={() => setMobileSearchOpen((v) => !v)}
+              aria-label={mobileSearchOpen ? "Fermer la recherche" : "Rechercher"}
+            >
+              <AnimatePresence mode="wait" initial={false}>
+                {mobileSearchOpen ? (
+                  <motion.span key="close" initial={{ rotate: -90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: 90, opacity: 0 }} transition={{ duration: 0.18 }}>
+                    <X className="w-4 h-4" />
+                  </motion.span>
+                ) : (
+                  <motion.span key="search" initial={{ rotate: 90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: -90, opacity: 0 }} transition={{ duration: 0.18 }}>
+                    <Search className="w-4 h-4" />
+                  </motion.span>
+                )}
+              </AnimatePresence>
+            </button>
+          </div>
+
+          {/* Mobile search slide panel — CSS-animated, appears below Row B */}
+          <div className={`mobile-search-panel sm:hidden ${mobileSearchOpen ? "open" : "closed"}`}>
+            <div id="mobile-search-slot" className="pb-3" />
           </div>
         </div>
       </header>

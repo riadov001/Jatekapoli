@@ -337,26 +337,24 @@
     font-family: 'Poppins', sans-serif;
   }
 
-  /* Wood-cut header — soft warm gradient with subtle rings (less hatching) */
+  /* Fintech premium header — light glassmorphism + pink/magenta tint */
   .wood-header {
-    background-color: hsl(28 35% 90%);
-    background-image:
-      radial-gradient(ellipse 120% 80% at 30% -10%, hsl(30 45% 95% / 0.95), transparent 60%),
-      radial-gradient(ellipse 100% 70% at 80% 110%, hsl(24 38% 82% / 0.7), transparent 60%),
-      repeating-radial-gradient(ellipse at 25% 60%, hsl(28 25% 70% / 0.06) 0px, hsl(28 25% 70% / 0.06) 1px, transparent 2px, transparent 22px),
-      linear-gradient(180deg, hsl(30 35% 92%), hsl(28 30% 86%));
+    background: linear-gradient(160deg, rgba(255,255,255,0.90) 0%, rgba(255,232,246,0.93) 100%);
+    backdrop-filter: blur(22px) saturate(160%);
+    -webkit-backdrop-filter: blur(22px) saturate(160%);
+    border-bottom: 1px solid hsl(330 100% 44% / 0.10);
     box-shadow:
-      0 1px 0 hsl(28 25% 70% / 0.4) inset,
-      0 -1px 0 hsl(24 30% 55% / 0.18) inset,
-      0 4px 14px -8px hsl(24 30% 30% / 0.25);
+      0 2px 24px -6px hsl(330 100% 44% / 0.18),
+      0 1px 0 rgba(255,255,255,0.70) inset;
   }
   .dark .wood-header {
-    background-color: hsl(24 18% 14%);
-    background-image:
-      radial-gradient(ellipse 120% 80% at 30% -10%, hsl(28 25% 22% / 0.9), transparent 60%),
-      radial-gradient(ellipse 100% 70% at 80% 110%, hsl(20 22% 10% / 0.8), transparent 60%),
-      repeating-radial-gradient(ellipse at 25% 60%, hsl(28 18% 30% / 0.08) 0px, hsl(28 18% 30% / 0.08) 1px, transparent 2px, transparent 24px),
-      linear-gradient(180deg, hsl(24 18% 16%), hsl(24 18% 12%));
+    background: linear-gradient(160deg, rgba(18,4,12,0.90) 0%, rgba(32,6,22,0.94) 100%);
+    backdrop-filter: blur(22px) saturate(140%);
+    -webkit-backdrop-filter: blur(22px) saturate(140%);
+    border-bottom: 1px solid hsl(330 100% 52% / 0.12);
+    box-shadow:
+      0 2px 24px -6px hsl(330 100% 44% / 0.35),
+      0 1px 0 rgba(255,255,255,0.05) inset;
   }
   .xs\:inline { display: inline; }
 
@@ -367,15 +365,14 @@
     overflow: hidden;
   }
 
-  /* Subtle zigzag bottom border that continues the wood-cut header.
-     Uses the same bottom color as the header gradient so it reads as one. */
+  /* Zigzag bottom — matches the glassmorphism header pink tint */
   .zigzag-bottom {
     position: absolute;
     left: 0;
     right: 0;
     bottom: -7px;
     height: 8px;
-    background: linear-gradient(180deg, hsl(28 30% 86%), hsl(28 30% 86%));
+    background: linear-gradient(180deg, hsl(330 80% 90%), hsl(330 80% 90%));
     -webkit-mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8' preserveAspectRatio='none'><polygon fill='black' points='0,0 12,0 12,0 11,8 9,0 7,8 5,0 3,8 1,0 0,0'/></svg>");
             mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8' preserveAspectRatio='none'><polygon fill='black' points='0,0 12,0 12,0 11,8 9,0 7,8 5,0 3,8 1,0 0,0'/></svg>");
     -webkit-mask-size: 12px 8px;
@@ -384,7 +381,41 @@
             mask-repeat: repeat-x;
     pointer-events: none;
   }
-  .dark .zigzag-bottom { background: linear-gradient(180deg, hsl(24 18% 12%), hsl(24 18% 12%)); }
+  .dark .zigzag-bottom { background: linear-gradient(180deg, hsl(330 60% 14%), hsl(330 60% 14%)); }
+
+  /* Wave hero collapse animation — CSS only transition */
+  .wave-hero {
+    transition: max-height 480ms cubic-bezier(0.4, 0, 0.2, 1),
+                opacity 380ms ease,
+                transform 380ms cubic-bezier(0.4, 0, 0.2, 1);
+    will-change: max-height, opacity, transform;
+    overflow: hidden;
+  }
+  .wave-hero.wave-visible {
+    max-height: 200px;
+    opacity: 1;
+    transform: translateY(0);
+  }
+  .wave-hero.wave-collapsed {
+    max-height: 0;
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+
+  /* Mobile search slide panel */
+  .mobile-search-panel {
+    overflow: hidden;
+    transition: max-height 280ms cubic-bezier(0.4, 0, 0.2, 1),
+                opacity 220ms ease;
+  }
+  .mobile-search-panel.open {
+    max-height: 72px;
+    opacity: 1;
+  }
+  .mobile-search-panel.closed {
+    max-height: 0;
+    opacity: 0;
+  }
 
   /* Comics-style chunky button: thick black border + offset shadow + bouncy press */
   .comics-btn {
