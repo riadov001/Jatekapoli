@@ -285,6 +285,7 @@ function ComicsCheckoutButton({
 
   const onIn = () => {
     if (disabled) return;
+    if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     Animated.spring(scale, { toValue: 0.93, useNativeDriver: true, friction: 5, tension: 200 }).start();
     Animated.spring(rot, { toValue: 0, useNativeDriver: true, friction: 4 }).start();
   };
