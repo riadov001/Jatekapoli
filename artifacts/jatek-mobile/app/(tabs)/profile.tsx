@@ -7,9 +7,12 @@ import { useColors } from "@/hooks/useColors";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { apiBase } from "@/lib/api";
-import { TornEdge } from "@/components/TornEdge";
+import { WaveEdge } from "@/components/WaveEdge";
+import { LinearGradient } from "expo-linear-gradient";
 
-const PINK = "#C026D3";
+const PINK = "#E91E8C";
+const PINK_LIGHT = "#FF5FAD";
+const PINK_DEEP = "#C81877";
 
 interface RowProps { icon: string; label: string; onPress: () => void; danger?: boolean; subtitle?: string; }
 
@@ -80,16 +83,22 @@ export default function ProfileScreen() {
         style={{ flex: 1, backgroundColor: "#F8F8F8" }}
         contentContainerStyle={{ paddingBottom: insets.bottom + (Platform.OS === "web" ? 34 : 90) }}
       >
-        {/* Fuchsia hero */}
+        {/* Gradient hero — invité */}
         <View style={{ position: "relative" }}>
-          <View style={[styles.guestHero, { paddingTop: insets.top + 24 + webTopPad }]}>
+          <LinearGradient
+            colors={[PINK_LIGHT, PINK, PINK_DEEP]}
+            locations={[0, 0.55, 1]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 0, y: 1 }}
+            style={[styles.guestHero, { paddingTop: insets.top + 24 + webTopPad }]}
+          >
             <Text style={styles.guestEmoji}>🛍️</Text>
             <Text style={styles.guestTitle}>
               Inscris-toi maintenant et fais-toi livrer tes favoris.
             </Text>
-          </View>
-          <TornEdge color={PINK} position="bottom" height={12}
-            gradientStops={[{ offset: 0, color: PINK }, { offset: 1, color: PINK }]} />
+          </LinearGradient>
+          <WaveEdge color={PINK_DEEP} height={28}
+            gradientStops={[{ offset: 0, color: PINK }, { offset: 1, color: PINK_DEEP }]} />
         </View>
 
         <View style={styles.guestCtaWrap}>
@@ -133,9 +142,15 @@ export default function ProfileScreen() {
       contentContainerStyle={{ paddingBottom: insets.bottom + (Platform.OS === "web" ? 34 : 90) }}
       showsVerticalScrollIndicator={false}
     >
-      {/* Fuchsia hero — style Talabat Account */}
+      {/* Gradient hero — style Talabat Account */}
       <View style={{ position: "relative" }}>
-        <View style={[styles.heroPink, { paddingTop: insets.top + 28 + webTopPad }]}>
+        <LinearGradient
+          colors={[PINK_LIGHT, PINK, PINK_DEEP]}
+          locations={[0, 0.55, 1]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 0, y: 1 }}
+          style={[styles.heroPink, { paddingTop: insets.top + 28 + webTopPad }]}
+        >
           <View style={styles.heroTopRow}>
             <View style={styles.avatar}>
               <Text style={styles.avatarText}>{(user?.name ?? "J").charAt(0).toUpperCase()}</Text>
@@ -149,9 +164,9 @@ export default function ProfileScreen() {
               ) : null}
             </View>
           </View>
-        </View>
-        <TornEdge color={PINK} position="bottom" height={12}
-          gradientStops={[{ offset: 0, color: PINK }, { offset: 1, color: PINK }]} />
+        </LinearGradient>
+        <WaveEdge color={PINK_DEEP} height={28}
+          gradientStops={[{ offset: 0, color: PINK }, { offset: 1, color: PINK_DEEP }]} />
       </View>
 
       {/* Floating quick-action cards row */}
@@ -255,13 +270,13 @@ export default function ProfileScreen() {
 
 const styles = StyleSheet.create({
   // Hero
-  heroPink: { paddingHorizontal: 24, paddingBottom: 28, backgroundColor: PINK },
+  heroPink: { paddingHorizontal: 24, paddingBottom: 28 },
   heroTopRow: { flexDirection: "row", alignItems: "center", gap: 14 },
   avatar: { width: 58, height: 58, borderRadius: 29, backgroundColor: "rgba(255,255,255,0.25)", alignItems: "center", justifyContent: "center", borderWidth: 2, borderColor: "rgba(255,255,255,0.6)" },
   avatarText: { color: "#fff", fontSize: 22, fontFamily: "Inter_700Bold" },
   heroHello: { fontSize: 20, fontFamily: "Inter_700Bold", lineHeight: 26, letterSpacing: -0.3, color: "#fff" },
   heroEmail: { fontSize: 12, fontFamily: "Inter_400Regular", color: "rgba(255,255,255,0.75)", marginTop: 3 },
-  guestHero: { paddingHorizontal: 24, paddingBottom: 28, alignItems: "center", backgroundColor: PINK },
+  guestHero: { paddingHorizontal: 24, paddingBottom: 28, alignItems: "center" },
   guestEmoji: { fontSize: 64, marginBottom: 12 },
   guestTitle: { fontSize: 20, fontFamily: "Inter_700Bold", textAlign: "center", lineHeight: 26, color: "#fff", paddingHorizontal: 8 },
   guestCtaWrap: { paddingHorizontal: 16, marginTop: 16, gap: 10 },

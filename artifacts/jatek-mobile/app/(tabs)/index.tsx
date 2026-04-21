@@ -31,24 +31,25 @@ import { useCart } from "@/contexts/CartContext";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { AddressQuickPicker } from "@/components/AddressQuickPicker";
 import { useT } from "@/contexts/LanguageContext";
-import { TornEdge } from "@/components/TornEdge";
+import { WaveEdge } from "@/components/WaveEdge";
 import { ShortPlayerModal } from "@/components/ShortPlayerModal";
 
-// Talabat-inspired palette — fuchsia redesign
+// Talabat-inspired palette — rose magenta redesign
 const BG = "#F8F8F8";
 const CARD_BG = "#FFFFFF";
-const PINK = "#C026D3";
-const PINK_DEEP = "#A21CAF";
-const PINK_SOFT = "#F9F0FF";
+const PINK = "#E91E8C";         // rose magenta (primary)
+const PINK_LIGHT = "#FF5FAD";   // lighter top for header gradient
+const PINK_DEEP = "#C81877";    // darker bottom for header gradient
+const PINK_SOFT = "#FDE8F4";
 const TURQUOISE = "#22D3EE";
 const TURQUOISE_SOFT = "#ECFEFF";
 const YELLOW_PRO = "#FACC15";
 const OLIVE = "#84CC16";
 const ORANGE_FREE = "#F97316";
-const PRO_DAY_BG = "#F3EEFF";
+const PRO_DAY_BG = "#FFF0F8";   // very light pink
 const TEXT_DARK = "#0A1B3D";
 const TEXT_MUTED = "#6B7280";
-const BORDER = "#EEE8FF";
+const BORDER = "#22D3EE";  // turquoise border for cards
 const STAR_YELLOW = "#FFC107";
 
 const { width: SCREEN_W } = Dimensions.get("window");
@@ -759,9 +760,13 @@ export default function HomeScreen() {
 
   return (
     <View style={[styles.flex, { backgroundColor: BG }]}>
-      {/* ── Solid fuchsia header ── */}
+      {/* ── Gradient magenta header ── */}
       <View style={styles.headerWrap}>
-        <View
+        <LinearGradient
+          colors={[PINK_LIGHT, PINK, PINK_DEEP]}
+          locations={[0, 0.55, 1]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 0, y: 1 }}
           style={[
             styles.headerBg,
             { paddingTop: insets.top + 10 + webTopPad },
@@ -815,14 +820,16 @@ export default function HomeScreen() {
           <Animated.View style={{ opacity: greetingOpacity, maxHeight: greetingMaxH, overflow: "hidden" }}>
             <Text style={styles.withYouText}>With you, Oujda 🇲🇦</Text>
           </Animated.View>
-        </View>
+        </LinearGradient>
 
-        {/* Zigzag fuchsia torn edge at bottom of header */}
-        <TornEdge
-          color={PINK}
-          position="bottom"
-          height={12}
-          gradientStops={[{ offset: 0, color: PINK }, { offset: 1, color: PINK }]}
+        {/* Organic wave at bottom of header */}
+        <WaveEdge
+          color={PINK_DEEP}
+          height={28}
+          gradientStops={[
+            { offset: 0, color: PINK },
+            { offset: 1, color: PINK_DEEP },
+          ]}
         />
       </View>
 
@@ -837,7 +844,7 @@ export default function HomeScreen() {
           contentContainerStyle={[
             styles.list,
             {
-              paddingTop: 8,
+              paddingTop: 22,
               paddingBottom:
                 insets.bottom + (Platform.OS === "web" ? 34 : 90) + freeBarH,
             },
@@ -916,7 +923,6 @@ const styles = StyleSheet.create({
   // ---------- Header ----------
   headerWrap: { position: "relative" },
   headerBg: {
-    backgroundColor: PINK,
     paddingHorizontal: 16,
     paddingBottom: 16,
   },

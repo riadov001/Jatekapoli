@@ -14,9 +14,12 @@ import { useListOrders, getListOrdersQueryKey } from "@workspace/api-client-reac
 import { useAuth } from "@/contexts/AuthContext";
 import { OrderCard } from "@/components/OrderCard";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { TornEdge } from "@/components/TornEdge";
+import { WaveEdge } from "@/components/WaveEdge";
+import { LinearGradient } from "expo-linear-gradient";
 
-const PINK = "#C026D3";
+const PINK = "#E91E8C";
+const PINK_LIGHT = "#FF5FAD";
+const PINK_DEEP = "#C81877";
 const ORANGE = "#F97316";
 
 type Filter = "all" | "active" | "past";
@@ -57,9 +60,15 @@ export default function OrdersScreen() {
 
   return (
     <View style={styles.flex}>
-      {/* ── Fuchsia header — style Talabat ── */}
+      {/* ── Gradient header — style Talabat ── */}
       <View style={styles.headerWrap}>
-        <View style={[styles.headerBg, { paddingTop: insets.top + 14 + webTopPad }]}>
+        <LinearGradient
+          colors={[PINK_LIGHT, PINK, PINK_DEEP]}
+          locations={[0, 0.55, 1]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 0, y: 1 }}
+          style={[styles.headerBg, { paddingTop: insets.top + 14 + webTopPad }]}
+        >
           <Text style={styles.headerTitle}>Mes commandes</Text>
 
           {/* Filter pills */}
@@ -85,12 +94,11 @@ export default function OrdersScreen() {
               </TouchableOpacity>
             ))}
           </View>
-        </View>
-        <TornEdge
-          color={PINK}
-          position="bottom"
-          height={12}
-          gradientStops={[{ offset: 0, color: PINK }, { offset: 1, color: PINK }]}
+        </LinearGradient>
+        <WaveEdge
+          color={PINK_DEEP}
+          height={28}
+          gradientStops={[{ offset: 0, color: PINK }, { offset: 1, color: PINK_DEEP }]}
         />
       </View>
 
@@ -154,7 +162,6 @@ const styles = StyleSheet.create({
   // Header
   headerWrap: { position: "relative" },
   headerBg: {
-    backgroundColor: PINK,
     paddingHorizontal: 20,
     paddingBottom: 14,
   },

@@ -2,7 +2,11 @@ import React, { useRef } from "react";
 import { StyleSheet, Text, View, TouchableOpacity, Image, Pressable, Animated, Platform } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
+import { LinearGradient } from "expo-linear-gradient";
 import { useColors } from "@/hooks/useColors";
+
+const BTN_FROM = "#FF5FAD";
+const BTN_TO   = "#C81877";
 
 interface MenuItemCardProps {
   item: {
@@ -90,19 +94,33 @@ export function MenuItemCard({ item, quantity, onAdd, onRemove, onPressCard }: M
             {/* Floating "+" / quantity controls overlapping image bottom-right */}
             {quantity > 0 ? (
               <View style={styles.qtyControls}>
-                <TouchableOpacity onPress={handleRemove} style={[styles.qtyBtn, { backgroundColor: "#fff" }]} hitSlop={6}>
+                <TouchableOpacity onPress={handleRemove} style={[styles.qtyBtn, styles.qtyBtnMinus]} hitSlop={6}>
                   <Ionicons name="remove" size={16} color={colors.primary} />
                 </TouchableOpacity>
                 <Text style={[styles.qtyText, { color: colors.primary }]}>{quantity}</Text>
-                <TouchableOpacity onPress={handleAdd} style={[styles.qtyBtn, { backgroundColor: colors.primary }]} hitSlop={6}>
-                  <Ionicons name="add" size={16} color="#fff" />
-                </TouchableOpacity>
+                <LinearGradient
+                  colors={[BTN_FROM, BTN_TO]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 0, y: 1 }}
+                  style={styles.qtyBtnPlus}
+                >
+                  <TouchableOpacity onPress={handleAdd} hitSlop={6} style={styles.qtyBtnHit}>
+                    <Ionicons name="add" size={16} color="#fff" />
+                  </TouchableOpacity>
+                </LinearGradient>
               </View>
             ) : (
-              <Animated.View style={[styles.plusFab, { backgroundColor: colors.primary, transform: [{ scale: plusScale }] }]}>
-                <TouchableOpacity onPress={handleAdd} hitSlop={10} style={styles.plusFabHit}>
-                  <Ionicons name="add" size={22} color="#fff" />
-                </TouchableOpacity>
+              <Animated.View style={[styles.plusFabWrap, { transform: [{ scale: plusScale }] }]}>
+                <LinearGradient
+                  colors={[BTN_FROM, BTN_TO]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.plusFab}
+                >
+                  <TouchableOpacity onPress={handleAdd} hitSlop={10} style={styles.plusFabHit}>
+                    <Ionicons name="add" size={24} color="#fff" />
+                  </TouchableOpacity>
+                </LinearGradient>
               </Animated.View>
             )}
           </View>
@@ -167,24 +185,28 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  plusFab: {
+  plusFabWrap: {
     position: "absolute",
-    bottom: -8,
-    right: -8,
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    bottom: -10,
+    right: -10,
+    shadowColor: "#C81877",
+    shadowOpacity: 0.45,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 8,
+  },
+  plusFab: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     alignItems: "center",
     justifyContent: "center",
-    borderWidth: 3,
+    borderWidth: 2.5,
     borderColor: "#fff",
-    shadowColor: "#000",
-    shadowOpacity: 0.25,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 3 },
-    elevation: 6,
+    overflow: "hidden",
   },
   plusFabHit: { width: "100%", height: "100%", alignItems: "center", justifyContent: "center" },
+
   qtyControls: {
     position: "absolute",
     bottom: -10,
@@ -194,15 +216,15 @@ const styles = StyleSheet.create({
     gap: 4,
     paddingHorizontal: 4,
     paddingVertical: 4,
-    borderRadius: 22,
+    borderRadius: 24,
     backgroundColor: "rgba(255,255,255,0.98)",
-    shadowColor: "#000",
-    shadowOpacity: 0.18,
+    shadowColor: "#C81877",
+    shadowOpacity: 0.2,
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 3 },
     elevation: 5,
     borderWidth: 1,
-    borderColor: "#F1E0E8",
+    borderColor: "#FDD5E8",
   },
   qtyBtn: {
     width: 28,
@@ -211,5 +233,22 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+  qtyBtnMinus: {
+    backgroundColor: "#FDE8F4",
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  qtyBtnPlus: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: "center",
+    justifyContent: "center",
+    overflow: "hidden",
+  },
+  qtyBtnHit: { width: "100%", height: "100%", alignItems: "center", justifyContent: "center" },
   qtyText: { fontSize: 13, fontFamily: "Inter_700Bold", minWidth: 16, textAlign: "center" },
 });
