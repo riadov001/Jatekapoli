@@ -14,6 +14,17 @@ import { useT } from "@/contexts/LanguageContext";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 
+type PaymentMethodId = "cash" | "card";
+interface PaymentMethodOption {
+  id: PaymentMethodId;
+  label: string;
+  icon: React.ComponentProps<typeof Ionicons>["name"];
+}
+const PAYMENT_METHODS: PaymentMethodOption[] = [
+  { id: "cash", label: "Espèces", icon: "cash-outline" },
+  { id: "card", label: "Carte", icon: "card-outline" },
+];
+
 export default function CartScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
@@ -24,6 +35,7 @@ export default function CartScreen() {
   const createOrder = useCreateOrder();
   const address = selectedAddress;
   const [notes, setNotes] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState<"cash" | "card" | null>(null);
 
   const handlePlaceOrder = () => {
     if (!token) {
@@ -31,6 +43,15 @@ export default function CartScreen() {
         { text: t("cancel"), style: "cancel" },
         { text: t("cart_signin"), onPress: () => router.push("/(auth)/login") },
       ]);
+      return;
+    }
+    if (!paymentMethod) {
+      Alert.alert(
+        "Méthode de paiement requise",
+        "Veuillez choisir une méthode de paiement avant de valider votre commande.",
+        [{ text: "OK" }],
+      );
+      if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
       return;
     }
     if (!address.trim()) {
@@ -179,6 +200,34 @@ export default function CartScreen() {
           </View>
           <Ionicons name="chevron-forward" size={20} color={colors.mutedForeground} />
         </TouchableOpacity>
+
+        {/* Payment method */}
+        <Text style={[styles.sectionLabel, { color: colors.foreground }]}>Méthode de paiement</Text>
+        <View style={[styles.paymentRow, { marginHorizontal: 16, marginBottom: 16, gap: 10 }]}>
+          {PAYMENT_METHODS.map((method) => {
+            const selected = paymentMethod === method.id;
+            return (
+              <TouchableOpacity
+                key={method.id}
+                onPress={() => setPaymentMethod(method.id)}
+                style={[
+                  styles.paymentOption,
+                  {
+                    backgroundColor: selected ? colors.primary + "15" : colors.card,
+                    borderColor: selected ? colors.primary : colors.border,
+                  },
+                ]}
+                activeOpacity={0.7}
+              >
+                <Ionicons name={method.icon} size={22} color={selected ? colors.primary : colors.mutedForeground} />
+                <Text style={[styles.paymentLabel, { color: selected ? colors.primary : colors.foreground }]}>
+                  {method.label}
+                </Text>
+                {selected && <Ionicons name="checkmark-circle" size={18} color={colors.primary} />}
+              </TouchableOpacity>
+            );
+          })}
+        </View>
 
         {/* Notes */}
         <Text style={[styles.sectionLabel, { color: colors.foreground }]}>{t("cart_notes")}</Text>
@@ -452,4 +501,15 @@ const styles = StyleSheet.create({
   freeDeliveryText: { flex: 1, fontSize: 13, fontFamily: "Inter_600SemiBold" },
   freeDeliveryBarTrack: { height: 6, borderRadius: 3, overflow: "hidden" },
   freeDeliveryBarFill: { height: "100%", borderRadius: 3 },
+  paymentRow: { flexDirection: "row" },
+  paymentOption: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    padding: 14,
+    borderRadius: 14,
+    borderWidth: 1.5,
+  },
+  paymentLabel: { fontSize: 14, fontFamily: "Inter_600SemiBold", flex: 1 },
 });

@@ -10,14 +10,22 @@ import { useCart } from "@/contexts/CartContext";
 
 export default function AddressesScreen() {
   const colors = useColors();
-  const { select } = useLocalSearchParams<{ select?: string }>();
+  const { select, returnTo } = useLocalSearchParams<{ select?: string; returnTo?: string }>();
   const selectMode = select === "1";
   const { setSelectedAddress } = useCart();
 
+  const ALLOWED_RETURN_PATHS = ["/cart", "/(tabs)", "/(tabs)/profile"] as const;
   const pickAddress = (a: SavedAddress) => {
     const full = a.details ? `${a.fullAddress} (${a.details})` : a.fullAddress;
     setSelectedAddress(full);
-    if (router.canGoBack()) router.back(); else router.replace("/cart");
+    const safePath = ALLOWED_RETURN_PATHS.find((p) => p === returnTo) ?? null;
+    if (safePath) {
+      router.replace(safePath);
+    } else if (router.canGoBack()) {
+      router.back();
+    } else {
+      router.replace("/cart");
+    }
   };
   const [items, setItems] = useState<SavedAddress[]>([]);
   const [loading, setLoading] = useState(true);

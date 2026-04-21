@@ -1,11 +1,4 @@
-import {
-  Inter_400Regular,
-  Inter_500Medium,
-  Inter_600SemiBold,
-  Inter_700Bold,
-  Inter_900Black,
-  useFonts,
-} from "@expo-google-fonts/inter";
+import { useFonts } from "expo-font";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
@@ -55,24 +48,20 @@ function RootLayoutNav() {
 
 export default function RootLayout() {
   const [fontsLoaded, fontError] = useFonts({
-    Inter_400Regular,
-    Inter_500Medium,
-    Inter_600SemiBold,
-    Inter_700Bold,
-  Inter_900Black,
+    Inter_400Regular: require("../assets/fonts/Inter_400Regular.ttf"),
+    Inter_500Medium: require("../assets/fonts/Inter_500Medium.ttf"),
+    Inter_600SemiBold: require("../assets/fonts/Inter_600SemiBold.ttf"),
+    Inter_700Bold: require("../assets/fonts/Inter_700Bold.ttf"),
+    Inter_900Black: require("../assets/fonts/Inter_900Black.ttf"),
   });
-  const [splashHidden, setSplashHidden] = React.useState(false);
-
   // Hide the splash as soon as fonts are ready OR a 1.5 s safety timeout
-  // elapses — whichever comes first. Without this fallback, a slow / blocked
-  // Google Fonts CDN response would leave the splash visible forever
-  // (the "écran bleu" production crash on Expo Go).
+  // elapses — whichever comes first. Without this fallback, a slow bundle
+  // would leave the splash visible forever ("écran bleu" in production).
   useEffect(() => {
     let cancelled = false;
     const hide = () => {
       if (cancelled) return;
       cancelled = true;
-      setSplashHidden(true);
       SplashScreen.hideAsync().catch(() => {});
     };
     if (fontsLoaded || fontError) {
@@ -86,10 +75,9 @@ export default function RootLayout() {
     };
   }, [fontsLoaded, fontError]);
 
-  // Render the tree even if fonts aren't ready yet — system fonts will be
-  // used as a fallback, and Inter swaps in once it loads. Returning null
-  // here was the root cause of the splash hang in production.
-  if (!splashHidden && !fontsLoaded && !fontError) return null;
+  // Render the tree immediately — system fonts are used as a fallback until
+  // Inter finishes loading. Never return null here as that caused the splash
+  // to hang indefinitely ("écran bleu") in production.
 
   return (
     <SafeAreaProvider>

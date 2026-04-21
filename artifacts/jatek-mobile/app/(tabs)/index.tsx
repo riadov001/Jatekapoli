@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef } from "react";
+import React, { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import {
   StyleSheet,
   Text,
@@ -33,6 +33,7 @@ import { AddressQuickPicker } from "@/components/AddressQuickPicker";
 import { useT } from "@/contexts/LanguageContext";
 import { WaveEdge } from "@/components/WaveEdge";
 import { ShortPlayerModal } from "@/components/ShortPlayerModal";
+import { getFavoriteIds, toggleFavorite as toggleFavoriteStorage } from "@/lib/favorites";
 
 // Talabat-inspired palette — rose magenta redesign
 const BG = "#F8F8F8";
@@ -84,10 +85,14 @@ function RestaurantCard({
   restaurant,
   variant = "standard",
   onPress,
+  isFavorite = false,
+  onToggleFavorite,
 }: {
   restaurant: Restaurant;
   variant?: "standard" | "split";
   onPress: () => void;
+  isFavorite?: boolean;
+  onToggleFavorite?: () => void;
 }) {
   const hasFreeDelivery = restaurant.deliveryFee === 0;
   const isTopRated = (restaurant.rating ?? 0) >= 4.6;
@@ -250,10 +255,15 @@ function RestaurantCard({
           ) : null}
         </View>
 
-        {/* Heart (purely decorative, no logic). */}
-        <View style={styles.heartBtn}>
-          <Ionicons name="heart-outline" size={18} color="#fff" />
-        </View>
+        {/* Heart — toggles favorite */}
+        <TouchableOpacity
+          style={styles.heartBtn}
+          onPress={(e) => { e.stopPropagation?.(); onToggleFavorite?.(); }}
+          hitSlop={10}
+          activeOpacity={0.75}
+        >
+          <Ionicons name={isFavorite ? "heart" : "heart-outline"} size={18} color={isFavorite ? "#FF4593" : "#fff"} />
+        </TouchableOpacity>
 
         {restaurant.isOpen === false ? (
           <View style={styles.closedOverlayFull}>
@@ -512,6 +522,21 @@ export default function HomeScreen() {
   const [showAddrPicker, setShowAddrPicker] = useState(false);
   const [shortsModal, setShortsModal] = useState<{ open: boolean; index: number }>({ open: false, index: 0 });
   const [freeBarOpen, setFreeBarOpen] = useState(true);
+  const [favoriteIds, setFavoriteIds] = useState<Set<number>>(new Set());
+
+  useEffect(() => {
+    getFavoriteIds().then((ids) => setFavoriteIds(new Set(ids)));
+  }, []);
+
+  const handleToggleFavorite = useCallback(async (restaurantId: number) => {
+    const isNowFav = await toggleFavoriteStorage(restaurantId);
+    setFavoriteIds((prev) => {
+      const next = new Set(prev);
+      if (isNowFav) next.add(restaurantId);
+      else next.delete(restaurantId);
+      return next;
+    });
+  }, []);
   const webTopPad = Platform.OS === "web" ? 67 : 0;
   const promosScrollRef = useRef<ScrollView | null>(null);
   const promoAutoIdx = useRef(0);
@@ -876,6 +901,8 @@ export default function HomeScreen() {
               restaurant={item}
               variant={index > 0 && index % 3 === 0 ? "split" : "standard"}
               onPress={() => goRestaurant(item.id)}
+              isFavorite={favoriteIds.has(item.id)}
+              onToggleFavorite={() => handleToggleFavorite(item.id)}
             />
           )}
         />
