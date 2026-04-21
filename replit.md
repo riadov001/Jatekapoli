@@ -93,3 +93,12 @@ JWT stored in localStorage (`jatek_token`). `setAuthTokenGetter` registered in `
 - Tokens:
   - Web: `artifacts/food-delivery/src/index.css` (`--primary`, `--brand-yellow*`, `--brand-turquoise*`); use Tailwind `bg-brand-yellow`, `text-brand-turquoise`, etc.
   - Mobile: `artifacts/jatek-mobile/constants/colors.ts` (`primary`, `yellow`, `yellowSoft`, `turquoise`, `turquoiseSoft`); read via `useColors()`
+
+## Backend Dashboard (artifact `backend-dashboard`, path `/admin/`)
+Staff/admin dashboard for Jatek with full RBAC (super_admin, admin, manager, restaurant_owner, employee).
+
+- Routes prefix `/api/backend/*` in `artifacts/api-server/src/routes/backend.ts` — every route checks role + scopes data per role.
+- DB additions: `users.assignedShopId` (employee), `dashboard_todos` table.
+- Demo accounts (password `password123`): super@jatek.ma, admin@jatek.ma, manager@jatek.ma, owner@jatek.ma, employee@jatek.ma.
+- Auth: JWT in `localStorage["jatek_backend_token"]`, attached via `setAuthTokenGetter` from `@workspace/api-client-react`.
+- Frontend: react-vite + tanstack-query + wouter + shadcn, Jatek magenta palette.

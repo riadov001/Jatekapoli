@@ -313,17 +313,33 @@ router.get("/backend/staff", requireAuth, async (req: AuthedRequest, res): Promi
   res.json(rows.map((u) => { const { password, ...s } = u; return s; }));
 });
 
+const STAFF_FIELD_ALLOWLIST = ["name", "email", "password", "role", "phone", "isActive", "assignedShopId"] as const;
+const ROLE_TRANSITIONS: Record<string, RoleKey[]> = {
+  super_admin: ["super_admin", "admin", "manager", "restaurant_owner", "employee"],
+  admin: ["admin", "manager", "restaurant_owner", "employee"],
+  restaurant_owner: ["employee"],
+};
+
 router.post("/backend/staff", requireAuth, async (req: AuthedRequest, res): Promise<void> => {
   const ctx = await requireBackendUser(req, res);
   if (!ctx) return;
-  if (!["super_admin", "admin", "restaurant_owner"].includes(ctx.role)) { res.status(403).json({ error: "Forbidden" }); return; }
+  const allowedRolesForActor = ROLE_TRANSITIONS[ctx.role];
+  if (!allowedRolesForActor) { res.status(403).json({ error: "Forbidden" }); return; }
   const { name, email, password, role, phone, assignedShopId } = req.body || {};
   if (!name || !email || !password || !role) { res.status(400).json({ error: "Missing fields" }); return; }
-  if (ctx.role === "admin" && role === "super_admin") { res.status(403).json({ error: "Only super_admin can create super_admin" }); return; }
-  if (ctx.role === "restaurant_owner" && role !== "employee") { res.status(403).json({ error: "Merchants can only create employees" }); return; }
+  if (!allowedRolesForActor.includes(role)) { res.status(403).json({ error: `Cannot create role '${role}'` }); return; }
+
+  let finalShopId: number | null = assignedShopId ?? null;
+  if (ctx.role === "restaurant_owner") {
+    // merchant: must assign to one of their own shops
+    const ownedShops = await getScopedShopIds(ctx.id, ctx.role, ctx.assignedShopId) ?? [];
+    if (!finalShopId || !ownedShops.includes(finalShopId)) {
+      res.status(403).json({ error: "assignedShopId must belong to your shops" }); return;
+    }
+  }
   const hashed = await bcrypt.hash(String(password), 10);
   const [u] = await db.insert(usersTable).values({
-    name, email: String(email).toLowerCase().trim(), password: hashed, role, phone: phone || null, assignedShopId: assignedShopId ?? null,
+    name, email: String(email).toLowerCase().trim(), password: hashed, role, phone: phone || null, assignedShopId: finalShopId,
   }).returning();
   const { password: _, ...safe } = u;
   res.status(201).json(safe);
@@ -332,11 +348,42 @@ router.post("/backend/staff", requireAuth, async (req: AuthedRequest, res): Prom
 router.patch("/backend/staff/:id", requireAuth, async (req: AuthedRequest, res): Promise<void> => {
   const ctx = await requireBackendUser(req, res);
   if (!ctx) return;
-  if (!["super_admin", "admin", "restaurant_owner"].includes(ctx.role)) { res.status(403).json({ error: "Forbidden" }); return; }
+  const allowedRolesForActor = ROLE_TRANSITIONS[ctx.role];
+  if (!allowedRolesForActor) { res.status(403).json({ error: "Forbidden" }); return; }
   const id = Number(req.params.id);
-  const updates: any = { ...req.body };
+
+  // Load target to enforce target-scope and role-boundary
+  const [target] = await db.select().from(usersTable).where(eq(usersTable.id, id)).limit(1);
+  if (!target) { res.status(404).json({ error: "Not found" }); return; }
+  if (!allowedRolesForActor.includes(target.role as RoleKey) && target.role !== ctx.role) {
+    res.status(403).json({ error: "Cannot modify this user" }); return;
+  }
+  if (ctx.role === "restaurant_owner") {
+    const ownedShops = await getScopedShopIds(ctx.id, ctx.role, ctx.assignedShopId) ?? [];
+    if (target.role !== "employee" || !target.assignedShopId || !ownedShops.includes(target.assignedShopId)) {
+      res.status(403).json({ error: "Cannot modify this user" }); return;
+    }
+  }
+
+  // Field allowlist
+  const updates: any = {};
+  for (const k of STAFF_FIELD_ALLOWLIST) {
+    if (k in (req.body || {})) updates[k] = req.body[k];
+  }
   if (updates.password) updates.password = await bcrypt.hash(String(updates.password), 10);
-  if (ctx.role !== "super_admin" && updates.role === "super_admin") { res.status(403).json({ error: "Cannot promote to super_admin" }); return; }
+  if (updates.role && !allowedRolesForActor.includes(updates.role)) {
+    res.status(403).json({ error: `Cannot assign role '${updates.role}'` }); return;
+  }
+  if (ctx.role === "restaurant_owner") {
+    if (updates.role && updates.role !== "employee") { res.status(403).json({ error: "Forbidden" }); return; }
+    if ("assignedShopId" in updates) {
+      const ownedShops = await getScopedShopIds(ctx.id, ctx.role, ctx.assignedShopId) ?? [];
+      if (!updates.assignedShopId || !ownedShops.includes(updates.assignedShopId)) {
+        res.status(403).json({ error: "assignedShopId must belong to your shops" }); return;
+      }
+    }
+  }
+
   const [u] = await db.update(usersTable).set(updates).where(eq(usersTable.id, id)).returning();
   if (!u) { res.status(404).json({ error: "Not found" }); return; }
   const { password: _, ...safe } = u;
@@ -355,6 +402,7 @@ router.delete("/backend/staff/:id", requireAuth, async (req: AuthedRequest, res)
 router.get("/backend/customers", requireAuth, async (req: AuthedRequest, res): Promise<void> => {
   const ctx = await requireBackendUser(req, res);
   if (!ctx) return;
+  if (!["super_admin", "admin", "manager"].includes(ctx.role)) { res.status(403).json({ error: "Forbidden" }); return; }
   const conds: any[] = [eq(usersTable.role, "customer")];
   if (req.query.search && typeof req.query.search === "string") {
     const s = `%${req.query.search}%`;
@@ -368,6 +416,7 @@ router.get("/backend/customers", requireAuth, async (req: AuthedRequest, res): P
 router.get("/backend/deliverymen", requireAuth, async (_req: AuthedRequest, res): Promise<void> => {
   const ctx = await requireBackendUser(_req, res);
   if (!ctx) return;
+  if (!["super_admin", "admin", "manager"].includes(ctx.role)) { res.status(403).json({ error: "Forbidden" }); return; }
   const rows = await db.select().from(driversTable).orderBy(desc(driversTable.createdAt));
   res.json(rows);
 });
@@ -392,10 +441,18 @@ router.get("/backend/reviews", requireAuth, async (req: AuthedRequest, res): Pro
 router.get("/backend/categories", requireAuth, async (req: AuthedRequest, res): Promise<void> => {
   const ctx = await requireBackendUser(req, res);
   if (!ctx) return;
-  const rows = await db
+  const scoped = await getScopedShopIds(ctx.id, ctx.role, ctx.assignedShopId);
+  const baseQuery = db
     .select({ name: restaurantsTable.category, count: count() })
     .from(restaurantsTable)
     .groupBy(restaurantsTable.category);
+  let rows;
+  if (scoped !== null) {
+    if (scoped.length === 0) { res.json([]); return; }
+    rows = await baseQuery.where(inArray(restaurantsTable.id, scoped));
+  } else {
+    rows = await baseQuery;
+  }
   res.json(rows.map((r) => ({ name: r.name, count: Number(r.count) })));
 });
 
