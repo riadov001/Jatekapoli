@@ -8,21 +8,129 @@
 import * as zod from "zod";
 
 /**
- * @summary Health check
+ * @summary List current user's addresses
  */
-export const HealthCheckResponse = zod.object({
-  status: zod.string(),
+export const ListAddressesResponseItem = zod.object({
+  id: zod.number(),
+  userId: zod.number(),
+  label: zod.string(),
+  fullAddress: zod.string(),
+  details: zod.string().nullish(),
+  isDefault: zod.boolean(),
+  createdAt: zod.coerce.date(),
+});
+export const ListAddressesResponse = zod.array(ListAddressesResponseItem);
+
+/**
+ * @summary Create a address
+ */
+export const CreateAddressBody = zod.object({
+  label: zod.string(),
+  fullAddress: zod.string(),
+  details: zod.string().nullish(),
+  isDefault: zod.boolean().optional(),
 });
 
 /**
- * @summary Register a new user
+ * @summary Update a address
  */
-export const RegisterBody = zod.object({
-  name: zod.string(),
-  email: zod.string(),
-  password: zod.string(),
-  role: zod.enum(["customer", "driver", "restaurant_owner", "admin"]),
-  phone: zod.string().nullish(),
+export const UpdateAddressParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const UpdateAddressBody = zod.object({
+  label: zod.string().optional(),
+  fullAddress: zod.string().optional(),
+  details: zod.string().nullish(),
+  isDefault: zod.boolean().optional(),
+});
+
+export const UpdateAddressResponse = zod.object({
+  id: zod.number(),
+  userId: zod.number(),
+  label: zod.string(),
+  fullAddress: zod.string(),
+  details: zod.string().nullish(),
+  isDefault: zod.boolean(),
+  createdAt: zod.coerce.date(),
+});
+
+/**
+ * @summary Delete a address
+ */
+export const DeleteAddressParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+/**
+ * @summary Get recent orders for admin dashboard
+ */
+export const GetRecentOrdersResponseItem = zod.object({
+  id: zod.number(),
+  userId: zod.number(),
+  restaurantId: zod.number(),
+  driverId: zod.number().nullish(),
+  restaurantName: zod.string(),
+  userName: zod.string(),
+  status: zod.enum([
+    "pending",
+    "accepted",
+    "preparing",
+    "ready",
+    "picked_up",
+    "delivered",
+    "cancelled",
+  ]),
+  subtotal: zod.number(),
+  deliveryFee: zod.number(),
+  total: zod.number(),
+  deliveryAddress: zod.string(),
+  notes: zod.string().nullish(),
+  estimatedDeliveryTime: zod.number().nullish(),
+  items: zod.array(
+    zod.object({
+      id: zod.number(),
+      orderId: zod.number(),
+      menuItemId: zod.number(),
+      menuItemName: zod.string(),
+      quantity: zod.number(),
+      unitPrice: zod.number(),
+      totalPrice: zod.number(),
+    }),
+  ),
+  createdAt: zod.coerce.date(),
+  updatedAt: zod.coerce.date(),
+  reference: zod.string().nullish(),
+  kitchenCode: zod.string().nullish(),
+  pickupCode: zod.string().nullish(),
+});
+export const GetRecentOrdersResponse = zod.array(GetRecentOrdersResponseItem);
+
+/**
+ * @summary Get admin dashboard statistics
+ */
+export const GetAdminStatsResponse = zod.object({
+  totalUsers: zod.number(),
+  totalRestaurants: zod.number(),
+  totalOrders: zod.number(),
+  totalDrivers: zod.number(),
+  activeOrders: zod.number(),
+  revenue: zod.number(),
+  ordersToday: zod.number(),
+  newUsersToday: zod.number(),
+});
+
+/**
+ * @summary Send a password reset OTP to the phone attached to an email
+ */
+export const ForgotPasswordBody = zod.object({
+  email: zod.string().email(),
+});
+
+export const ForgotPasswordResponse = zod.object({
+  success: zod.boolean(),
+  message: zod.string(),
+  demoOtp: zod.string().optional(),
 });
 
 /**
@@ -46,7 +154,15 @@ export const LoginResponse = zod.object({
     isActive: zod.boolean(),
     loyaltyPoints: zod.number(),
     createdAt: zod.coerce.date(),
+    assignedShopId: zod.number().nullish(),
   }),
+});
+
+/**
+ * @summary Logout
+ */
+export const LogoutResponse = zod.object({
+  success: zod.boolean(),
 });
 
 /**
@@ -63,13 +179,54 @@ export const GetMeResponse = zod.object({
   isActive: zod.boolean(),
   loyaltyPoints: zod.number(),
   createdAt: zod.coerce.date(),
+  assignedShopId: zod.number().nullish(),
 });
 
 /**
- * @summary Logout
+ * @summary Delete the current authenticated user account
  */
-export const LogoutResponse = zod.object({
+export const DeleteAuthMeResponse = zod.object({
   success: zod.boolean(),
+});
+
+/**
+ * @summary Register a new user
+ */
+export const RegisterBody = zod.object({
+  name: zod.string(),
+  email: zod.string(),
+  password: zod.string(),
+  role: zod.enum(["customer", "driver", "restaurant_owner", "admin"]),
+  phone: zod.string().nullish(),
+});
+
+/**
+ * @summary Reset password with OTP and login
+ */
+export const resetPasswordBodyNewPasswordMin = 6;
+
+export const ResetPasswordBody = zod.object({
+  email: zod.string().email(),
+  code: zod.string(),
+  newPassword: zod.string().min(resetPasswordBodyNewPasswordMin),
+});
+
+export const ResetPasswordResponse = zod.object({
+  success: zod.boolean(),
+  token: zod.string(),
+  user: zod.object({
+    id: zod.number(),
+    name: zod.string(),
+    email: zod.string(),
+    role: zod.string(),
+    phone: zod.string().nullish(),
+    address: zod.string().nullish(),
+    avatarUrl: zod.string().nullish(),
+    isActive: zod.boolean(),
+    loyaltyPoints: zod.number(),
+    createdAt: zod.coerce.date(),
+    assignedShopId: zod.number().nullish(),
+  }),
 });
 
 /**
@@ -88,6 +245,31 @@ export const SendOtpResponse = zod.object({
   success: zod.boolean(),
   message: zod.string(),
   demoOtp: zod.string().optional(),
+});
+
+/**
+ * @summary Update the current user name after OTP signup
+ */
+export const updateAuthNameBodyNameMin = 2;
+
+export const UpdateAuthNameBody = zod.object({
+  name: zod.string().min(updateAuthNameBodyNameMin),
+});
+
+export const UpdateAuthNameResponse = zod.object({
+  user: zod.object({
+    id: zod.number(),
+    name: zod.string(),
+    email: zod.string(),
+    role: zod.string(),
+    phone: zod.string().nullish(),
+    address: zod.string().nullish(),
+    avatarUrl: zod.string().nullish(),
+    isActive: zod.boolean(),
+    loyaltyPoints: zod.number(),
+    createdAt: zod.coerce.date(),
+    assignedShopId: zod.number().nullish(),
+  }),
 });
 
 /**
@@ -113,206 +295,224 @@ export const VerifyOtpResponse = zod.object({
     isActive: zod.boolean(),
     loyaltyPoints: zod.number(),
     createdAt: zod.coerce.date(),
+    assignedShopId: zod.number().nullish(),
   }),
 });
 
 /**
- * @summary List restaurants
+ * JWT required. Backend dashboard RBAC applies by staff role and scoped shop access.
+ * @summary List shop/restaurant categories (distinct values from shops)
  */
-export const ListRestaurantsQueryParams = zod.object({
-  search: zod.coerce.string().optional(),
-  category: zod.coerce.string().optional(),
-  isLocal: zod.coerce.boolean().optional(),
-  isOpen: zod.coerce.boolean().optional(),
-  businessType: zod.coerce.string().optional(),
-  ownerId: zod.coerce.number().optional(),
-});
-
-export const ListRestaurantsResponseItem = zod.object({
-  id: zod.number(),
-  ownerId: zod.number(),
+export const ListBackendCategoriesResponseItem = zod.object({
   name: zod.string(),
-  description: zod.string().nullish(),
-  address: zod.string(),
-  phone: zod.string().nullish(),
-  imageUrl: zod.string().nullish(),
-  coverImageUrl: zod.string().nullish(),
-  logoUrl: zod.string().nullish(),
-  category: zod.string(),
-  businessType: zod.string(),
-  isLocal: zod.boolean(),
-  isOpen: zod.boolean(),
-  deliveryTime: zod.number().nullish(),
-  deliveryFee: zod.number().nullish(),
-  minimumOrder: zod.number().nullish(),
-  rating: zod.number().nullish(),
-  reviewCount: zod.number(),
-  isVerified: zod.boolean(),
-  createdAt: zod.coerce.date(),
+  count: zod.number(),
 });
-export const ListRestaurantsResponse = zod.array(ListRestaurantsResponseItem);
-
-/**
- * @summary Create a restaurant
- */
-export const CreateRestaurantBody = zod.object({
-  name: zod.string(),
-  description: zod.string().optional(),
-  address: zod.string(),
-  phone: zod.string().optional(),
-  imageUrl: zod.string().optional(),
-  coverImageUrl: zod.string().optional(),
-  logoUrl: zod.string().nullish(),
-  category: zod.string(),
-  businessType: zod.string().optional(),
-  isLocal: zod.boolean().optional(),
-  deliveryTime: zod.number().optional(),
-  deliveryFee: zod.number().optional(),
-  minimumOrder: zod.number().optional(),
-});
-
-/**
- * @summary Get a restaurant
- */
-export const GetRestaurantParams = zod.object({
-  id: zod.coerce.number(),
-});
-
-export const GetRestaurantResponse = zod.object({
-  id: zod.number(),
-  ownerId: zod.number(),
-  name: zod.string(),
-  description: zod.string().nullish(),
-  address: zod.string(),
-  phone: zod.string().nullish(),
-  imageUrl: zod.string().nullish(),
-  coverImageUrl: zod.string().nullish(),
-  logoUrl: zod.string().nullish(),
-  category: zod.string(),
-  businessType: zod.string(),
-  isLocal: zod.boolean(),
-  isOpen: zod.boolean(),
-  deliveryTime: zod.number().nullish(),
-  deliveryFee: zod.number().nullish(),
-  minimumOrder: zod.number().nullish(),
-  rating: zod.number().nullish(),
-  reviewCount: zod.number(),
-  isVerified: zod.boolean(),
-  createdAt: zod.coerce.date(),
-});
-
-/**
- * @summary Update a restaurant
- */
-export const UpdateRestaurantParams = zod.object({
-  id: zod.coerce.number(),
-});
-
-export const UpdateRestaurantBody = zod.object({
-  name: zod.string().optional(),
-  description: zod.string().optional(),
-  address: zod.string().optional(),
-  phone: zod.string().optional(),
-  imageUrl: zod.string().optional(),
-  coverImageUrl: zod.string().optional(),
-  logoUrl: zod.string().nullish(),
-  category: zod.string().optional(),
-  businessType: zod.string().optional(),
-  isLocal: zod.boolean().optional(),
-  isOpen: zod.boolean().optional(),
-  deliveryTime: zod.number().optional(),
-  deliveryFee: zod.number().optional(),
-  minimumOrder: zod.number().optional(),
-  isVerified: zod.boolean().optional(),
-});
-
-export const UpdateRestaurantResponse = zod.object({
-  id: zod.number(),
-  ownerId: zod.number(),
-  name: zod.string(),
-  description: zod.string().nullish(),
-  address: zod.string(),
-  phone: zod.string().nullish(),
-  imageUrl: zod.string().nullish(),
-  coverImageUrl: zod.string().nullish(),
-  logoUrl: zod.string().nullish(),
-  category: zod.string(),
-  businessType: zod.string(),
-  isLocal: zod.boolean(),
-  isOpen: zod.boolean(),
-  deliveryTime: zod.number().nullish(),
-  deliveryFee: zod.number().nullish(),
-  minimumOrder: zod.number().nullish(),
-  rating: zod.number().nullish(),
-  reviewCount: zod.number(),
-  isVerified: zod.boolean(),
-  createdAt: zod.coerce.date(),
-});
-
-/**
- * @summary Delete a restaurant
- */
-export const DeleteRestaurantParams = zod.object({
-  id: zod.coerce.number(),
-});
-
-/**
- * @summary Get restaurant statistics
- */
-export const GetRestaurantStatsParams = zod.object({
-  id: zod.coerce.number(),
-});
-
-export const GetRestaurantStatsResponse = zod.object({
-  totalOrders: zod.number(),
-  completedOrders: zod.number(),
-  totalRevenue: zod.number(),
-  averageRating: zod.number().nullish(),
-  totalReviews: zod.number(),
-  pendingOrders: zod.number(),
-});
-
-/**
- * @summary Get featured/top restaurants
- */
-export const GetFeaturedRestaurantsResponseItem = zod.object({
-  id: zod.number(),
-  ownerId: zod.number(),
-  name: zod.string(),
-  description: zod.string().nullish(),
-  address: zod.string(),
-  phone: zod.string().nullish(),
-  imageUrl: zod.string().nullish(),
-  coverImageUrl: zod.string().nullish(),
-  logoUrl: zod.string().nullish(),
-  category: zod.string(),
-  businessType: zod.string(),
-  isLocal: zod.boolean(),
-  isOpen: zod.boolean(),
-  deliveryTime: zod.number().nullish(),
-  deliveryFee: zod.number().nullish(),
-  minimumOrder: zod.number().nullish(),
-  rating: zod.number().nullish(),
-  reviewCount: zod.number(),
-  isVerified: zod.boolean(),
-  createdAt: zod.coerce.date(),
-});
-export const GetFeaturedRestaurantsResponse = zod.array(
-  GetFeaturedRestaurantsResponseItem,
+export const ListBackendCategoriesResponse = zod.array(
+  ListBackendCategoriesResponseItem,
 );
 
 /**
- * @summary List menu items for a restaurant
+ * JWT required. Backend dashboard RBAC applies by staff role and scoped shop access.
+ * @summary List customers
  */
-export const ListMenuItemsParams = zod.object({
-  restaurantId: zod.coerce.number(),
+export const ListBackendCustomersQueryParams = zod.object({
+  search: zod.coerce.string().optional(),
 });
 
-export const ListMenuItemsQueryParams = zod.object({
-  category: zod.coerce.string().optional(),
+export const ListBackendCustomersResponseItem = zod.object({
+  id: zod.number(),
+  name: zod.string(),
+  email: zod.string(),
+  role: zod.string(),
+  phone: zod.string().nullish(),
+  address: zod.string().nullish(),
+  avatarUrl: zod.string().nullish(),
+  isActive: zod.boolean(),
+  loyaltyPoints: zod.number(),
+  createdAt: zod.coerce.date(),
+  assignedShopId: zod.number().nullish(),
+});
+export const ListBackendCustomersResponse = zod.array(
+  ListBackendCustomersResponseItem,
+);
+
+/**
+ * JWT required. Backend dashboard RBAC applies by staff role and scoped shop access.
+ * @summary Aggregate stats for the backend dashboard
+ */
+export const getBackendDashboardQueryRangeDefault = `month`;
+
+export const GetBackendDashboardQueryParams = zod.object({
+  range: zod
+    .enum(["week", "month", "year"])
+    .default(getBackendDashboardQueryRangeDefault),
 });
 
-export const ListMenuItemsResponseItem = zod.object({
+export const GetBackendDashboardResponse = zod.object({
+  inProgressOrders: zod.number(),
+  cancelledOrders: zod.number(),
+  deliveredOrders: zod.number(),
+  outOfStockProducts: zod.number(),
+  totalProducts: zod.number(),
+  orderReviews: zod.number(),
+  totalEarned: zod.number(),
+  deliveryEarning: zod.number(),
+  totalOrderTax: zod.number(),
+  totalCommission: zod.number(),
+  ordersChart: zod.array(
+    zod.object({
+      label: zod.string(),
+      value: zod.number(),
+    }),
+  ),
+});
+
+/**
+ * JWT required. Backend dashboard RBAC applies by staff role and scoped shop access.
+ * @summary List delivery drivers
+ */
+export const ListBackendDeliverymenResponseItem = zod.object({
+  id: zod.number(),
+  userId: zod.number(),
+  name: zod.string(),
+  phone: zod.string().nullish(),
+  vehicleType: zod.string().nullish(),
+  isAvailable: zod.boolean(),
+  totalDeliveries: zod.number(),
+  rating: zod.number().nullish(),
+  createdAt: zod.coerce.date(),
+  vehiclePlate: zod.string().nullish(),
+  nationalId: zod.string().nullish(),
+  licenseNumber: zod.string().nullish(),
+  photoUrl: zod.string().nullish(),
+  latitude: zod.number().nullish(),
+  longitude: zod.number().nullish(),
+  locationUpdatedAt: zod.coerce.date().nullish(),
+  profileCompletedAt: zod.coerce.date().nullish(),
+});
+export const ListBackendDeliverymenResponse = zod.array(
+  ListBackendDeliverymenResponseItem,
+);
+
+/**
+ * @summary Login to the backend dashboard (staff only)
+ */
+export const BackendLoginBody = zod.object({
+  email: zod.string(),
+  password: zod.string(),
+});
+
+export const BackendLoginResponse = zod.object({
+  token: zod.string(),
+  user: zod.object({
+    id: zod.number(),
+    name: zod.string(),
+    email: zod.string(),
+    role: zod.string(),
+    phone: zod.string().nullish(),
+    address: zod.string().nullish(),
+    avatarUrl: zod.string().nullish(),
+    isActive: zod.boolean(),
+    loyaltyPoints: zod.number(),
+    createdAt: zod.coerce.date(),
+    assignedShopId: zod.number().nullish(),
+  }),
+});
+
+/**
+ * JWT required. Backend dashboard RBAC applies by staff role and scoped shop access.
+ * @summary Get current backend user with permissions
+ */
+export const BackendMeResponse = zod.object({
+  user: zod.object({
+    id: zod.number(),
+    name: zod.string(),
+    email: zod.string(),
+    role: zod.string(),
+    phone: zod.string().nullish(),
+    address: zod.string().nullish(),
+    avatarUrl: zod.string().nullish(),
+    isActive: zod.boolean(),
+    loyaltyPoints: zod.number(),
+    createdAt: zod.coerce.date(),
+    assignedShopId: zod.number().nullish(),
+  }),
+  permissions: zod.array(zod.string()),
+  scopedShopIds: zod
+    .array(zod.number())
+    .optional()
+    .describe(
+      "Restricts data to these shops (merchant + employee). Empty = no scope restriction.",
+    ),
+});
+
+/**
+ * JWT required. Backend dashboard RBAC applies by staff role and scoped shop access.
+ * @summary List orders (filtered by role scope)
+ */
+export const listBackendOrdersQueryLimitDefault = 50;
+
+export const ListBackendOrdersQueryParams = zod.object({
+  status: zod.coerce.string().optional(),
+  shopId: zod.coerce.number().optional(),
+  search: zod.coerce.string().optional(),
+  limit: zod.coerce.number().default(listBackendOrdersQueryLimitDefault),
+});
+
+export const ListBackendOrdersResponseItem = zod.object({
+  id: zod.number(),
+  userId: zod.number(),
+  restaurantId: zod.number(),
+  driverId: zod.number().nullish(),
+  restaurantName: zod.string(),
+  userName: zod.string(),
+  status: zod.enum([
+    "pending",
+    "accepted",
+    "preparing",
+    "ready",
+    "picked_up",
+    "delivered",
+    "cancelled",
+  ]),
+  subtotal: zod.number(),
+  deliveryFee: zod.number(),
+  total: zod.number(),
+  deliveryAddress: zod.string(),
+  notes: zod.string().nullish(),
+  estimatedDeliveryTime: zod.number().nullish(),
+  items: zod.array(
+    zod.object({
+      id: zod.number(),
+      orderId: zod.number(),
+      menuItemId: zod.number(),
+      menuItemName: zod.string(),
+      quantity: zod.number(),
+      unitPrice: zod.number(),
+      totalPrice: zod.number(),
+    }),
+  ),
+  createdAt: zod.coerce.date(),
+  updatedAt: zod.coerce.date(),
+  reference: zod.string().nullish(),
+  kitchenCode: zod.string().nullish(),
+  pickupCode: zod.string().nullish(),
+});
+export const ListBackendOrdersResponse = zod.array(
+  ListBackendOrdersResponseItem,
+);
+
+/**
+ * JWT required. Backend dashboard RBAC applies by staff role and scoped shop access.
+ * @summary List products (menu items, filtered by role scope)
+ */
+export const ListBackendProductsQueryParams = zod.object({
+  status: zod.coerce.string().optional(),
+  shopId: zod.coerce.number().optional(),
+  search: zod.coerce.string().optional(),
+});
+
+export const ListBackendProductsResponseItem = zod.object({
   id: zod.number(),
   restaurantId: zod.number(),
   name: zod.string(),
@@ -324,23 +524,748 @@ export const ListMenuItemsResponseItem = zod.object({
   isPopular: zod.boolean(),
   createdAt: zod.coerce.date(),
 });
-export const ListMenuItemsResponse = zod.array(ListMenuItemsResponseItem);
+export const ListBackendProductsResponse = zod.array(
+  ListBackendProductsResponseItem,
+);
 
 /**
- * @summary Create a menu item
+ * JWT required. Backend dashboard RBAC applies by staff role and scoped shop access.
+ * @summary List shop reviews
  */
-export const CreateMenuItemParams = zod.object({
+export const ListBackendReviewsQueryParams = zod.object({
+  shopId: zod.coerce.number().optional(),
+});
+
+export const ListBackendReviewsResponseItem = zod.object({
+  id: zod.number(),
+  userId: zod.number(),
+  restaurantId: zod.number(),
+  orderId: zod.number().nullish(),
+  userName: zod.string(),
+  rating: zod.number(),
+  comment: zod.string().nullish(),
+  createdAt: zod.coerce.date(),
+});
+export const ListBackendReviewsResponse = zod.array(
+  ListBackendReviewsResponseItem,
+);
+
+/**
+ * JWT required. Backend dashboard RBAC applies by staff role and scoped shop access.
+ * @summary List roles + permission matrix
+ */
+export const ListBackendRolesResponseItem = zod.object({
+  key: zod.string(),
+  label: zod.string(),
+  description: zod.string().optional(),
+  permissions: zod.array(zod.string()),
+});
+export const ListBackendRolesResponse = zod.array(ListBackendRolesResponseItem);
+
+/**
+ * JWT required. Backend dashboard RBAC applies by staff role and scoped shop access.
+ * @summary List shops (filtered by role scope)
+ */
+export const ListBackendShopsQueryParams = zod.object({
+  search: zod.coerce.string().optional(),
+});
+
+export const ListBackendShopsResponseItem = zod.object({
+  id: zod.number(),
+  ownerId: zod.number(),
+  name: zod.string(),
+  description: zod.string().nullish(),
+  address: zod.string(),
+  phone: zod.string().nullish(),
+  imageUrl: zod.string().nullish(),
+  coverImageUrl: zod.string().nullish(),
+  logoUrl: zod.string().nullish(),
+  category: zod.string(),
+  businessType: zod.string(),
+  isLocal: zod.boolean(),
+  isOpen: zod.boolean(),
+  deliveryTime: zod.number().nullish(),
+  deliveryFee: zod.number().nullish(),
+  minimumOrder: zod.number().nullish(),
+  rating: zod.number().nullish(),
+  reviewCount: zod.number(),
+  isVerified: zod.boolean(),
+  createdAt: zod.coerce.date(),
+  legalName: zod.string().nullish(),
+  ice: zod.string().nullish(),
+  printerEmail: zod.string().nullish(),
+  profileCompletedAt: zod.coerce.date().nullish(),
+  freeDeliveryThreshold: zod
+    .number()
+    .optional()
+    .describe("Defaulted by the API when not stored on the restaurant row."),
+});
+export const ListBackendShopsResponse = zod.array(ListBackendShopsResponseItem);
+
+/**
+ * JWT required. Backend dashboard RBAC applies by staff role and scoped shop access.
+ * @summary List staff & admin users (admin only)
+ */
+export const ListBackendStaffResponseItem = zod.object({
+  id: zod.number(),
+  name: zod.string(),
+  email: zod.string(),
+  role: zod.string(),
+  phone: zod.string().nullish(),
+  address: zod.string().nullish(),
+  avatarUrl: zod.string().nullish(),
+  isActive: zod.boolean(),
+  loyaltyPoints: zod.number(),
+  createdAt: zod.coerce.date(),
+  assignedShopId: zod.number().nullish(),
+});
+export const ListBackendStaffResponse = zod.array(ListBackendStaffResponseItem);
+
+/**
+ * JWT required. Backend dashboard RBAC applies by staff role and scoped shop access.
+ * @summary Create a staff/admin user (admin only)
+ */
+export const CreateBackendStaffBody = zod.object({
+  name: zod.string(),
+  email: zod.string(),
+  password: zod.string(),
+  role: zod.enum([
+    "admin",
+    "super_admin",
+    "manager",
+    "restaurant_owner",
+    "employee",
+  ]),
+  phone: zod.string().nullish(),
+  assignedShopId: zod.number().nullish(),
+});
+
+/**
+ * JWT required. Backend dashboard RBAC applies by staff role and scoped shop access.
+ * @summary Update staff user
+ */
+export const UpdateBackendStaffParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const UpdateBackendStaffBody = zod.object({
+  name: zod.string().optional(),
+  email: zod.string().optional(),
+  password: zod.string().optional(),
+  role: zod.string().optional(),
+  phone: zod.string().optional(),
+  isActive: zod.boolean().optional(),
+  assignedShopId: zod.number().nullish(),
+});
+
+export const UpdateBackendStaffResponse = zod.object({
+  id: zod.number(),
+  name: zod.string(),
+  email: zod.string(),
+  role: zod.string(),
+  phone: zod.string().nullish(),
+  address: zod.string().nullish(),
+  avatarUrl: zod.string().nullish(),
+  isActive: zod.boolean(),
+  loyaltyPoints: zod.number(),
+  createdAt: zod.coerce.date(),
+  assignedShopId: zod.number().nullish(),
+});
+
+/**
+ * JWT required. Backend dashboard RBAC applies by staff role and scoped shop access.
+ * @summary Delete staff user
+ */
+export const DeleteBackendStaffParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+/**
+ * JWT required. Backend dashboard RBAC applies by staff role and scoped shop access.
+ * @summary List dashboard todos for current user
+ */
+export const ListBackendTodosResponseItem = zod.object({
+  id: zod.number(),
+  userId: zod.number(),
+  text: zod.string(),
+  done: zod.boolean(),
+  createdAt: zod.coerce.date(),
+});
+export const ListBackendTodosResponse = zod.array(ListBackendTodosResponseItem);
+
+/**
+ * JWT required. Backend dashboard RBAC applies by staff role and scoped shop access.
+ * @summary Create a todo
+ */
+export const CreateBackendTodoBody = zod.object({
+  text: zod.string(),
+});
+
+/**
+ * JWT required. Backend dashboard RBAC applies by staff role and scoped shop access.
+ * @summary Toggle done status of a todo
+ */
+export const ToggleBackendTodoParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const ToggleBackendTodoBody = zod.object({
+  done: zod.boolean(),
+});
+
+export const ToggleBackendTodoResponse = zod.object({
+  id: zod.number(),
+  userId: zod.number(),
+  text: zod.string(),
+  done: zod.boolean(),
+  createdAt: zod.coerce.date(),
+});
+
+/**
+ * JWT required. Backend dashboard RBAC applies by staff role and scoped shop access.
+ * @summary Delete a todo
+ */
+export const DeleteBackendTodoParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+/**
+ * @summary Get privacy consents and current legal versions
+ */
+export const GetUserConsentsResponse = zod.object({
+  userId: zod.number().optional(),
+  cookiesEssential: zod.boolean().optional(),
+  cookiesAnalytics: zod.boolean().optional(),
+  cookiesMarketing: zod.boolean().optional(),
+  dataProcessing: zod.boolean().optional(),
+  dataSharing: zod.boolean().optional(),
+  personalization: zod.boolean().optional(),
+  marketingEmails: zod.boolean().optional(),
+  marketingSms: zod.boolean().optional(),
+  marketingPush: zod.boolean().optional(),
+  termsVersion: zod.string().nullish(),
+  termsAcceptedAt: zod.coerce.date().nullish(),
+  privacyVersion: zod.string().nullish(),
+  privacyAcceptedAt: zod.coerce.date().nullish(),
+  cookiesVersion: zod.string().nullish(),
+  cookiesAcceptedAt: zod.coerce.date().nullish(),
+  updatedAt: zod.coerce.date().optional(),
+  currentVersions: zod
+    .object({
+      terms: zod.string(),
+      privacy: zod.string(),
+      cookies: zod.string(),
+    })
+    .optional(),
+});
+
+/**
+ * @summary Update privacy consents
+ */
+export const UpdateUserConsentsBody = zod.object({
+  cookiesAnalytics: zod.boolean().optional(),
+  cookiesMarketing: zod.boolean().optional(),
+  dataProcessing: zod.boolean().optional(),
+  dataSharing: zod.boolean().optional(),
+  personalization: zod.boolean().optional(),
+  marketingEmails: zod.boolean().optional(),
+  marketingSms: zod.boolean().optional(),
+  marketingPush: zod.boolean().optional(),
+  acceptTerms: zod.boolean().optional(),
+  acceptPrivacy: zod.boolean().optional(),
+  acceptCookies: zod.boolean().optional(),
+});
+
+export const UpdateUserConsentsResponse = zod.object({
+  userId: zod.number(),
+  cookiesEssential: zod.boolean(),
+  cookiesAnalytics: zod.boolean(),
+  cookiesMarketing: zod.boolean(),
+  dataProcessing: zod.boolean(),
+  dataSharing: zod.boolean(),
+  personalization: zod.boolean(),
+  marketingEmails: zod.boolean(),
+  marketingSms: zod.boolean(),
+  marketingPush: zod.boolean(),
+  termsVersion: zod.string().nullish(),
+  termsAcceptedAt: zod.coerce.date().nullish(),
+  privacyVersion: zod.string().nullish(),
+  privacyAcceptedAt: zod.coerce.date().nullish(),
+  cookiesVersion: zod.string().nullish(),
+  cookiesAcceptedAt: zod.coerce.date().nullish(),
+  updatedAt: zod.coerce.date(),
+});
+
+/**
+ * @summary Accept all privacy consents
+ */
+export const AcceptAllConsentsResponse = zod.object({
+  userId: zod.number(),
+  cookiesEssential: zod.boolean(),
+  cookiesAnalytics: zod.boolean(),
+  cookiesMarketing: zod.boolean(),
+  dataProcessing: zod.boolean(),
+  dataSharing: zod.boolean(),
+  personalization: zod.boolean(),
+  marketingEmails: zod.boolean(),
+  marketingSms: zod.boolean(),
+  marketingPush: zod.boolean(),
+  termsVersion: zod.string().nullish(),
+  termsAcceptedAt: zod.coerce.date().nullish(),
+  privacyVersion: zod.string().nullish(),
+  privacyAcceptedAt: zod.coerce.date().nullish(),
+  cookiesVersion: zod.string().nullish(),
+  cookiesAcceptedAt: zod.coerce.date().nullish(),
+  updatedAt: zod.coerce.date(),
+});
+
+/**
+ * @summary Reject optional privacy consents
+ */
+export const RejectAllConsentsResponse = zod.object({
+  userId: zod.number(),
+  cookiesEssential: zod.boolean(),
+  cookiesAnalytics: zod.boolean(),
+  cookiesMarketing: zod.boolean(),
+  dataProcessing: zod.boolean(),
+  dataSharing: zod.boolean(),
+  personalization: zod.boolean(),
+  marketingEmails: zod.boolean(),
+  marketingSms: zod.boolean(),
+  marketingPush: zod.boolean(),
+  termsVersion: zod.string().nullish(),
+  termsAcceptedAt: zod.coerce.date().nullish(),
+  privacyVersion: zod.string().nullish(),
+  privacyAcceptedAt: zod.coerce.date().nullish(),
+  cookiesVersion: zod.string().nullish(),
+  cookiesAcceptedAt: zod.coerce.date().nullish(),
+  updatedAt: zod.coerce.date(),
+});
+
+/**
+ * @summary List drivers
+ */
+export const ListDriversQueryParams = zod.object({
+  isAvailable: zod.coerce.boolean().optional(),
+});
+
+export const ListDriversResponseItem = zod.object({
+  id: zod.number(),
+  userId: zod.number(),
+  name: zod.string(),
+  phone: zod.string().nullish(),
+  vehicleType: zod.string().nullish(),
+  isAvailable: zod.boolean(),
+  totalDeliveries: zod.number(),
+  rating: zod.number().nullish(),
+  createdAt: zod.coerce.date(),
+  vehiclePlate: zod.string().nullish(),
+  nationalId: zod.string().nullish(),
+  licenseNumber: zod.string().nullish(),
+  photoUrl: zod.string().nullish(),
+  latitude: zod.number().nullish(),
+  longitude: zod.number().nullish(),
+  locationUpdatedAt: zod.coerce.date().nullish(),
+  profileCompletedAt: zod.coerce.date().nullish(),
+});
+export const ListDriversResponse = zod.array(ListDriversResponseItem);
+
+/**
+ * @summary Get a driver
+ */
+export const GetDriverParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const GetDriverResponse = zod.object({
+  id: zod.number(),
+  userId: zod.number(),
+  name: zod.string(),
+  phone: zod.string().nullish(),
+  vehicleType: zod.string().nullish(),
+  isAvailable: zod.boolean(),
+  totalDeliveries: zod.number(),
+  rating: zod.number().nullish(),
+  createdAt: zod.coerce.date(),
+  vehiclePlate: zod.string().nullish(),
+  nationalId: zod.string().nullish(),
+  licenseNumber: zod.string().nullish(),
+  photoUrl: zod.string().nullish(),
+  latitude: zod.number().nullish(),
+  longitude: zod.number().nullish(),
+  locationUpdatedAt: zod.coerce.date().nullish(),
+  profileCompletedAt: zod.coerce.date().nullish(),
+});
+
+/**
+ * JWT required. Driver owner or admin only.
+ * @summary Update driver info
+ */
+export const UpdateDriverParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const UpdateDriverBody = zod.object({
+  vehicleType: zod.string().optional(),
+  isAvailable: zod.boolean().optional(),
+});
+
+export const UpdateDriverResponse = zod.object({
+  id: zod.number(),
+  userId: zod.number(),
+  name: zod.string(),
+  phone: zod.string().nullish(),
+  vehicleType: zod.string().nullish(),
+  isAvailable: zod.boolean(),
+  totalDeliveries: zod.number(),
+  rating: zod.number().nullish(),
+  createdAt: zod.coerce.date(),
+  vehiclePlate: zod.string().nullish(),
+  nationalId: zod.string().nullish(),
+  licenseNumber: zod.string().nullish(),
+  photoUrl: zod.string().nullish(),
+  latitude: zod.number().nullish(),
+  longitude: zod.number().nullish(),
+  locationUpdatedAt: zod.coerce.date().nullish(),
+  profileCompletedAt: zod.coerce.date().nullish(),
+});
+
+/**
+ * @summary Complete a driver profile
+ */
+export const CompleteDriverProfileParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const completeDriverProfileBodyVehiclePlateMin = 3;
+
+export const completeDriverProfileBodyNationalIdMin = 4;
+
+export const CompleteDriverProfileBody = zod.object({
+  vehicleType: zod.string(),
+  vehiclePlate: zod.string().min(completeDriverProfileBodyVehiclePlateMin),
+  nationalId: zod.string().min(completeDriverProfileBodyNationalIdMin),
+  licenseNumber: zod.string().nullish(),
+  photoUrl: zod.string().nullish(),
+});
+
+export const CompleteDriverProfileResponse = zod.object({
+  id: zod.number(),
+  userId: zod.number(),
+  name: zod.string(),
+  phone: zod.string().nullish(),
+  vehicleType: zod.string().nullish(),
+  isAvailable: zod.boolean(),
+  totalDeliveries: zod.number(),
+  rating: zod.number().nullish(),
+  createdAt: zod.coerce.date(),
+  vehiclePlate: zod.string().nullish(),
+  nationalId: zod.string().nullish(),
+  licenseNumber: zod.string().nullish(),
+  photoUrl: zod.string().nullish(),
+  latitude: zod.number().nullish(),
+  longitude: zod.number().nullish(),
+  locationUpdatedAt: zod.coerce.date().nullish(),
+  profileCompletedAt: zod.coerce.date().nullish(),
+});
+
+/**
+ * JWT required. Driver owner or admin only.
+ * @summary Get driver earnings summary
+ */
+export const GetDriverEarningsParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const GetDriverEarningsResponse = zod.object({
+  today: zod.number(),
+  thisWeek: zod.number(),
+  thisMonth: zod.number(),
+  totalDeliveries: zod.number(),
+  completedToday: zod.number(),
+});
+
+/**
+ * @summary Update driver live location
+ */
+export const UpdateDriverLocationParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const UpdateDriverLocationBody = zod.object({
+  latitude: zod.number(),
+  longitude: zod.number(),
+});
+
+export const UpdateDriverLocationResponse = zod.object({
+  latitude: zod.number().nullable(),
+  longitude: zod.number().nullable(),
+  locationUpdatedAt: zod.coerce.date().nullish(),
+});
+
+/**
+ * @summary Get driver live location
+ */
+export const GetDriverLocationParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const GetDriverLocationResponse = zod.object({
+  latitude: zod.number().nullish(),
+  longitude: zod.number().nullish(),
+  locationUpdatedAt: zod.coerce.date().nullish(),
+  isAvailable: zod.boolean().optional(),
+  name: zod.string().optional(),
+});
+
+/**
+ * @summary Subscribe to server-sent events
+ */
+export const SubscribeEventsQueryParams = zod.object({
+  channels: zod.coerce
+    .string()
+    .describe(
+      "Comma-separated channels such as order:5,restaurant:2,available_orders,driver:7.",
+    ),
+});
+
+/**
+ * @summary List favorite restaurants for current user
+ */
+export const ListFavoritesResponseItem = zod.object({
+  id: zod.number(),
+  restaurantId: zod.number(),
+  createdAt: zod.coerce.date(),
+  restaurant: zod
+    .object({
+      id: zod.number(),
+      ownerId: zod.number(),
+      name: zod.string(),
+      description: zod.string().nullish(),
+      address: zod.string(),
+      phone: zod.string().nullish(),
+      imageUrl: zod.string().nullish(),
+      coverImageUrl: zod.string().nullish(),
+      logoUrl: zod.string().nullish(),
+      category: zod.string(),
+      businessType: zod.string(),
+      isLocal: zod.boolean(),
+      isOpen: zod.boolean(),
+      deliveryTime: zod.number().nullish(),
+      deliveryFee: zod.number().nullish(),
+      minimumOrder: zod.number().nullish(),
+      rating: zod.number().nullish(),
+      reviewCount: zod.number(),
+      isVerified: zod.boolean(),
+      createdAt: zod.coerce.date(),
+      legalName: zod.string().nullish(),
+      ice: zod.string().nullish(),
+      printerEmail: zod.string().nullish(),
+      profileCompletedAt: zod.coerce.date().nullish(),
+      freeDeliveryThreshold: zod
+        .number()
+        .optional()
+        .describe(
+          "Defaulted by the API when not stored on the restaurant row.",
+        ),
+    })
+    .optional(),
+});
+export const ListFavoritesResponse = zod.array(ListFavoritesResponseItem);
+
+/**
+ * @summary Add a restaurant to favorites
+ */
+export const AddFavoriteBody = zod.object({
+  restaurantId: zod.number(),
+});
+
+export const AddFavoriteResponse = zod.object({
+  id: zod.number(),
+  userId: zod.number(),
+  restaurantId: zod.number(),
+  createdAt: zod.coerce.date(),
+});
+
+/**
+ * @summary Remove a restaurant from favorites
+ */
+export const DeleteFavoriteParams = zod.object({
   restaurantId: zod.coerce.number(),
 });
 
-export const CreateMenuItemBody = zod.object({
-  name: zod.string(),
-  description: zod.string().optional(),
-  price: zod.number(),
-  imageUrl: zod.string().optional(),
-  category: zod.string(),
-  isAvailable: zod.boolean().optional(),
-  isPopular: zod.boolean().optional(),
+/**
+ * @summary Health check
+ */
+export const HealthCheckResponse = zod.object({
+  status: zod.string(),
+});
+
+/**
+ * @summary Export current user personal data
+ */
+export const ExportMyDataResponse = zod.object({
+  generatedAt: zod.coerce.date(),
+  user: zod.object({
+    id: zod.number(),
+    name: zod.string(),
+    email: zod.string(),
+    role: zod.string(),
+    phone: zod.string().nullish(),
+    address: zod.string().nullish(),
+    avatarUrl: zod.string().nullish(),
+    isActive: zod.boolean(),
+    loyaltyPoints: zod.number(),
+    createdAt: zod.coerce.date(),
+    assignedShopId: zod.number().nullish(),
+  }),
+  orders: zod.array(
+    zod.object({
+      id: zod.number(),
+      userId: zod.number(),
+      restaurantId: zod.number(),
+      driverId: zod.number().nullish(),
+      restaurantName: zod.string(),
+      userName: zod.string(),
+      status: zod.enum([
+        "pending",
+        "accepted",
+        "preparing",
+        "ready",
+        "picked_up",
+        "delivered",
+        "cancelled",
+      ]),
+      subtotal: zod.number(),
+      deliveryFee: zod.number(),
+      total: zod.number(),
+      deliveryAddress: zod.string(),
+      notes: zod.string().nullish(),
+      estimatedDeliveryTime: zod.number().nullish(),
+      items: zod.array(
+        zod.object({
+          id: zod.number(),
+          orderId: zod.number(),
+          menuItemId: zod.number(),
+          menuItemName: zod.string(),
+          quantity: zod.number(),
+          unitPrice: zod.number(),
+          totalPrice: zod.number(),
+        }),
+      ),
+      createdAt: zod.coerce.date(),
+      updatedAt: zod.coerce.date(),
+      reference: zod.string().nullish(),
+      kitchenCode: zod.string().nullish(),
+      pickupCode: zod.string().nullish(),
+    }),
+  ),
+  orderItems: zod.array(
+    zod.object({
+      id: zod.number(),
+      orderId: zod.number(),
+      menuItemId: zod.number(),
+      menuItemName: zod.string(),
+      quantity: zod.number(),
+      unitPrice: zod.number(),
+      totalPrice: zod.number(),
+    }),
+  ),
+  addresses: zod.array(
+    zod.object({
+      id: zod.number(),
+      userId: zod.number(),
+      label: zod.string(),
+      fullAddress: zod.string(),
+      details: zod.string().nullish(),
+      isDefault: zod.boolean(),
+      createdAt: zod.coerce.date(),
+    }),
+  ),
+  paymentMethods: zod.array(
+    zod.object({
+      id: zod.number(),
+      userId: zod.number(),
+      type: zod.string(),
+      label: zod.string(),
+      last4: zod.string().nullish(),
+      brand: zod.string().nullish(),
+      isDefault: zod.boolean(),
+      createdAt: zod.coerce.date(),
+    }),
+  ),
+  favorites: zod.array(
+    zod.object({
+      id: zod.number(),
+      userId: zod.number(),
+      restaurantId: zod.number(),
+      createdAt: zod.coerce.date(),
+    }),
+  ),
+  notificationPrefs: zod
+    .union([
+      zod.object({
+        userId: zod.number(),
+        pushOrders: zod.boolean(),
+        pushPromos: zod.boolean(),
+        emailReceipts: zod.boolean(),
+        emailNewsletter: zod.boolean(),
+        smsAlerts: zod.boolean(),
+        language: zod.enum(["fr", "en", "ar"]),
+        updatedAt: zod.coerce.date(),
+      }),
+      zod.null(),
+    ])
+    .optional(),
+  consents: zod
+    .union([
+      zod.object({
+        userId: zod.number(),
+        cookiesEssential: zod.boolean(),
+        cookiesAnalytics: zod.boolean(),
+        cookiesMarketing: zod.boolean(),
+        dataProcessing: zod.boolean(),
+        dataSharing: zod.boolean(),
+        personalization: zod.boolean(),
+        marketingEmails: zod.boolean(),
+        marketingSms: zod.boolean(),
+        marketingPush: zod.boolean(),
+        termsVersion: zod.string().nullish(),
+        termsAcceptedAt: zod.coerce.date().nullish(),
+        privacyVersion: zod.string().nullish(),
+        privacyAcceptedAt: zod.coerce.date().nullish(),
+        cookiesVersion: zod.string().nullish(),
+        cookiesAcceptedAt: zod.coerce.date().nullish(),
+        updatedAt: zod.coerce.date(),
+      }),
+      zod.null(),
+    ])
+    .optional(),
+  reviews: zod.array(
+    zod.object({
+      id: zod.number(),
+      userId: zod.number(),
+      restaurantId: zod.number(),
+      orderId: zod.number().nullish(),
+      userName: zod.string(),
+      rating: zod.number(),
+      comment: zod.string().nullish(),
+      createdAt: zod.coerce.date(),
+    }),
+  ),
+  supportTickets: zod.array(
+    zod.object({
+      id: zod.number(),
+      userId: zod.number(),
+      category: zod.string(),
+      subject: zod.string(),
+      message: zod.string(),
+      status: zod.enum(["open", "in_progress", "closed"]),
+      createdAt: zod.coerce.date(),
+      userName: zod.string().nullish(),
+      userEmail: zod.string().nullish(),
+    }),
+  ),
 });
 
 /**
@@ -364,6 +1289,7 @@ export const GetMenuItemResponse = zod.object({
 });
 
 /**
+ * RBAC: admin or owning restaurant_owner.
  * @summary Update a menu item
  */
 export const UpdateMenuItemParams = zod.object({
@@ -394,6 +1320,7 @@ export const UpdateMenuItemResponse = zod.object({
 });
 
 /**
+ * RBAC: admin or owning restaurant_owner.
  * @summary Delete a menu item
  */
 export const DeleteMenuItemParams = zod.object({
@@ -401,6 +1328,44 @@ export const DeleteMenuItemParams = zod.object({
 });
 
 /**
+ * @summary Get notification preferences
+ */
+export const GetNotificationPrefsResponse = zod.object({
+  userId: zod.number(),
+  pushOrders: zod.boolean(),
+  pushPromos: zod.boolean(),
+  emailReceipts: zod.boolean(),
+  emailNewsletter: zod.boolean(),
+  smsAlerts: zod.boolean(),
+  language: zod.enum(["fr", "en", "ar"]),
+  updatedAt: zod.coerce.date(),
+});
+
+/**
+ * @summary Update notification preferences
+ */
+export const UpdateNotificationPrefsBody = zod.object({
+  pushOrders: zod.boolean().optional(),
+  pushPromos: zod.boolean().optional(),
+  emailReceipts: zod.boolean().optional(),
+  emailNewsletter: zod.boolean().optional(),
+  smsAlerts: zod.boolean().optional(),
+  language: zod.enum(["fr", "en", "ar"]).optional(),
+});
+
+export const UpdateNotificationPrefsResponse = zod.object({
+  userId: zod.number(),
+  pushOrders: zod.boolean(),
+  pushPromos: zod.boolean(),
+  emailReceipts: zod.boolean(),
+  emailNewsletter: zod.boolean(),
+  smsAlerts: zod.boolean(),
+  language: zod.enum(["fr", "en", "ar"]),
+  updatedAt: zod.coerce.date(),
+});
+
+/**
+ * JWT required. Customers are scoped to their own orders unless using restaurant/driver filters as allowed by role.
  * @summary List orders
  */
 export const ListOrdersQueryParams = zod.object({
@@ -445,10 +1410,14 @@ export const ListOrdersResponseItem = zod.object({
   ),
   createdAt: zod.coerce.date(),
   updatedAt: zod.coerce.date(),
+  reference: zod.string().nullish(),
+  kitchenCode: zod.string().nullish(),
+  pickupCode: zod.string().nullish(),
 });
 export const ListOrdersResponse = zod.array(ListOrdersResponseItem);
 
 /**
+ * JWT required. Creates an order for the current user.
  * @summary Place a new order
  */
 export const CreateOrderBody = zod.object({
@@ -505,9 +1474,146 @@ export const GetOrderResponse = zod.object({
   ),
   createdAt: zod.coerce.date(),
   updatedAt: zod.coerce.date(),
+  reference: zod.string().nullish(),
+  kitchenCode: zod.string().nullish(),
+  pickupCode: zod.string().nullish(),
 });
 
 /**
+ * @summary Driver accepts a ready order for delivery
+ */
+export const AcceptOrderDeliveryParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const AcceptOrderDeliveryBody = zod.object({
+  driverId: zod.number(),
+});
+
+export const AcceptOrderDeliveryResponse = zod.object({
+  id: zod.number(),
+  userId: zod.number(),
+  restaurantId: zod.number(),
+  driverId: zod.number().nullish(),
+  restaurantName: zod.string(),
+  userName: zod.string(),
+  status: zod.enum([
+    "pending",
+    "accepted",
+    "preparing",
+    "ready",
+    "picked_up",
+    "delivered",
+    "cancelled",
+  ]),
+  subtotal: zod.number(),
+  deliveryFee: zod.number(),
+  total: zod.number(),
+  deliveryAddress: zod.string(),
+  notes: zod.string().nullish(),
+  estimatedDeliveryTime: zod.number().nullish(),
+  items: zod.array(
+    zod.object({
+      id: zod.number(),
+      orderId: zod.number(),
+      menuItemId: zod.number(),
+      menuItemName: zod.string(),
+      quantity: zod.number(),
+      unitPrice: zod.number(),
+      totalPrice: zod.number(),
+    }),
+  ),
+  createdAt: zod.coerce.date(),
+  updatedAt: zod.coerce.date(),
+  reference: zod.string().nullish(),
+  kitchenCode: zod.string().nullish(),
+  pickupCode: zod.string().nullish(),
+});
+
+/**
+ * @summary Driver confirms delivery using the customer pickup code
+ */
+export const ConfirmOrderDeliveryParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const confirmOrderDeliveryBodyPickupCodeRegExp = new RegExp("^\\d{4}$");
+
+export const ConfirmOrderDeliveryBody = zod.object({
+  pickupCode: zod.string().regex(confirmOrderDeliveryBodyPickupCodeRegExp),
+});
+
+export const ConfirmOrderDeliveryResponse = zod.object({
+  id: zod.number(),
+  userId: zod.number(),
+  restaurantId: zod.number(),
+  driverId: zod.number().nullish(),
+  restaurantName: zod.string(),
+  userName: zod.string(),
+  status: zod.enum([
+    "pending",
+    "accepted",
+    "preparing",
+    "ready",
+    "picked_up",
+    "delivered",
+    "cancelled",
+  ]),
+  subtotal: zod.number(),
+  deliveryFee: zod.number(),
+  total: zod.number(),
+  deliveryAddress: zod.string(),
+  notes: zod.string().nullish(),
+  estimatedDeliveryTime: zod.number().nullish(),
+  items: zod.array(
+    zod.object({
+      id: zod.number(),
+      orderId: zod.number(),
+      menuItemId: zod.number(),
+      menuItemName: zod.string(),
+      quantity: zod.number(),
+      unitPrice: zod.number(),
+      totalPrice: zod.number(),
+    }),
+  ),
+  createdAt: zod.coerce.date(),
+  updatedAt: zod.coerce.date(),
+  reference: zod.string().nullish(),
+  kitchenCode: zod.string().nullish(),
+  pickupCode: zod.string().nullish(),
+});
+
+/**
+ * @summary Get printable order invoice HTML
+ */
+export const GetOrderInvoiceParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const GetOrderInvoiceQueryParams = zod.object({
+  token: zod.coerce
+    .string()
+    .optional()
+    .describe("JWT token alternative for browser-opened document URLs."),
+});
+
+/**
+ * Restricted to admin or the owning restaurant owner. Supports bearer auth and token query auth.
+ * @summary Get printable kitchen receipt HTML
+ */
+export const GetOrderReceiptParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const GetOrderReceiptQueryParams = zod.object({
+  token: zod.coerce
+    .string()
+    .optional()
+    .describe("JWT token alternative for browser-opened document URLs."),
+});
+
+/**
+ * JWT required. Additional role/ownership checks apply when accepting restaurant orders or assigning drivers.
  * @summary Update order status
  */
 export const UpdateOrderStatusParams = zod.object({
@@ -562,6 +1668,9 @@ export const UpdateOrderStatusResponse = zod.object({
   ),
   createdAt: zod.coerce.date(),
   updatedAt: zod.coerce.date(),
+  reference: zod.string().nullish(),
+  kitchenCode: zod.string().nullish(),
+  pickupCode: zod.string().nullish(),
 });
 
 /**
@@ -602,163 +1711,547 @@ export const GetActiveOrdersResponseItem = zod.object({
   ),
   createdAt: zod.coerce.date(),
   updatedAt: zod.coerce.date(),
+  reference: zod.string().nullish(),
+  kitchenCode: zod.string().nullish(),
+  pickupCode: zod.string().nullish(),
 });
 export const GetActiveOrdersResponse = zod.array(GetActiveOrdersResponseItem);
 
 /**
- * @summary List users (admin)
+ * @summary List ready orders available for driver pickup
  */
-export const ListUsersQueryParams = zod.object({
-  role: zod.coerce.string().optional(),
+export const GetAvailableOrdersResponseItem = zod.object({
+  id: zod.number(),
+  userId: zod.number(),
+  restaurantId: zod.number(),
+  driverId: zod.number().nullish(),
+  restaurantName: zod.string(),
+  userName: zod.string(),
+  status: zod.enum([
+    "pending",
+    "accepted",
+    "preparing",
+    "ready",
+    "picked_up",
+    "delivered",
+    "cancelled",
+  ]),
+  subtotal: zod.number(),
+  deliveryFee: zod.number(),
+  total: zod.number(),
+  deliveryAddress: zod.string(),
+  notes: zod.string().nullish(),
+  estimatedDeliveryTime: zod.number().nullish(),
+  items: zod.array(
+    zod.object({
+      id: zod.number(),
+      orderId: zod.number(),
+      menuItemId: zod.number(),
+      menuItemName: zod.string(),
+      quantity: zod.number(),
+      unitPrice: zod.number(),
+      totalPrice: zod.number(),
+    }),
+  ),
+  createdAt: zod.coerce.date(),
+  updatedAt: zod.coerce.date(),
+  reference: zod.string().nullish(),
+  kitchenCode: zod.string().nullish(),
+  pickupCode: zod.string().nullish(),
+});
+export const GetAvailableOrdersResponse = zod.array(
+  GetAvailableOrdersResponseItem,
+);
+
+/**
+ * @summary List current user's payment methods
+ */
+export const ListPaymentMethodsResponseItem = zod.object({
+  id: zod.number(),
+  userId: zod.number(),
+  type: zod.string(),
+  label: zod.string(),
+  last4: zod.string().nullish(),
+  brand: zod.string().nullish(),
+  isDefault: zod.boolean(),
+  createdAt: zod.coerce.date(),
+});
+export const ListPaymentMethodsResponse = zod.array(
+  ListPaymentMethodsResponseItem,
+);
+
+/**
+ * @summary Create a payment method
+ */
+export const CreatePaymentMethodBody = zod.object({
+  type: zod.string(),
+  label: zod.string(),
+  last4: zod.string().nullish(),
+  brand: zod.string().nullish(),
+  isDefault: zod.boolean().optional(),
+});
+
+/**
+ * @summary Update a payment method
+ */
+export const UpdatePaymentMethodParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const UpdatePaymentMethodBody = zod.object({
+  type: zod.string().optional(),
+  label: zod.string().optional(),
+  last4: zod.string().nullish(),
+  brand: zod.string().nullish(),
+  isDefault: zod.boolean().optional(),
+});
+
+export const UpdatePaymentMethodResponse = zod.object({
+  id: zod.number(),
+  userId: zod.number(),
+  type: zod.string(),
+  label: zod.string(),
+  last4: zod.string().nullish(),
+  brand: zod.string().nullish(),
+  isDefault: zod.boolean(),
+  createdAt: zod.coerce.date(),
+});
+
+/**
+ * @summary Delete a payment method
+ */
+export const DeletePaymentMethodParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+/**
+ * @summary Request a quote from a merchant
+ */
+export const createQuoteBodySubjectMin = 2;
+export const createQuoteBodySubjectMax = 200;
+
+export const createQuoteBodyDescriptionMin = 2;
+export const createQuoteBodyDescriptionMax = 4000;
+
+export const CreateQuoteBody = zod.object({
+  restaurantId: zod.number(),
+  subject: zod
+    .string()
+    .min(createQuoteBodySubjectMin)
+    .max(createQuoteBodySubjectMax),
+  description: zod
+    .string()
+    .min(createQuoteBodyDescriptionMin)
+    .max(createQuoteBodyDescriptionMax),
+});
+
+/**
+ * @summary List quotes visible to the current user
+ */
+export const ListQuotesQueryParams = zod.object({
+  restaurantId: zod.coerce.number().optional(),
+});
+
+export const ListQuotesResponseItem = zod.object({
+  id: zod.number(),
+  userId: zod.number(),
+  restaurantId: zod.number(),
+  restaurantName: zod.string(),
+  userName: zod.string(),
+  userPhone: zod.string().nullish(),
+  subject: zod.string(),
+  description: zod.string(),
+  status: zod.enum(["pending", "quoted", "accepted", "rejected", "cancelled"]),
+  quotedAmount: zod.number().nullish(),
+  merchantNotes: zod.string().nullish(),
+  createdAt: zod.coerce.date(),
+  updatedAt: zod.coerce.date(),
+});
+export const ListQuotesResponse = zod.array(ListQuotesResponseItem);
+
+/**
+ * @summary Get a quote
+ */
+export const GetQuoteParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const GetQuoteResponse = zod.object({
+  id: zod.number(),
+  userId: zod.number(),
+  restaurantId: zod.number(),
+  restaurantName: zod.string(),
+  userName: zod.string(),
+  userPhone: zod.string().nullish(),
+  subject: zod.string(),
+  description: zod.string(),
+  status: zod.enum(["pending", "quoted", "accepted", "rejected", "cancelled"]),
+  quotedAmount: zod.number().nullish(),
+  merchantNotes: zod.string().nullish(),
+  createdAt: zod.coerce.date(),
+  updatedAt: zod.coerce.date(),
+});
+
+/**
+ * @summary Update a quote status or merchant offer
+ */
+export const UpdateQuoteParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const updateQuoteBodyQuotedAmountMin = 0;
+
+export const updateQuoteBodyMerchantNotesMax = 2000;
+
+export const UpdateQuoteBody = zod.object({
+  status: zod
+    .enum(["pending", "quoted", "accepted", "rejected", "cancelled"])
+    .optional(),
+  quotedAmount: zod.number().min(updateQuoteBodyQuotedAmountMin).optional(),
+  merchantNotes: zod.string().max(updateQuoteBodyMerchantNotesMax).optional(),
+});
+
+export const UpdateQuoteResponse = zod.object({
+  id: zod.number(),
+  userId: zod.number(),
+  restaurantId: zod.number(),
+  restaurantName: zod.string(),
+  userName: zod.string(),
+  userPhone: zod.string().nullish(),
+  subject: zod.string(),
+  description: zod.string(),
+  status: zod.enum(["pending", "quoted", "accepted", "rejected", "cancelled"]),
+  quotedAmount: zod.number().nullish(),
+  merchantNotes: zod.string().nullish(),
+  createdAt: zod.coerce.date(),
+  updatedAt: zod.coerce.date(),
+});
+
+/**
+ * @summary Get printable quote document HTML
+ */
+export const GetQuotePdfParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const GetQuotePdfQueryParams = zod.object({
+  token: zod.coerce
+    .string()
+    .optional()
+    .describe("JWT token alternative for browser-opened document URLs."),
+});
+
+/**
+ * @summary List restaurants
+ */
+export const ListRestaurantsQueryParams = zod.object({
   search: zod.coerce.string().optional(),
+  category: zod.coerce.string().optional(),
+  isLocal: zod.coerce.boolean().optional(),
+  isOpen: zod.coerce.boolean().optional(),
+  businessType: zod.coerce.string().optional(),
+  ownerId: zod.coerce.number().optional(),
 });
 
-export const ListUsersResponseItem = zod.object({
+export const ListRestaurantsResponseItem = zod.object({
   id: zod.number(),
+  ownerId: zod.number(),
   name: zod.string(),
-  email: zod.string(),
-  role: zod.string(),
+  description: zod.string().nullish(),
+  address: zod.string(),
   phone: zod.string().nullish(),
-  address: zod.string().nullish(),
-  avatarUrl: zod.string().nullish(),
-  isActive: zod.boolean(),
-  loyaltyPoints: zod.number(),
+  imageUrl: zod.string().nullish(),
+  coverImageUrl: zod.string().nullish(),
+  logoUrl: zod.string().nullish(),
+  category: zod.string(),
+  businessType: zod.string(),
+  isLocal: zod.boolean(),
+  isOpen: zod.boolean(),
+  deliveryTime: zod.number().nullish(),
+  deliveryFee: zod.number().nullish(),
+  minimumOrder: zod.number().nullish(),
+  rating: zod.number().nullish(),
+  reviewCount: zod.number(),
+  isVerified: zod.boolean(),
   createdAt: zod.coerce.date(),
+  legalName: zod.string().nullish(),
+  ice: zod.string().nullish(),
+  printerEmail: zod.string().nullish(),
+  profileCompletedAt: zod.coerce.date().nullish(),
+  freeDeliveryThreshold: zod
+    .number()
+    .optional()
+    .describe("Defaulted by the API when not stored on the restaurant row."),
 });
-export const ListUsersResponse = zod.array(ListUsersResponseItem);
+export const ListRestaurantsResponse = zod.array(ListRestaurantsResponseItem);
 
 /**
- * @summary Get a user
+ * RBAC: admin only.
+ * @summary Create a restaurant
  */
-export const GetUserParams = zod.object({
-  id: zod.coerce.number(),
-});
-
-export const GetUserResponse = zod.object({
-  id: zod.number(),
+export const CreateRestaurantBody = zod.object({
   name: zod.string(),
-  email: zod.string(),
-  role: zod.string(),
-  phone: zod.string().nullish(),
-  address: zod.string().nullish(),
-  avatarUrl: zod.string().nullish(),
-  isActive: zod.boolean(),
-  loyaltyPoints: zod.number(),
-  createdAt: zod.coerce.date(),
-});
-
-/**
- * @summary Update a user
- */
-export const UpdateUserParams = zod.object({
-  id: zod.coerce.number(),
-});
-
-export const UpdateUserBody = zod.object({
-  name: zod.string().optional(),
+  description: zod.string().optional(),
+  address: zod.string(),
   phone: zod.string().optional(),
+  imageUrl: zod.string().optional(),
+  coverImageUrl: zod.string().optional(),
+  logoUrl: zod.string().nullish(),
+  category: zod.string(),
+  businessType: zod.string().optional(),
+  isLocal: zod.boolean().optional(),
+  deliveryTime: zod.number().optional(),
+  deliveryFee: zod.number().optional(),
+  minimumOrder: zod.number().optional(),
+});
+
+/**
+ * @summary Get a restaurant
+ */
+export const GetRestaurantParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const GetRestaurantResponse = zod.object({
+  id: zod.number(),
+  ownerId: zod.number(),
+  name: zod.string(),
+  description: zod.string().nullish(),
+  address: zod.string(),
+  phone: zod.string().nullish(),
+  imageUrl: zod.string().nullish(),
+  coverImageUrl: zod.string().nullish(),
+  logoUrl: zod.string().nullish(),
+  category: zod.string(),
+  businessType: zod.string(),
+  isLocal: zod.boolean(),
+  isOpen: zod.boolean(),
+  deliveryTime: zod.number().nullish(),
+  deliveryFee: zod.number().nullish(),
+  minimumOrder: zod.number().nullish(),
+  rating: zod.number().nullish(),
+  reviewCount: zod.number(),
+  isVerified: zod.boolean(),
+  createdAt: zod.coerce.date(),
+  legalName: zod.string().nullish(),
+  ice: zod.string().nullish(),
+  printerEmail: zod.string().nullish(),
+  profileCompletedAt: zod.coerce.date().nullish(),
+  freeDeliveryThreshold: zod
+    .number()
+    .optional()
+    .describe("Defaulted by the API when not stored on the restaurant row."),
+});
+
+/**
+ * RBAC: admin or owning restaurant_owner.
+ * @summary Update a restaurant
+ */
+export const UpdateRestaurantParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const UpdateRestaurantBody = zod.object({
+  name: zod.string().optional(),
+  description: zod.string().optional(),
   address: zod.string().optional(),
-  avatarUrl: zod.string().optional(),
-  isActive: zod.boolean().optional(),
+  phone: zod.string().optional(),
+  imageUrl: zod.string().optional(),
+  coverImageUrl: zod.string().optional(),
+  logoUrl: zod.string().nullish(),
+  category: zod.string().optional(),
+  businessType: zod.string().optional(),
+  isLocal: zod.boolean().optional(),
+  isOpen: zod.boolean().optional(),
+  deliveryTime: zod.number().optional(),
+  deliveryFee: zod.number().optional(),
+  minimumOrder: zod.number().optional(),
+  isVerified: zod.boolean().optional(),
 });
 
-export const UpdateUserResponse = zod.object({
+export const UpdateRestaurantResponse = zod.object({
   id: zod.number(),
+  ownerId: zod.number(),
   name: zod.string(),
-  email: zod.string(),
-  role: zod.string(),
+  description: zod.string().nullish(),
+  address: zod.string(),
   phone: zod.string().nullish(),
-  address: zod.string().nullish(),
-  avatarUrl: zod.string().nullish(),
-  isActive: zod.boolean(),
-  loyaltyPoints: zod.number(),
-  createdAt: zod.coerce.date(),
-});
-
-/**
- * @summary Delete a user (admin)
- */
-export const DeleteUserParams = zod.object({
-  id: zod.coerce.number(),
-});
-
-/**
- * @summary List drivers
- */
-export const ListDriversQueryParams = zod.object({
-  isAvailable: zod.coerce.boolean().optional(),
-});
-
-export const ListDriversResponseItem = zod.object({
-  id: zod.number(),
-  userId: zod.number(),
-  name: zod.string(),
-  phone: zod.string().nullish(),
-  vehicleType: zod.string().nullish(),
-  isAvailable: zod.boolean(),
-  totalDeliveries: zod.number(),
+  imageUrl: zod.string().nullish(),
+  coverImageUrl: zod.string().nullish(),
+  logoUrl: zod.string().nullish(),
+  category: zod.string(),
+  businessType: zod.string(),
+  isLocal: zod.boolean(),
+  isOpen: zod.boolean(),
+  deliveryTime: zod.number().nullish(),
+  deliveryFee: zod.number().nullish(),
+  minimumOrder: zod.number().nullish(),
   rating: zod.number().nullish(),
+  reviewCount: zod.number(),
+  isVerified: zod.boolean(),
   createdAt: zod.coerce.date(),
+  legalName: zod.string().nullish(),
+  ice: zod.string().nullish(),
+  printerEmail: zod.string().nullish(),
+  profileCompletedAt: zod.coerce.date().nullish(),
+  freeDeliveryThreshold: zod
+    .number()
+    .optional()
+    .describe("Defaulted by the API when not stored on the restaurant row."),
 });
-export const ListDriversResponse = zod.array(ListDriversResponseItem);
 
 /**
- * @summary Get a driver
+ * RBAC: admin only.
+ * @summary Delete a restaurant
  */
-export const GetDriverParams = zod.object({
+export const DeleteRestaurantParams = zod.object({
   id: zod.coerce.number(),
 });
 
-export const GetDriverResponse = zod.object({
+/**
+ * RBAC: admin or the owning restaurant_owner. Required before accepting orders.
+ * @summary Complete a restaurant business profile
+ */
+export const CompleteRestaurantProfileParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const completeRestaurantProfileBodyLegalNameMin = 2;
+
+export const completeRestaurantProfileBodyIceRegExp = new RegExp("^\\d{8,15}$");
+
+export const CompleteRestaurantProfileBody = zod.object({
+  legalName: zod.string().min(completeRestaurantProfileBodyLegalNameMin),
+  ice: zod.string().regex(completeRestaurantProfileBodyIceRegExp),
+  printerEmail: zod.string().email().nullish(),
+});
+
+export const CompleteRestaurantProfileResponse = zod.object({
   id: zod.number(),
-  userId: zod.number(),
+  ownerId: zod.number(),
   name: zod.string(),
+  description: zod.string().nullish(),
+  address: zod.string(),
   phone: zod.string().nullish(),
-  vehicleType: zod.string().nullish(),
-  isAvailable: zod.boolean(),
-  totalDeliveries: zod.number(),
+  imageUrl: zod.string().nullish(),
+  coverImageUrl: zod.string().nullish(),
+  logoUrl: zod.string().nullish(),
+  category: zod.string(),
+  businessType: zod.string(),
+  isLocal: zod.boolean(),
+  isOpen: zod.boolean(),
+  deliveryTime: zod.number().nullish(),
+  deliveryFee: zod.number().nullish(),
+  minimumOrder: zod.number().nullish(),
   rating: zod.number().nullish(),
+  reviewCount: zod.number(),
+  isVerified: zod.boolean(),
   createdAt: zod.coerce.date(),
+  legalName: zod.string().nullish(),
+  ice: zod.string().nullish(),
+  printerEmail: zod.string().nullish(),
+  profileCompletedAt: zod.coerce.date().nullish(),
+  freeDeliveryThreshold: zod
+    .number()
+    .optional()
+    .describe("Defaulted by the API when not stored on the restaurant row."),
 });
 
 /**
- * @summary Update driver info
+ * @summary Get restaurant statistics
  */
-export const UpdateDriverParams = zod.object({
+export const GetRestaurantStatsParams = zod.object({
   id: zod.coerce.number(),
 });
 
-export const UpdateDriverBody = zod.object({
-  vehicleType: zod.string().optional(),
+export const GetRestaurantStatsResponse = zod.object({
+  totalOrders: zod.number(),
+  completedOrders: zod.number(),
+  totalRevenue: zod.number(),
+  averageRating: zod.number().nullish(),
+  totalReviews: zod.number(),
+  pendingOrders: zod.number(),
+});
+
+/**
+ * @summary List menu items for a restaurant
+ */
+export const ListMenuItemsParams = zod.object({
+  restaurantId: zod.coerce.number(),
+});
+
+export const ListMenuItemsQueryParams = zod.object({
+  category: zod.coerce.string().optional(),
+});
+
+export const ListMenuItemsResponseItem = zod.object({
+  id: zod.number(),
+  restaurantId: zod.number(),
+  name: zod.string(),
+  description: zod.string().nullish(),
+  price: zod.number(),
+  imageUrl: zod.string().nullish(),
+  category: zod.string(),
+  isAvailable: zod.boolean(),
+  isPopular: zod.boolean(),
+  createdAt: zod.coerce.date(),
+});
+export const ListMenuItemsResponse = zod.array(ListMenuItemsResponseItem);
+
+/**
+ * RBAC: admin or owning restaurant_owner.
+ * @summary Create a menu item
+ */
+export const CreateMenuItemParams = zod.object({
+  restaurantId: zod.coerce.number(),
+});
+
+export const CreateMenuItemBody = zod.object({
+  name: zod.string(),
+  description: zod.string().optional(),
+  price: zod.number(),
+  imageUrl: zod.string().optional(),
+  category: zod.string(),
   isAvailable: zod.boolean().optional(),
-});
-
-export const UpdateDriverResponse = zod.object({
-  id: zod.number(),
-  userId: zod.number(),
-  name: zod.string(),
-  phone: zod.string().nullish(),
-  vehicleType: zod.string().nullish(),
-  isAvailable: zod.boolean(),
-  totalDeliveries: zod.number(),
-  rating: zod.number().nullish(),
-  createdAt: zod.coerce.date(),
+  isPopular: zod.boolean().optional(),
 });
 
 /**
- * @summary Get driver earnings summary
+ * @summary Get featured/top restaurants
  */
-export const GetDriverEarningsParams = zod.object({
-  id: zod.coerce.number(),
+export const GetFeaturedRestaurantsResponseItem = zod.object({
+  id: zod.number(),
+  ownerId: zod.number(),
+  name: zod.string(),
+  description: zod.string().nullish(),
+  address: zod.string(),
+  phone: zod.string().nullish(),
+  imageUrl: zod.string().nullish(),
+  coverImageUrl: zod.string().nullish(),
+  logoUrl: zod.string().nullish(),
+  category: zod.string(),
+  businessType: zod.string(),
+  isLocal: zod.boolean(),
+  isOpen: zod.boolean(),
+  deliveryTime: zod.number().nullish(),
+  deliveryFee: zod.number().nullish(),
+  minimumOrder: zod.number().nullish(),
+  rating: zod.number().nullish(),
+  reviewCount: zod.number(),
+  isVerified: zod.boolean(),
+  createdAt: zod.coerce.date(),
+  legalName: zod.string().nullish(),
+  ice: zod.string().nullish(),
+  printerEmail: zod.string().nullish(),
+  profileCompletedAt: zod.coerce.date().nullish(),
+  freeDeliveryThreshold: zod
+    .number()
+    .optional()
+    .describe("Defaulted by the API when not stored on the restaurant row."),
 });
-
-export const GetDriverEarningsResponse = zod.object({
-  today: zod.number(),
-  thisWeek: zod.number(),
-  thisMonth: zod.number(),
-  totalDeliveries: zod.number(),
-  completedToday: zod.number(),
-});
+export const GetFeaturedRestaurantsResponse = zod.array(
+  GetFeaturedRestaurantsResponseItem,
+);
 
 /**
  * @summary List reviews
@@ -781,6 +2274,7 @@ export const ListReviewsResponseItem = zod.object({
 export const ListReviewsResponse = zod.array(ListReviewsResponseItem);
 
 /**
+ * JWT required.
  * @summary Create a review
  */
 export const CreateReviewBody = zod.object({
@@ -791,6 +2285,7 @@ export const CreateReviewBody = zod.object({
 });
 
 /**
+ * JWT required. Review author or admin only.
  * @summary Delete a review
  */
 export const DeleteReviewParams = zod.object({
@@ -810,452 +2305,21 @@ export const GetMyRewardsResponse = zod.object({
 });
 
 /**
- * @summary Get admin dashboard statistics
+ * @summary Serve an uploaded object
  */
-export const GetAdminStatsResponse = zod.object({
-  totalUsers: zod.number(),
-  totalRestaurants: zod.number(),
-  totalOrders: zod.number(),
-  totalDrivers: zod.number(),
-  activeOrders: zod.number(),
-  revenue: zod.number(),
-  ordersToday: zod.number(),
-  newUsersToday: zod.number(),
+export const GetObjectParams = zod.object({
+  path: zod.coerce.string(),
 });
 
 /**
- * @summary Get recent orders for admin dashboard
+ * @summary Serve a public object
  */
-export const GetRecentOrdersResponseItem = zod.object({
-  id: zod.number(),
-  userId: zod.number(),
-  restaurantId: zod.number(),
-  driverId: zod.number().nullish(),
-  restaurantName: zod.string(),
-  userName: zod.string(),
-  status: zod.enum([
-    "pending",
-    "accepted",
-    "preparing",
-    "ready",
-    "picked_up",
-    "delivered",
-    "cancelled",
-  ]),
-  subtotal: zod.number(),
-  deliveryFee: zod.number(),
-  total: zod.number(),
-  deliveryAddress: zod.string(),
-  notes: zod.string().nullish(),
-  estimatedDeliveryTime: zod.number().nullish(),
-  items: zod.array(
-    zod.object({
-      id: zod.number(),
-      orderId: zod.number(),
-      menuItemId: zod.number(),
-      menuItemName: zod.string(),
-      quantity: zod.number(),
-      unitPrice: zod.number(),
-      totalPrice: zod.number(),
-    }),
-  ),
-  createdAt: zod.coerce.date(),
-  updatedAt: zod.coerce.date(),
-});
-export const GetRecentOrdersResponse = zod.array(GetRecentOrdersResponseItem);
-
-/**
- * @summary Login to the backend dashboard (staff only)
- */
-export const BackendLoginBody = zod.object({
-  email: zod.string(),
-  password: zod.string(),
-});
-
-export const BackendLoginResponse = zod.object({
-  token: zod.string(),
-  user: zod.object({
-    id: zod.number(),
-    name: zod.string(),
-    email: zod.string(),
-    role: zod.string(),
-    phone: zod.string().nullish(),
-    address: zod.string().nullish(),
-    avatarUrl: zod.string().nullish(),
-    isActive: zod.boolean(),
-    loyaltyPoints: zod.number(),
-    createdAt: zod.coerce.date(),
-  }),
+export const GetPublicObjectParams = zod.object({
+  filePath: zod.coerce.string(),
 });
 
 /**
- * @summary Get current backend user with permissions
- */
-export const BackendMeResponse = zod.object({
-  user: zod.object({
-    id: zod.number(),
-    name: zod.string(),
-    email: zod.string(),
-    role: zod.string(),
-    phone: zod.string().nullish(),
-    address: zod.string().nullish(),
-    avatarUrl: zod.string().nullish(),
-    isActive: zod.boolean(),
-    loyaltyPoints: zod.number(),
-    createdAt: zod.coerce.date(),
-  }),
-  permissions: zod.array(zod.string()),
-  scopedShopIds: zod
-    .array(zod.number())
-    .optional()
-    .describe(
-      "Restricts data to these shops (merchant + employee). Empty = no scope restriction.",
-    ),
-});
-
-/**
- * @summary Aggregate stats for the backend dashboard
- */
-export const getBackendDashboardQueryRangeDefault = `month`;
-
-export const GetBackendDashboardQueryParams = zod.object({
-  range: zod
-    .enum(["week", "month", "year"])
-    .default(getBackendDashboardQueryRangeDefault),
-});
-
-export const GetBackendDashboardResponse = zod.object({
-  inProgressOrders: zod.number(),
-  cancelledOrders: zod.number(),
-  deliveredOrders: zod.number(),
-  outOfStockProducts: zod.number(),
-  totalProducts: zod.number(),
-  orderReviews: zod.number(),
-  totalEarned: zod.number(),
-  deliveryEarning: zod.number(),
-  totalOrderTax: zod.number(),
-  totalCommission: zod.number(),
-  ordersChart: zod.array(
-    zod.object({
-      label: zod.string(),
-      value: zod.number(),
-    }),
-  ),
-});
-
-/**
- * @summary List orders (filtered by role scope)
- */
-export const listBackendOrdersQueryLimitDefault = 50;
-
-export const ListBackendOrdersQueryParams = zod.object({
-  status: zod.coerce.string().optional(),
-  shopId: zod.coerce.number().optional(),
-  search: zod.coerce.string().optional(),
-  limit: zod.coerce.number().default(listBackendOrdersQueryLimitDefault),
-});
-
-export const ListBackendOrdersResponseItem = zod.object({
-  id: zod.number(),
-  userId: zod.number(),
-  restaurantId: zod.number(),
-  driverId: zod.number().nullish(),
-  restaurantName: zod.string(),
-  userName: zod.string(),
-  status: zod.enum([
-    "pending",
-    "accepted",
-    "preparing",
-    "ready",
-    "picked_up",
-    "delivered",
-    "cancelled",
-  ]),
-  subtotal: zod.number(),
-  deliveryFee: zod.number(),
-  total: zod.number(),
-  deliveryAddress: zod.string(),
-  notes: zod.string().nullish(),
-  estimatedDeliveryTime: zod.number().nullish(),
-  items: zod.array(
-    zod.object({
-      id: zod.number(),
-      orderId: zod.number(),
-      menuItemId: zod.number(),
-      menuItemName: zod.string(),
-      quantity: zod.number(),
-      unitPrice: zod.number(),
-      totalPrice: zod.number(),
-    }),
-  ),
-  createdAt: zod.coerce.date(),
-  updatedAt: zod.coerce.date(),
-});
-export const ListBackendOrdersResponse = zod.array(
-  ListBackendOrdersResponseItem,
-);
-
-/**
- * @summary List products (menu items, filtered by role scope)
- */
-export const ListBackendProductsQueryParams = zod.object({
-  status: zod.coerce.string().optional(),
-  shopId: zod.coerce.number().optional(),
-  search: zod.coerce.string().optional(),
-});
-
-export const ListBackendProductsResponseItem = zod.object({
-  id: zod.number(),
-  restaurantId: zod.number(),
-  name: zod.string(),
-  description: zod.string().nullish(),
-  price: zod.number(),
-  imageUrl: zod.string().nullish(),
-  category: zod.string(),
-  isAvailable: zod.boolean(),
-  isPopular: zod.boolean(),
-  createdAt: zod.coerce.date(),
-});
-export const ListBackendProductsResponse = zod.array(
-  ListBackendProductsResponseItem,
-);
-
-/**
- * @summary List shops (filtered by role scope)
- */
-export const ListBackendShopsQueryParams = zod.object({
-  search: zod.coerce.string().optional(),
-});
-
-export const ListBackendShopsResponseItem = zod.object({
-  id: zod.number(),
-  ownerId: zod.number(),
-  name: zod.string(),
-  description: zod.string().nullish(),
-  address: zod.string(),
-  phone: zod.string().nullish(),
-  imageUrl: zod.string().nullish(),
-  coverImageUrl: zod.string().nullish(),
-  logoUrl: zod.string().nullish(),
-  category: zod.string(),
-  businessType: zod.string(),
-  isLocal: zod.boolean(),
-  isOpen: zod.boolean(),
-  deliveryTime: zod.number().nullish(),
-  deliveryFee: zod.number().nullish(),
-  minimumOrder: zod.number().nullish(),
-  rating: zod.number().nullish(),
-  reviewCount: zod.number(),
-  isVerified: zod.boolean(),
-  createdAt: zod.coerce.date(),
-});
-export const ListBackendShopsResponse = zod.array(ListBackendShopsResponseItem);
-
-/**
- * @summary List staff & admin users (admin only)
- */
-export const ListBackendStaffResponseItem = zod.object({
-  id: zod.number(),
-  name: zod.string(),
-  email: zod.string(),
-  role: zod.string(),
-  phone: zod.string().nullish(),
-  address: zod.string().nullish(),
-  avatarUrl: zod.string().nullish(),
-  isActive: zod.boolean(),
-  loyaltyPoints: zod.number(),
-  createdAt: zod.coerce.date(),
-});
-export const ListBackendStaffResponse = zod.array(ListBackendStaffResponseItem);
-
-/**
- * @summary Create a staff/admin user (admin only)
- */
-export const CreateBackendStaffBody = zod.object({
-  name: zod.string(),
-  email: zod.string(),
-  password: zod.string(),
-  role: zod.enum([
-    "admin",
-    "super_admin",
-    "manager",
-    "restaurant_owner",
-    "employee",
-  ]),
-  phone: zod.string().nullish(),
-  assignedShopId: zod.number().nullish(),
-});
-
-/**
- * @summary Update staff user
- */
-export const UpdateBackendStaffParams = zod.object({
-  id: zod.coerce.number(),
-});
-
-export const UpdateBackendStaffBody = zod.object({
-  name: zod.string().optional(),
-  email: zod.string().optional(),
-  password: zod.string().optional(),
-  role: zod.string().optional(),
-  phone: zod.string().optional(),
-  isActive: zod.boolean().optional(),
-  assignedShopId: zod.number().nullish(),
-});
-
-export const UpdateBackendStaffResponse = zod.object({
-  id: zod.number(),
-  name: zod.string(),
-  email: zod.string(),
-  role: zod.string(),
-  phone: zod.string().nullish(),
-  address: zod.string().nullish(),
-  avatarUrl: zod.string().nullish(),
-  isActive: zod.boolean(),
-  loyaltyPoints: zod.number(),
-  createdAt: zod.coerce.date(),
-});
-
-/**
- * @summary Delete staff user
- */
-export const DeleteBackendStaffParams = zod.object({
-  id: zod.coerce.number(),
-});
-
-/**
- * @summary List customers
- */
-export const ListBackendCustomersQueryParams = zod.object({
-  search: zod.coerce.string().optional(),
-});
-
-export const ListBackendCustomersResponseItem = zod.object({
-  id: zod.number(),
-  name: zod.string(),
-  email: zod.string(),
-  role: zod.string(),
-  phone: zod.string().nullish(),
-  address: zod.string().nullish(),
-  avatarUrl: zod.string().nullish(),
-  isActive: zod.boolean(),
-  loyaltyPoints: zod.number(),
-  createdAt: zod.coerce.date(),
-});
-export const ListBackendCustomersResponse = zod.array(
-  ListBackendCustomersResponseItem,
-);
-
-/**
- * @summary List delivery drivers
- */
-export const ListBackendDeliverymenResponseItem = zod.object({
-  id: zod.number(),
-  userId: zod.number(),
-  name: zod.string(),
-  phone: zod.string().nullish(),
-  vehicleType: zod.string().nullish(),
-  isAvailable: zod.boolean(),
-  totalDeliveries: zod.number(),
-  rating: zod.number().nullish(),
-  createdAt: zod.coerce.date(),
-});
-export const ListBackendDeliverymenResponse = zod.array(
-  ListBackendDeliverymenResponseItem,
-);
-
-/**
- * @summary List shop reviews
- */
-export const ListBackendReviewsQueryParams = zod.object({
-  shopId: zod.coerce.number().optional(),
-});
-
-export const ListBackendReviewsResponseItem = zod.object({
-  id: zod.number(),
-  userId: zod.number(),
-  restaurantId: zod.number(),
-  orderId: zod.number().nullish(),
-  userName: zod.string(),
-  rating: zod.number(),
-  comment: zod.string().nullish(),
-  createdAt: zod.coerce.date(),
-});
-export const ListBackendReviewsResponse = zod.array(
-  ListBackendReviewsResponseItem,
-);
-
-/**
- * @summary List shop/restaurant categories (distinct values from shops)
- */
-export const ListBackendCategoriesResponseItem = zod.object({
-  name: zod.string(),
-  count: zod.number(),
-});
-export const ListBackendCategoriesResponse = zod.array(
-  ListBackendCategoriesResponseItem,
-);
-
-/**
- * @summary List roles + permission matrix
- */
-export const ListBackendRolesResponseItem = zod.object({
-  key: zod.string(),
-  label: zod.string(),
-  description: zod.string().optional(),
-  permissions: zod.array(zod.string()),
-});
-export const ListBackendRolesResponse = zod.array(ListBackendRolesResponseItem);
-
-/**
- * @summary List dashboard todos for current user
- */
-export const ListBackendTodosResponseItem = zod.object({
-  id: zod.number(),
-  userId: zod.number(),
-  text: zod.string(),
-  done: zod.boolean(),
-  createdAt: zod.coerce.date(),
-});
-export const ListBackendTodosResponse = zod.array(ListBackendTodosResponseItem);
-
-/**
- * @summary Create a todo
- */
-export const CreateBackendTodoBody = zod.object({
-  text: zod.string(),
-});
-
-/**
- * @summary Toggle done status of a todo
- */
-export const ToggleBackendTodoParams = zod.object({
-  id: zod.coerce.number(),
-});
-
-export const ToggleBackendTodoBody = zod.object({
-  done: zod.boolean(),
-});
-
-export const ToggleBackendTodoResponse = zod.object({
-  id: zod.number(),
-  userId: zod.number(),
-  text: zod.string(),
-  done: zod.boolean(),
-  createdAt: zod.coerce.date(),
-});
-
-/**
- * @summary Delete a todo
- */
-export const DeleteBackendTodoParams = zod.object({
-  id: zod.coerce.number(),
-});
-
-/**
- * Returns a presigned GCS URL for direct upload. The client sends JSON
-metadata here, then uploads the file directly to the returned URL.
-
+ * RBAC: admin or restaurant_owner only.
  * @summary Request a presigned URL for file upload
  */
 
@@ -1285,4 +2349,146 @@ export const RequestUploadUrlResponse = zod.object({
         .describe("MIME type of the file (e.g. image\/jpeg)."),
     })
     .optional(),
+});
+
+/**
+ * Admins receive all tickets with user details; other users receive only their own tickets.
+ * @summary List support tickets
+ */
+export const ListSupportTicketsResponseItem = zod.object({
+  id: zod.number(),
+  userId: zod.number(),
+  category: zod.string(),
+  subject: zod.string(),
+  message: zod.string(),
+  status: zod.enum(["open", "in_progress", "closed"]),
+  createdAt: zod.coerce.date(),
+  userName: zod.string().nullish(),
+  userEmail: zod.string().nullish(),
+});
+export const ListSupportTicketsResponse = zod.array(
+  ListSupportTicketsResponseItem,
+);
+
+/**
+ * @summary Create a support ticket
+ */
+export const CreateSupportTicketBody = zod.object({
+  category: zod.string(),
+  subject: zod.string(),
+  message: zod.string(),
+});
+
+/**
+ * Admin only.
+ * @summary Update support ticket status
+ */
+export const UpdateSupportTicketParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const UpdateSupportTicketBody = zod.object({
+  status: zod.enum(["open", "in_progress", "closed"]),
+});
+
+export const UpdateSupportTicketResponse = zod.object({
+  id: zod.number(),
+  userId: zod.number(),
+  category: zod.string(),
+  subject: zod.string(),
+  message: zod.string(),
+  status: zod.enum(["open", "in_progress", "closed"]),
+  createdAt: zod.coerce.date(),
+  userName: zod.string().nullish(),
+  userEmail: zod.string().nullish(),
+});
+
+/**
+ * Admin only.
+ * @summary Delete a support ticket
+ */
+export const DeleteSupportTicketParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+/**
+ * @summary List users (admin)
+ */
+export const ListUsersQueryParams = zod.object({
+  role: zod.coerce.string().optional(),
+  search: zod.coerce.string().optional(),
+});
+
+export const ListUsersResponseItem = zod.object({
+  id: zod.number(),
+  name: zod.string(),
+  email: zod.string(),
+  role: zod.string(),
+  phone: zod.string().nullish(),
+  address: zod.string().nullish(),
+  avatarUrl: zod.string().nullish(),
+  isActive: zod.boolean(),
+  loyaltyPoints: zod.number(),
+  createdAt: zod.coerce.date(),
+  assignedShopId: zod.number().nullish(),
+});
+export const ListUsersResponse = zod.array(ListUsersResponseItem);
+
+/**
+ * @summary Get a user
+ */
+export const GetUserParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const GetUserResponse = zod.object({
+  id: zod.number(),
+  name: zod.string(),
+  email: zod.string(),
+  role: zod.string(),
+  phone: zod.string().nullish(),
+  address: zod.string().nullish(),
+  avatarUrl: zod.string().nullish(),
+  isActive: zod.boolean(),
+  loyaltyPoints: zod.number(),
+  createdAt: zod.coerce.date(),
+  assignedShopId: zod.number().nullish(),
+});
+
+/**
+ * JWT required. Users can update themselves; admins can update any user.
+ * @summary Update a user
+ */
+export const UpdateUserParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const UpdateUserBody = zod.object({
+  name: zod.string().optional(),
+  phone: zod.string().optional(),
+  address: zod.string().optional(),
+  avatarUrl: zod.string().optional(),
+  isActive: zod.boolean().optional(),
+});
+
+export const UpdateUserResponse = zod.object({
+  id: zod.number(),
+  name: zod.string(),
+  email: zod.string(),
+  role: zod.string(),
+  phone: zod.string().nullish(),
+  address: zod.string().nullish(),
+  avatarUrl: zod.string().nullish(),
+  isActive: zod.boolean(),
+  loyaltyPoints: zod.number(),
+  createdAt: zod.coerce.date(),
+  assignedShopId: zod.number().nullish(),
+});
+
+/**
+ * JWT required. Users can delete themselves; admins can delete any user.
+ * @summary Delete a user (admin)
+ */
+export const DeleteUserParams = zod.object({
+  id: zod.coerce.number(),
 });

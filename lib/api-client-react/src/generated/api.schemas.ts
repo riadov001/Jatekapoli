@@ -55,6 +55,8 @@ export interface User {
   isActive: boolean;
   loyaltyPoints: number;
   createdAt: string;
+  /** @nullable */
+  assignedShopId?: number | null;
 }
 
 export interface AuthResponse {
@@ -131,6 +133,16 @@ export interface Restaurant {
   reviewCount: number;
   isVerified: boolean;
   createdAt: string;
+  /** @nullable */
+  legalName?: string | null;
+  /** @nullable */
+  ice?: string | null;
+  /** @nullable */
+  printerEmail?: string | null;
+  /** @nullable */
+  profileCompletedAt?: string | null;
+  /** Defaulted by the API when not stored on the restaurant row. */
+  freeDeliveryThreshold?: number;
 }
 
 export interface CreateRestaurantBody {
@@ -256,6 +268,12 @@ export interface Order {
   items: OrderItem[];
   createdAt: string;
   updatedAt: string;
+  /** @nullable */
+  reference?: string | null;
+  /** @nullable */
+  kitchenCode?: string | null;
+  /** @nullable */
+  pickupCode?: string | null;
 }
 
 export type CreateOrderBodyItemsItem = {
@@ -301,6 +319,22 @@ export interface Driver {
   /** @nullable */
   rating?: number | null;
   createdAt: string;
+  /** @nullable */
+  vehiclePlate?: string | null;
+  /** @nullable */
+  nationalId?: string | null;
+  /** @nullable */
+  licenseNumber?: string | null;
+  /** @nullable */
+  photoUrl?: string | null;
+  /** @nullable */
+  latitude?: number | null;
+  /** @nullable */
+  longitude?: number | null;
+  /** @nullable */
+  locationUpdatedAt?: string | null;
+  /** @nullable */
+  profileCompletedAt?: string | null;
 }
 
 export interface UpdateDriverBody {
@@ -465,38 +499,402 @@ export interface UploadUrlResponse {
   metadata?: UploadUrlRequest;
 }
 
-export type ListRestaurantsParams = {
-  search?: string;
-  category?: string;
-  isLocal?: boolean;
-  isOpen?: boolean;
-  businessType?: string;
-  ownerId?: number;
-};
+export interface UpdateNameBody {
+  /** @minLength 2 */
+  name: string;
+}
 
-export type ListMenuItemsParams = {
-  category?: string;
-};
+export interface UserEnvelope {
+  user: User;
+}
 
-export type ListOrdersParams = {
-  status?: string;
-  userId?: number;
-  restaurantId?: number;
-  driverId?: number;
-};
+export interface ForgotPasswordBody {
+  email: string;
+}
 
-export type ListUsersParams = {
-  role?: string;
-  search?: string;
-};
+export interface PasswordResetRequestResponse {
+  success: boolean;
+  message: string;
+  demoOtp?: string;
+}
 
-export type ListDriversParams = {
+export interface ResetPasswordBody {
+  email: string;
+  code: string;
+  /** @minLength 6 */
+  newPassword: string;
+}
+
+export interface PasswordResetResponse {
+  success: boolean;
+  token: string;
+  user: User;
+}
+
+export interface CompleteRestaurantProfileBody {
+  /** @minLength 2 */
+  legalName: string;
+  /** @pattern ^\d{8,15}$ */
+  ice: string;
+  /** @nullable */
+  printerEmail?: string | null;
+}
+
+export interface AcceptDeliveryBody {
+  driverId: number;
+}
+
+export interface ConfirmDeliveryBody {
+  /** @pattern ^\d{4}$ */
+  pickupCode: string;
+}
+
+export interface CompleteDriverProfileBody {
+  vehicleType: string;
+  /** @minLength 3 */
+  vehiclePlate: string;
+  /** @minLength 4 */
+  nationalId: string;
+  /** @nullable */
+  licenseNumber?: string | null;
+  /** @nullable */
+  photoUrl?: string | null;
+}
+
+export interface DriverLocationUpdateBody {
+  latitude: number;
+  longitude: number;
+}
+
+export interface DriverLocation {
+  /** @nullable */
+  latitude: number | null;
+  /** @nullable */
+  longitude: number | null;
+  /** @nullable */
+  locationUpdatedAt?: string | null;
+}
+
+export interface DriverLocationPublic {
+  /** @nullable */
+  latitude?: number | null;
+  /** @nullable */
+  longitude?: number | null;
+  /** @nullable */
+  locationUpdatedAt?: string | null;
   isAvailable?: boolean;
+  name?: string;
+}
+
+export interface Favorite {
+  id: number;
+  userId: number;
+  restaurantId: number;
+  createdAt: string;
+}
+
+export interface FavoriteWithRestaurant {
+  id: number;
+  restaurantId: number;
+  createdAt: string;
+  restaurant?: Restaurant;
+}
+
+export interface FavoriteBody {
+  restaurantId: number;
+}
+
+export interface Address {
+  id: number;
+  userId: number;
+  label: string;
+  fullAddress: string;
+  /** @nullable */
+  details?: string | null;
+  isDefault: boolean;
+  createdAt: string;
+}
+
+export interface AddressBody {
+  label: string;
+  fullAddress: string;
+  /** @nullable */
+  details?: string | null;
+  isDefault?: boolean;
+}
+
+export interface UpdateAddressBody {
+  label?: string;
+  fullAddress?: string;
+  /** @nullable */
+  details?: string | null;
+  isDefault?: boolean;
+}
+
+export interface PaymentMethod {
+  id: number;
+  userId: number;
+  type: string;
+  label: string;
+  /** @nullable */
+  last4?: string | null;
+  /** @nullable */
+  brand?: string | null;
+  isDefault: boolean;
+  createdAt: string;
+}
+
+export interface PaymentMethodBody {
+  type: string;
+  label: string;
+  /** @nullable */
+  last4?: string | null;
+  /** @nullable */
+  brand?: string | null;
+  isDefault?: boolean;
+}
+
+export interface UpdatePaymentMethodBody {
+  type?: string;
+  label?: string;
+  /** @nullable */
+  last4?: string | null;
+  /** @nullable */
+  brand?: string | null;
+  isDefault?: boolean;
+}
+
+export type SupportTicketStatus =
+  (typeof SupportTicketStatus)[keyof typeof SupportTicketStatus];
+
+export const SupportTicketStatus = {
+  open: "open",
+  in_progress: "in_progress",
+  closed: "closed",
+} as const;
+
+export interface SupportTicket {
+  id: number;
+  userId: number;
+  category: string;
+  subject: string;
+  message: string;
+  status: SupportTicketStatus;
+  createdAt: string;
+  /** @nullable */
+  userName?: string | null;
+  /** @nullable */
+  userEmail?: string | null;
+}
+
+export interface CreateSupportTicketBody {
+  category: string;
+  subject: string;
+  message: string;
+}
+
+export type UpdateSupportTicketBodyStatus =
+  (typeof UpdateSupportTicketBodyStatus)[keyof typeof UpdateSupportTicketBodyStatus];
+
+export const UpdateSupportTicketBodyStatus = {
+  open: "open",
+  in_progress: "in_progress",
+  closed: "closed",
+} as const;
+
+export interface UpdateSupportTicketBody {
+  status: UpdateSupportTicketBodyStatus;
+}
+
+export type NotificationPrefsLanguage =
+  (typeof NotificationPrefsLanguage)[keyof typeof NotificationPrefsLanguage];
+
+export const NotificationPrefsLanguage = {
+  fr: "fr",
+  en: "en",
+  ar: "ar",
+} as const;
+
+export interface NotificationPrefs {
+  userId: number;
+  pushOrders: boolean;
+  pushPromos: boolean;
+  emailReceipts: boolean;
+  emailNewsletter: boolean;
+  smsAlerts: boolean;
+  language: NotificationPrefsLanguage;
+  updatedAt: string;
+}
+
+export type UpdateNotificationPrefsBodyLanguage =
+  (typeof UpdateNotificationPrefsBodyLanguage)[keyof typeof UpdateNotificationPrefsBodyLanguage];
+
+export const UpdateNotificationPrefsBodyLanguage = {
+  fr: "fr",
+  en: "en",
+  ar: "ar",
+} as const;
+
+export interface UpdateNotificationPrefsBody {
+  pushOrders?: boolean;
+  pushPromos?: boolean;
+  emailReceipts?: boolean;
+  emailNewsletter?: boolean;
+  smsAlerts?: boolean;
+  language?: UpdateNotificationPrefsBodyLanguage;
+}
+
+export interface UserConsents {
+  userId: number;
+  cookiesEssential: boolean;
+  cookiesAnalytics: boolean;
+  cookiesMarketing: boolean;
+  dataProcessing: boolean;
+  dataSharing: boolean;
+  personalization: boolean;
+  marketingEmails: boolean;
+  marketingSms: boolean;
+  marketingPush: boolean;
+  /** @nullable */
+  termsVersion?: string | null;
+  /** @nullable */
+  termsAcceptedAt?: string | null;
+  /** @nullable */
+  privacyVersion?: string | null;
+  /** @nullable */
+  privacyAcceptedAt?: string | null;
+  /** @nullable */
+  cookiesVersion?: string | null;
+  /** @nullable */
+  cookiesAcceptedAt?: string | null;
+  updatedAt: string;
+}
+
+export type UserConsentsWithVersionsCurrentVersions = {
+  terms: string;
+  privacy: string;
+  cookies: string;
 };
 
-export type ListReviewsParams = {
-  restaurantId?: number;
+export interface UserConsentsWithVersions {
   userId?: number;
+  cookiesEssential?: boolean;
+  cookiesAnalytics?: boolean;
+  cookiesMarketing?: boolean;
+  dataProcessing?: boolean;
+  dataSharing?: boolean;
+  personalization?: boolean;
+  marketingEmails?: boolean;
+  marketingSms?: boolean;
+  marketingPush?: boolean;
+  /** @nullable */
+  termsVersion?: string | null;
+  /** @nullable */
+  termsAcceptedAt?: string | null;
+  /** @nullable */
+  privacyVersion?: string | null;
+  /** @nullable */
+  privacyAcceptedAt?: string | null;
+  /** @nullable */
+  cookiesVersion?: string | null;
+  /** @nullable */
+  cookiesAcceptedAt?: string | null;
+  updatedAt?: string;
+  currentVersions?: UserConsentsWithVersionsCurrentVersions;
+}
+
+export interface UpdateUserConsentsBody {
+  cookiesAnalytics?: boolean;
+  cookiesMarketing?: boolean;
+  dataProcessing?: boolean;
+  dataSharing?: boolean;
+  personalization?: boolean;
+  marketingEmails?: boolean;
+  marketingSms?: boolean;
+  marketingPush?: boolean;
+  acceptTerms?: boolean;
+  acceptPrivacy?: boolean;
+  acceptCookies?: boolean;
+}
+
+export interface UserDataExport {
+  generatedAt: string;
+  user: User;
+  orders: Order[];
+  orderItems: OrderItem[];
+  addresses: Address[];
+  paymentMethods: PaymentMethod[];
+  favorites: Favorite[];
+  notificationPrefs?: NotificationPrefs | null;
+  consents?: UserConsents | null;
+  reviews: Review[];
+  supportTickets: SupportTicket[];
+}
+
+export type QuoteStatus = (typeof QuoteStatus)[keyof typeof QuoteStatus];
+
+export const QuoteStatus = {
+  pending: "pending",
+  quoted: "quoted",
+  accepted: "accepted",
+  rejected: "rejected",
+  cancelled: "cancelled",
+} as const;
+
+export interface Quote {
+  id: number;
+  userId: number;
+  restaurantId: number;
+  restaurantName: string;
+  userName: string;
+  /** @nullable */
+  userPhone?: string | null;
+  subject: string;
+  description: string;
+  status: QuoteStatus;
+  /** @nullable */
+  quotedAmount?: number | null;
+  /** @nullable */
+  merchantNotes?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateQuoteBody {
+  restaurantId: number;
+  /**
+   * @minLength 2
+   * @maxLength 200
+   */
+  subject: string;
+  /**
+   * @minLength 2
+   * @maxLength 4000
+   */
+  description: string;
+}
+
+export type UpdateQuoteBodyStatus =
+  (typeof UpdateQuoteBodyStatus)[keyof typeof UpdateQuoteBodyStatus];
+
+export const UpdateQuoteBodyStatus = {
+  pending: "pending",
+  quoted: "quoted",
+  accepted: "accepted",
+  rejected: "rejected",
+  cancelled: "cancelled",
+} as const;
+
+export interface UpdateQuoteBody {
+  status?: UpdateQuoteBodyStatus;
+  /** @minimum 0 */
+  quotedAmount?: number;
+  /** @maxLength 2000 */
+  merchantNotes?: string;
+}
+
+export type ListBackendCustomersParams = {
+  search?: string;
 };
 
 export type GetBackendDashboardParams = {
@@ -525,18 +923,80 @@ export type ListBackendProductsParams = {
   search?: string;
 };
 
-export type ListBackendShopsParams = {
-  search?: string;
-};
-
-export type ListBackendCustomersParams = {
-  search?: string;
-};
-
 export type ListBackendReviewsParams = {
   shopId?: number;
 };
 
+export type ListBackendShopsParams = {
+  search?: string;
+};
+
 export type ToggleBackendTodoBody = {
   done: boolean;
+};
+
+export type ListDriversParams = {
+  isAvailable?: boolean;
+};
+
+export type SubscribeEventsParams = {
+  /**
+   * Comma-separated channels such as order:5,restaurant:2,available_orders,driver:7.
+   */
+  channels: string;
+};
+
+export type ListOrdersParams = {
+  status?: string;
+  userId?: number;
+  restaurantId?: number;
+  driverId?: number;
+};
+
+export type GetOrderInvoiceParams = {
+  /**
+   * JWT token alternative for browser-opened document URLs.
+   */
+  token?: string;
+};
+
+export type GetOrderReceiptParams = {
+  /**
+   * JWT token alternative for browser-opened document URLs.
+   */
+  token?: string;
+};
+
+export type ListQuotesParams = {
+  restaurantId?: number;
+};
+
+export type GetQuotePdfParams = {
+  /**
+   * JWT token alternative for browser-opened document URLs.
+   */
+  token?: string;
+};
+
+export type ListRestaurantsParams = {
+  search?: string;
+  category?: string;
+  isLocal?: boolean;
+  isOpen?: boolean;
+  businessType?: string;
+  ownerId?: number;
+};
+
+export type ListMenuItemsParams = {
+  category?: string;
+};
+
+export type ListReviewsParams = {
+  restaurantId?: number;
+  userId?: number;
+};
+
+export type ListUsersParams = {
+  role?: string;
+  search?: string;
 };

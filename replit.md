@@ -34,6 +34,7 @@ See the `pnpm-workspace` skill for workspace structure, TypeScript setup, and pa
 - `artifacts/api-server` — Express 5 REST API on port 8080, JWT auth (jsonwebtoken/bcryptjs)
 - `artifacts/food-delivery` — React + Vite frontend (Tailwind, shadcn/ui, wouter, react-query)
 - `lib/api-spec/openapi.yaml` — OpenAPI spec (source of truth)
+- `lib/api-spec/openapi.json` — generated Swagger/OpenAPI JSON export kept in sync with the YAML spec
 - `lib/api-client-react` — Orval-generated hooks + custom-fetch with setAuthTokenGetter
 - `lib/api-zod` — Orval-generated Zod schemas
 - `lib/db` — Drizzle ORM schema + client
