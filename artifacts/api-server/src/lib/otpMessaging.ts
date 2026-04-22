@@ -120,21 +120,35 @@ async function getTwilioCredentials() {
   if (
     !conn ||
     !conn.settings?.account_sid ||
-    !conn.settings?.api_key ||
-    !conn.settings?.api_key_secret
+    !conn.settings?.api_key
   ) {
     throw new Error("Twilio not connected");
   }
 
-  return {
-    accountSid: conn.settings.account_sid as string,
-    // NOTE: the Replit "twilio" connector exposes Account SID + Auth Token
-    // pairs under the field names `api_key` / `api_key_secret`. Despite the
-    // names, `api_key` is the Auth Token (32 hex chars). We use basic auth:
-    // twilio(accountSid, authToken) — NOT the API Key auth pattern.
-    authToken: conn.settings.api_key as string,
-    phoneNumber: conn.settings.phone_number as string | undefined,
-  };
+  const accountSid = conn.settings.account_sid as string;
+  const authToken = conn.settings.api_key as string;
+  const phoneNumber = conn.settings.phone_number as string | undefined;
+  // Optional Messaging Service SID (MG...) — when the integration was set up
+  // with a Messaging Service rather than a single number, the user typically
+  // pastes it into account_sid by mistake. We accept it via env override and
+  // also detect the misplacement to surface a clear error below.
+  const messagingServiceSid =
+    process.env.TWILIO_MESSAGING_SERVICE_SID ||
+    (typeof conn.settings.api_key_secret === "string" &&
+    conn.settings.api_key_secret.startsWith("MG")
+      ? (conn.settings.api_key_secret as string)
+      : undefined);
+
+  if (!accountSid.startsWith("AC")) {
+    throw new Error(
+      `Twilio account_sid is invalid — expected a value starting with "AC..." ` +
+        `(your Twilio Account SID, found on the Twilio Console homepage). ` +
+        `Got a value starting with "${accountSid.slice(0, 2)}..." instead. ` +
+        `Open the integrations panel and reconnect Twilio with the correct Account SID.`,
+    );
+  }
+
+  return { accountSid, authToken, phoneNumber, messagingServiceSid };
 }
 
 async function getTwilioClient() {
@@ -153,8 +167,14 @@ async function twilioConfigured(): Promise<boolean> {
 
 async function sendTwilioSms(to: string, body: string): Promise<void> {
   const client = await getTwilioClient();
-  const { phoneNumber } = await getTwilioCredentials();
+  const { phoneNumber, messagingServiceSid } = await getTwilioCredentials();
   const from = process.env.TWILIO_SMS_FROM || phoneNumber;
+  // Prefer Messaging Service when configured — works around country-specific
+  // sender requirements (e.g. alphanumeric in Morocco) without code changes.
+  if (messagingServiceSid) {
+    await client.messages.create({ to, body, messagingServiceSid });
+    return;
+  }
   if (!from) throw new Error("Twilio SMS sender not configured");
   await client.messages.create({ to, from, body });
 }
