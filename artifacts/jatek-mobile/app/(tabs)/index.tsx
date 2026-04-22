@@ -40,6 +40,16 @@ const STAR = "#E91E63";
 const NEW_GREEN = "#7BE36A";
 const CARD_BORDER = "#F0F0F0";
 
+// Shop categories (3×2 grid below the header)
+const SHOP_CATEGORIES = [
+  { slug: "restauration", label: "Restauration", icon: "restaurant" as const, bg: "#FFE3EC", color: "#E91E63" },
+  { slug: "epicerie",     label: "Épicerie",      icon: "basket"     as const, bg: "#FFEFD6", color: "#F97316" },
+  { slug: "sante",        label: "Santé",         icon: "medkit"     as const, bg: "#EDE3FF", color: "#8B5CF6" },
+  { slug: "supermarche",  label: "Supermarché",   icon: "cart"       as const, bg: "#D7F6FA", color: "#0AA5C0" },
+  { slug: "boutiques",    label: "Boutiques",     icon: "storefront" as const, bg: "#FFC9D8", color: "#C2185B" },
+  { slug: "coursier",     label: "Coursier",      icon: "bicycle"    as const, bg: "#DFF7D6", color: "#3A7D1B" },
+];
+
 // Service squares (Service Coursier / Boutiques / Offers / Parapharm)
 const SERVICES = [
   { key: "courier",  label: "Service Coursier", bg: "#D7F6FA", icon: "bicycle"   as const, color: "#0AA5C0", businessType: "services",     categorySlug: "coursier" },
@@ -306,46 +316,22 @@ export default function HomeScreen() {
           <WaveEdge color={PINK} height={28} />
         </View>
 
-        {/* ─── Top categories: 2 big cards (Restaurants / Supermarche) ─── */}
-        <View style={s.topCardsRow}>
-          <Pressable
-            onPress={() => router.push({ pathname: "/category/[slug]", params: { slug: "restauration" } })}
-            style={({ pressed }) => [
-              s.topCard,
-              { backgroundColor: "#FFE3EC" },
-              pressed && { opacity: 0.9 },
-            ]}
-          >
-            <View style={s.topCardPromoBadge}>
-              <Text style={s.topCardPromoTxt}>Promo</Text>
-            </View>
-            <Image
-              source={{
-                uri: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=400&q=80&auto=format&fit=crop",
-              }}
-              style={s.topCardImg}
-              resizeMode="contain"
-            />
-            <Text style={s.topCardLabel}>Restaurants</Text>
-          </Pressable>
-
-          <Pressable
-            onPress={() => router.push({ pathname: "/category/[slug]", params: { slug: "supermarche" } })}
-            style={({ pressed }) => [
-              s.topCard,
-              { backgroundColor: "#FBE7CF" },
-              pressed && { opacity: 0.9 },
-            ]}
-          >
-            <Image
-              source={{
-                uri: "https://images.unsplash.com/photo-1542838132-92c53300491e?w=400&q=80&auto=format&fit=crop",
-              }}
-              style={s.topCardImg}
-              resizeMode="contain"
-            />
-            <Text style={s.topCardLabel}>Supermarche</Text>
-          </Pressable>
+        {/* ─── Shop categories grid (3×2) ─── */}
+        <View style={s.shopCatsGrid}>
+          {SHOP_CATEGORIES.map((c) => (
+            <Pressable
+              key={c.slug}
+              onPress={() => router.push({ pathname: "/category/[slug]", params: { slug: c.slug } })}
+              style={({ pressed }) => [s.shopCatItem, pressed && { opacity: 0.85, transform: [{ scale: 0.97 }] }]}
+            >
+              <View style={[s.shopCatTile, { backgroundColor: c.bg }]}>
+                <Ionicons name={c.icon} size={28} color={c.color} />
+              </View>
+              <Text style={s.shopCatLabel} numberOfLines={1}>
+                {c.label}
+              </Text>
+            </Pressable>
+          ))}
         </View>
 
         {/* ─── 4 service squares ─── */}
@@ -560,52 +546,33 @@ const s = StyleSheet.create({
     height: 44,
     padding: 0,
   },
-  // ── Top 2 big cards ──
-  topCardsRow: {
+  // ── Shop categories grid ──
+  shopCatsGrid: {
     flexDirection: "row",
-    paddingHorizontal: 16,
-    marginTop: 8,
-    gap: 12,
+    flexWrap: "wrap",
+    paddingHorizontal: 12,
+    marginTop: 12,
+    rowGap: 14,
   },
-  topCard: {
-    flex: 1,
-    height: 130,
+  shopCatItem: {
+    width: "33.333%",
+    alignItems: "center",
+    paddingHorizontal: 4,
+  },
+  shopCatTile: {
+    width: 64,
+    height: 64,
     borderRadius: 18,
-    padding: 12,
-    overflow: "hidden",
-    justifyContent: "flex-end",
-    position: "relative",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 6,
   },
-  topCardImg: {
-    position: "absolute",
-    top: 8,
-    left: 8,
-    right: 8,
-    bottom: 30,
-    width: undefined,
-    height: undefined,
-  },
-  topCardLabel: {
-    fontSize: 14,
-    fontFamily: "Inter_700Bold",
-    color: TEXT_DARK,
-  },
-  topCardPromoBadge: {
-    position: "absolute",
-    top: 10,
-    right: 10,
-    backgroundColor: PINK,
-    paddingHorizontal: 10,
-    paddingVertical: 3,
-    borderRadius: 12,
-    zIndex: 2,
-  },
-  topCardPromoTxt: {
-    color: "#fff",
+  shopCatLabel: {
+    fontSize: 12,
     fontFamily: "Inter_600SemiBold",
-    fontSize: 11,
+    color: TEXT_DARK,
+    textAlign: "center",
   },
-
   // ── Services row ──
   servicesRow: {
     flexDirection: "row",
