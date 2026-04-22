@@ -42,12 +42,22 @@ See the `pnpm-workspace` skill for workspace structure, TypeScript setup, and pa
 ### DB Models
 users, restaurants, menuItems, orders, orderItems, drivers, reviews
 
+### Development demo data
+- Development DB is populated with realistic Jatek test data: 14 restaurants/shops/pharmacies/courier services, 55 menu/product items, demo orders, order items, favorites, addresses, payment methods, support tickets, quotes, consents, notification preferences, dashboard todos, and staff accounts.
+- New mobile Home filters have data coverage for `businessType`: `restaurant`, `shop`, `pharmacy`, and `courier`.
+
 ### Test Accounts (all password: `password123`)
 - customer@jatek.ma (customer)
 - driver@jatek.ma (driver)
 - driver2@jatek.ma (driver)
 - admin@jatek.ma (admin)
 - owner@jatek.ma (restaurant_owner, owns restaurants 1-6)
+- demo.client@jatek.ma (customer with demo orders, addresses, payments, favorites)
+- amina.vip@jatek.ma (VIP customer with preferences/consents)
+- samir.driver@jatek.ma (driver with completed profile and live location)
+- super@jatek.ma (super_admin)
+- manager@jatek.ma (manager)
+- employee@jatek.ma (employee assigned to Jatek Market Al Qods)
 
 ### Frontend Routes
 - `/` — Home (hero, category filter, Support Local, all restaurants)
