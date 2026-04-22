@@ -6,10 +6,10 @@
       }
     },
     "android": {
-      "package": "com.mytoolsgroup.workspace"
+      "package": "ma.jatek.app"
     },
     "ios": {
-      "bundleIdentifier": "com.mytoolsgroup.workspace",
+      "bundleIdentifier": "ma.jatek.app",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
