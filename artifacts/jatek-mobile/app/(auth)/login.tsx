@@ -57,9 +57,23 @@ export default function LoginScreen() {
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
       <ScrollView
-        contentContainerStyle={[styles.container, { paddingTop: insets.top + 40, paddingBottom: insets.bottom + 24 }]}
+        contentContainerStyle={[styles.container, { paddingTop: insets.top + 16, paddingBottom: insets.bottom + 24 }]}
         keyboardShouldPersistTaps="handled"
       >
+        {/* Back button (top-left) */}
+        <TouchableOpacity
+          onPress={() => {
+            if (Platform.OS !== "web") Haptics.selectionAsync();
+            if (router.canGoBack()) router.back();
+            else router.replace("/(auth)/welcome");
+          }}
+          style={[styles.backBtn, { backgroundColor: colors.muted }]}
+          hitSlop={10}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="arrow-back" size={22} color={colors.foreground} />
+        </TouchableOpacity>
+
         {/* Logo with pink->turquoise gradient hero */}
         <LinearGradient
           colors={[colors.primary, colors.turquoise]}
@@ -186,7 +200,16 @@ const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
     paddingHorizontal: 24,
+    paddingTop: 24,
     alignItems: "center",
+  },
+  backBtn: {
+    position: "absolute",
+    top: 12,
+    left: 16,
+    width: 40, height: 40, borderRadius: 20,
+    alignItems: "center", justifyContent: "center",
+    zIndex: 10,
   },
   logoWrap: {
     width: 80, height: 80, borderRadius: 24,

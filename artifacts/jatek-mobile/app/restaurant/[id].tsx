@@ -89,23 +89,16 @@ export default function RestaurantScreen() {
                   <Ionicons name="restaurant" size={48} color={colors.mutedForeground} />
                 </View>
               )}
-              {/* Back button */}
+              {/* Back button (top-left) */}
               <TouchableOpacity
                 onPress={() => router.back()}
                 style={[styles.backBtn, { backgroundColor: "rgba(0,0,0,0.4)" }]}
               >
                 <Ionicons name="arrow-back" size={22} color="#fff" />
               </TouchableOpacity>
-              {/* Favorite button */}
-              <TouchableOpacity
-                onPress={toggleFav}
-                style={[styles.backBtn, { backgroundColor: "rgba(0,0,0,0.4)", left: undefined, right: 16 }]}
-              >
-                <Ionicons name={isFav ? "heart" : "heart-outline"} size={22} color={isFav ? "#E2006A" : "#fff"} />
-              </TouchableOpacity>
-              {/* Circular merchant logo overlapping hero bottom-left */}
+              {/* Merchant logo (top-right, transparent background) */}
               {(restaurant.logoUrl || restaurant.imageUrl) ? (
-                <View style={[styles.heroLogoWrap, { borderColor: colors.card, shadowColor: colors.primary }]}>
+                <View style={styles.heroLogoWrap}>
                   <Image
                     source={{ uri: restaurant.logoUrl ?? restaurant.imageUrl! }}
                     style={styles.heroLogoImg}
@@ -113,16 +106,23 @@ export default function RestaurantScreen() {
                   />
                 </View>
               ) : (
-                <View style={[styles.heroLogoWrap, { borderColor: colors.card, backgroundColor: colors.primary, shadowColor: colors.primary, alignItems: "center", justifyContent: "center" }]}>
-                  <Text style={{ fontSize: 32, color: "#fff", fontFamily: "Inter_700Bold" }}>
+                <View style={[styles.heroLogoWrap, { backgroundColor: "rgba(0,0,0,0.35)", alignItems: "center", justifyContent: "center" }]}>
+                  <Text style={{ fontSize: 28, color: "#fff", fontFamily: "Inter_700Bold" }}>
                     {restaurant.name?.charAt(0)?.toUpperCase() ?? "?"}
                   </Text>
                 </View>
               )}
+              {/* Favorite button — placed BELOW the logo, top-right column */}
+              <TouchableOpacity
+                onPress={toggleFav}
+                style={styles.heroFavBtn}
+              >
+                <Ionicons name={isFav ? "heart" : "heart-outline"} size={22} color={isFav ? "#E2006A" : "#fff"} />
+              </TouchableOpacity>
             </View>
 
             {/* Info */}
-            <View style={[styles.infoSection, { backgroundColor: colors.background, paddingTop: 40 }]}>
+            <View style={[styles.infoSection, { backgroundColor: colors.background, paddingTop: 16 }]}>
               <Text style={[styles.rName, { color: colors.foreground }]}>{restaurant.name}</Text>
               {restaurant.description && (
                 <Text style={[styles.rDesc, { color: colors.mutedForeground }]}>{restaurant.description}</Text>
@@ -333,22 +333,24 @@ const styles = StyleSheet.create({
   heroPlaceholder: { width: "100%", height: 220, alignItems: "center", justifyContent: "center" },
   heroLogoWrap: {
     position: "absolute",
-    bottom: -34,
-    left: 16,
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    borderWidth: 3,
-    backgroundColor: "#fff",
+    top: 44,
+    right: 16,
+    width: 64,
+    height: 64,
+    borderRadius: 14,
+    backgroundColor: "transparent",
     overflow: "hidden",
-    padding: 6,
-    shadowColor: "#000",
-    shadowOpacity: 0.22,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 3 },
-    elevation: 6,
+    padding: 0,
   },
-  heroLogoImg: { width: "100%", height: "100%" },
+  heroLogoImg: { width: "100%", height: "100%", backgroundColor: "transparent" },
+  heroFavBtn: {
+    position: "absolute",
+    top: 116,
+    right: 16,
+    width: 40, height: 40, borderRadius: 20,
+    alignItems: "center", justifyContent: "center",
+    backgroundColor: "rgba(0,0,0,0.4)",
+  },
   backBtn: {
     position: "absolute", top: 48, left: 16,
     width: 40, height: 40, borderRadius: 20, alignItems: "center", justifyContent: "center",

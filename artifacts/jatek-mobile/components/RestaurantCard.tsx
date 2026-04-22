@@ -52,7 +52,7 @@ export function RestaurantCard({ restaurant, onPress, horizontal }: RestaurantCa
           {/* Merchant logo overlay (top-left) */}
           <View style={styles.logoWrap}>
             {restaurant.logoUrl ? (
-              <Image source={{ uri: restaurant.logoUrl }} style={styles.logoImg} resizeMode="cover" />
+              <Image source={{ uri: restaurant.logoUrl }} style={styles.logoImg} resizeMode="contain" />
             ) : (
               <View style={[styles.logoImg, styles.logoFallback, { backgroundColor: colors.primary }]}>
                 <Text style={styles.logoLetter}>
@@ -135,19 +135,13 @@ const styles = StyleSheet.create({
   logoWrap: {
     position: "absolute",
     top: 8,
-    left: 8,
-    width: 38,
-    height: 38,
-    borderRadius: 11,
-    backgroundColor: "#fff",
-    padding: 2,
-    shadowColor: "#000",
-    shadowOpacity: 0.18,
-    shadowRadius: 4,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 3,
+    right: 8,
+    width: 42,
+    height: 42,
+    alignItems: "center",
+    justifyContent: "center",
   },
-  logoImg: { width: "100%", height: "100%", borderRadius: 9 },
+  logoImg: { width: "100%", height: "100%", borderRadius: 9, backgroundColor: "transparent" },
   logoFallback: { alignItems: "center", justifyContent: "center" },
   logoLetter: { color: "#fff", fontFamily: "Inter_700Bold", fontSize: 16 },
   closedBadge: {

@@ -294,7 +294,7 @@ export function AddressAutocomplete({ value, onChange, onZoneChange }: Props) {
             </Text>
           ) : (
             <Text style={[styles.zoneText, { color: "#DC2626" }]}>
-              Outside delivery zone ({zoneInfo.distanceKm.toFixed(1)} km — max {MAX_RADIUS_KM} km). Please choose a closer address.
+              Désolé, cette adresse est à {zoneInfo.distanceKm.toFixed(1)} km du centre d'Oujda — hors de notre zone ({MAX_RADIUS_KM} km). Nous arrivons bientôt chez vous !
             </Text>
           )}
         </View>

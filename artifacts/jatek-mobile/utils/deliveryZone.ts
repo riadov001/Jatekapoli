@@ -9,8 +9,12 @@ export const OUJDA_CENTER = {
   name: "Oujda",
 };
 
-/** Maximum delivery radius in kilometres */
-export const MAX_RADIUS_KM = 15;
+/** Maximum delivery radius in kilometres around Oujda city centre */
+export const MAX_RADIUS_KM = 5;
+
+/** Friendly out-of-zone message shown to the user. */
+export const OUT_OF_ZONE_MESSAGE =
+  "Désolé, cette adresse est en dehors de notre zone de livraison (5 km autour d'Oujda). Nous arrivons bientôt chez vous !";
 
 /**
  * Haversine formula — returns the great-circle distance (km) between two

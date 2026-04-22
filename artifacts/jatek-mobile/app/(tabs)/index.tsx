@@ -142,17 +142,17 @@ function RestaurantTile({
             <Text style={s.tileLogoText}>{restaurant.name.charAt(0).toUpperCase()}</Text>
           )}
         </View>
-        <View style={s.tileRatingPill}>
-          <Ionicons name="star" size={11} color={STAR} />
-          <Text style={s.tileRatingTxt}>
-            {rating.toFixed(1)} <Text style={s.tileRatingMuted}>(+100)</Text>
-          </Text>
-        </View>
       </View>
       <View style={s.tileBody}>
-        <Text style={s.tileName} numberOfLines={1}>
-          {restaurant.name}
-        </Text>
+        <View style={s.tileNameRow}>
+          <Text style={s.tileName} numberOfLines={1}>
+            {restaurant.name}
+          </Text>
+          <View style={s.tileRatingInline}>
+            <Ionicons name="star" size={11} color={STAR} />
+            <Text style={s.tileRatingTxt}>{rating.toFixed(1)}</Text>
+          </View>
+        </View>
         <View style={s.tileMetaRow}>
           <Ionicons name="time-outline" size={12} color={TEXT_MUTED} />
           <Text style={s.tileMetaTxt}>
@@ -799,31 +799,25 @@ const s = StyleSheet.create({
   },
   tileLogo: {
     position: "absolute",
-    left: "50%",
-    bottom: -22,
-    marginLeft: -28,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: "#fff",
-    borderWidth: 3,
-    borderColor: "#fff",
+    top: 8,
+    right: 8,
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: "transparent",
     alignItems: "center",
     justifyContent: "center",
     overflow: "hidden",
   },
-  tileLogoImg: { width: "86%", height: "86%" },
-  tileLogoText: { color: PINK, fontFamily: "Inter_700Bold", fontSize: 18 },
-  tileRatingPill: {
-    position: "absolute",
-    right: 8,
-    bottom: 8,
+  tileLogoImg: { width: "100%", height: "100%", backgroundColor: "transparent" },
+  tileLogoText: { color: "#fff", fontFamily: "Inter_700Bold", fontSize: 18, textShadowColor: "rgba(0,0,0,0.45)", textShadowRadius: 4 },
+  tileRatingInline: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 4,
-    backgroundColor: "rgba(255,255,255,0.95)",
-    paddingHorizontal: 8,
-    paddingVertical: 3,
+    gap: 3,
+    backgroundColor: "#FFF1F6",
+    paddingHorizontal: 7,
+    paddingVertical: 2,
     borderRadius: 10,
   },
   tileRatingTxt: {
@@ -831,17 +825,20 @@ const s = StyleSheet.create({
     fontFamily: "Inter_700Bold",
     color: TEXT_DARK,
   },
-  tileRatingMuted: {
-    color: TEXT_MUTED,
-    fontFamily: "Inter_400Regular",
-  },
   tileBody: {
     paddingHorizontal: 12,
-    paddingTop: 28,
+    paddingTop: 10,
     paddingBottom: 12,
     gap: 6,
   },
+  tileNameRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 8,
+  },
   tileName: {
+    flex: 1,
     fontSize: 14,
     fontFamily: "Inter_700Bold",
     color: TEXT_DARK,

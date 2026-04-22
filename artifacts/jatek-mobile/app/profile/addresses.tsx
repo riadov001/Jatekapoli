@@ -6,7 +6,9 @@ import ProfileScreenLayout from "@/components/ProfileScreenLayout";
 import { useColors } from "@/hooks/useColors";
 import { listAddresses, createAddress, updateAddress, deleteAddress, type SavedAddress } from "@/lib/api";
 import { AddressAutocomplete } from "@/components/AddressAutocomplete";
+import { LocationMapPicker } from "@/components/LocationMapPicker";
 import { useCart } from "@/contexts/CartContext";
+import { OUJDA_CENTER, checkDeliveryZone, reverseGeocode } from "@/utils/deliveryZone";
 
 export default function AddressesScreen() {
   const colors = useColors();
@@ -37,6 +39,7 @@ export default function AddressesScreen() {
   const [details, setDetails] = useState("");
   const [isDefault, setIsDefault] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [coords, setCoords] = useState({ latitude: OUJDA_CENTER.latitude, longitude: OUJDA_CENTER.longitude });
 
   const load = useCallback(async () => {
     try { setItems(await listAddresses()); }
@@ -45,12 +48,22 @@ export default function AddressesScreen() {
   }, []);
   useEffect(() => { load(); }, [load]);
 
-  const openAdd = () => { setEditing(null); setLabel(""); setFullAddress(""); setDetails(""); setIsDefault(items.length === 0); setFormAddrInZone(true); setShowForm(true); };
-  const openEdit = (a: SavedAddress) => { setEditing(a); setLabel(a.label); setFullAddress(a.fullAddress); setDetails(a.details ?? ""); setIsDefault(a.isDefault); setFormAddrInZone(true); setShowForm(true); };
+  const openAdd = () => { setEditing(null); setLabel(""); setFullAddress(""); setDetails(""); setIsDefault(items.length === 0); setFormAddrInZone(true); setCoords({ latitude: OUJDA_CENTER.latitude, longitude: OUJDA_CENTER.longitude }); setShowForm(true); };
+  const openEdit = (a: SavedAddress) => { setEditing(a); setLabel(a.label); setFullAddress(a.fullAddress); setDetails(a.details ?? ""); setIsDefault(a.isDefault); setFormAddrInZone(true); setCoords({ latitude: OUJDA_CENTER.latitude, longitude: OUJDA_CENTER.longitude }); setShowForm(true); };
+
+  const onMapPick = async (c: { latitude: number; longitude: number }) => {
+    setCoords(c);
+    const zone = checkDeliveryZone(c.latitude, c.longitude);
+    setFormAddrInZone(zone.inZone);
+    try {
+      const { address } = await reverseGeocode(c.latitude, c.longitude);
+      setFullAddress(address);
+    } catch { /* keep previous text */ }
+  };
 
   const save = async () => {
     if (!label.trim() || !fullAddress.trim()) { Alert.alert("Champs requis", "Le libellé et l'adresse sont requis."); return; }
-    if (!formAddrInZone) { Alert.alert("Hors zone", "Cette adresse est en dehors de notre zone de livraison (15 km autour d'Oujda)."); return; }
+    if (!formAddrInZone) { Alert.alert("Hors zone", "Désolé, cette adresse est en dehors de notre zone de livraison (5 km autour d'Oujda). Nous arrivons bientôt chez vous !"); return; }
     setSaving(true);
     try {
       if (editing) {
@@ -142,25 +155,29 @@ export default function AddressesScreen() {
         <View style={styles.modalOverlay}>
           <View style={[styles.sheet, { backgroundColor: colors.background }]}>
             <View style={styles.sheetHandle} />
-            <Text style={[styles.sheetTitle, { color: colors.heading }]}>{editing ? "Modifier l'adresse" : "Nouvelle adresse"}</Text>
-            <Text style={[styles.label, { color: colors.mutedForeground }]}>Libellé</Text>
-            <TextInput value={label} onChangeText={setLabel} placeholder="Domicile, Bureau..." placeholderTextColor={colors.mutedForeground} style={[styles.input, { backgroundColor: colors.card, color: colors.heading, borderColor: colors.border }]} />
-            <Text style={[styles.label, { color: colors.mutedForeground }]}>Adresse complète</Text>
-            <AddressAutocomplete value={fullAddress} onChange={setFullAddress} onZoneChange={(inZone) => setFormAddrInZone(inZone)} />
-            <Text style={[styles.label, { color: colors.mutedForeground }]}>Détails (étage, code, etc.)</Text>
-            <TextInput value={details} onChangeText={setDetails} placeholder="Optionnel" placeholderTextColor={colors.mutedForeground} style={[styles.input, { backgroundColor: colors.card, color: colors.heading, borderColor: colors.border }]} />
-            <TouchableOpacity onPress={() => setIsDefault((v) => !v)} style={{ flexDirection: "row", alignItems: "center", gap: 8, marginTop: 14 }}>
-              <Ionicons name={isDefault ? "checkbox" : "square-outline"} size={22} color={isDefault ? colors.primary : colors.mutedForeground} />
-              <Text style={{ color: colors.heading, fontSize: 14, fontFamily: "Inter_500Medium" }}>Définir par défaut</Text>
-            </TouchableOpacity>
-            <View style={{ flexDirection: "row", gap: 12, marginTop: 16 }}>
-              <TouchableOpacity onPress={() => setShowForm(false)} style={[styles.btn, { backgroundColor: colors.muted, flex: 1 }]}>
-                <Text style={[styles.btnText, { color: colors.heading }]}>Annuler</Text>
+            <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+              <Text style={[styles.sheetTitle, { color: colors.heading }]}>{editing ? "Modifier l'adresse" : "Nouvelle adresse"}</Text>
+              <Text style={[styles.label, { color: colors.mutedForeground }]}>Choisir sur la carte</Text>
+              <LocationMapPicker latitude={coords.latitude} longitude={coords.longitude} onChange={onMapPick} height={200} />
+              <Text style={[styles.label, { color: colors.mutedForeground }]}>Libellé</Text>
+              <TextInput value={label} onChangeText={setLabel} placeholder="Domicile, Bureau..." placeholderTextColor={colors.mutedForeground} style={[styles.input, { backgroundColor: colors.card, color: colors.heading, borderColor: colors.border }]} />
+              <Text style={[styles.label, { color: colors.mutedForeground }]}>Adresse (saisie manuelle ou autocomplete)</Text>
+              <AddressAutocomplete value={fullAddress} onChange={setFullAddress} onZoneChange={(inZone) => setFormAddrInZone(inZone)} />
+              <Text style={[styles.label, { color: colors.mutedForeground }]}>Détails (étage, code, etc.)</Text>
+              <TextInput value={details} onChangeText={setDetails} placeholder="Optionnel" placeholderTextColor={colors.mutedForeground} style={[styles.input, { backgroundColor: colors.card, color: colors.heading, borderColor: colors.border }]} />
+              <TouchableOpacity onPress={() => setIsDefault((v) => !v)} style={{ flexDirection: "row", alignItems: "center", gap: 8, marginTop: 14 }}>
+                <Ionicons name={isDefault ? "checkbox" : "square-outline"} size={22} color={isDefault ? colors.primary : colors.mutedForeground} />
+                <Text style={{ color: colors.heading, fontSize: 14, fontFamily: "Inter_500Medium" }}>Définir par défaut</Text>
               </TouchableOpacity>
-              <TouchableOpacity onPress={save} disabled={saving} style={[styles.btn, { backgroundColor: colors.primary, flex: 1 }]}>
-                {saving ? <ActivityIndicator color="#fff" /> : <Text style={[styles.btnText, { color: "#fff" }]}>{editing ? "Enregistrer" : "Ajouter"}</Text>}
-              </TouchableOpacity>
-            </View>
+              <View style={{ flexDirection: "row", gap: 12, marginTop: 16, marginBottom: 8 }}>
+                <TouchableOpacity onPress={() => setShowForm(false)} style={[styles.btn, { backgroundColor: colors.muted, flex: 1 }]}>
+                  <Text style={[styles.btnText, { color: colors.heading }]}>Annuler</Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={save} disabled={saving} style={[styles.btn, { backgroundColor: colors.primary, flex: 1 }]}>
+                  {saving ? <ActivityIndicator color="#fff" /> : <Text style={[styles.btnText, { color: "#fff" }]}>{editing ? "Enregistrer" : "Ajouter"}</Text>}
+                </TouchableOpacity>
+              </View>
+            </ScrollView>
           </View>
         </View>
       </Modal>
@@ -183,7 +200,7 @@ const styles = StyleSheet.create({
   addBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, padding: 14, borderRadius: 14, borderWidth: 1, borderStyle: "dashed", marginTop: 8 },
   addBtnText: { fontSize: 14, fontFamily: "Inter_600SemiBold" },
   modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" },
-  sheet: { borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, paddingBottom: 40 },
+  sheet: { borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, paddingBottom: 40, maxHeight: "92%" },
   sheetHandle: { width: 36, height: 4, borderRadius: 2, backgroundColor: "#ccc", alignSelf: "center", marginBottom: 12 },
   sheetTitle: { fontSize: 18, fontFamily: "Inter_700Bold" },
   label: { fontSize: 12, fontFamily: "Inter_500Medium", marginTop: 14, marginBottom: 6, textTransform: "uppercase", letterSpacing: 0.5 },
