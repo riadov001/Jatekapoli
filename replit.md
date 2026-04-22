@@ -42,6 +42,15 @@ See the `pnpm-workspace` skill for workspace structure, TypeScript setup, and pa
 ### DB Models
 users, restaurants, menuItems, orders, orderItems, drivers, reviews
 
+### Production hardening (API server)
+- Security: `helmet` (HSTS, X-Frame, nosniff, no x-powered-by), CORS allowlist with credentials, body size limit 1mb.
+- Rate limiting: 300 req/min global on `/api/*`, 30 req/15min on `/api/auth/*`. SSE `/api/events` and `/healthz` skip the limiter.
+- Performance: `compression` (gzip) on all responses.
+- Stability: 30s request/response timeout, keepAlive 65s, graceful SIGTERM/SIGINT shutdown, `unhandledRejection`/`uncaughtException` loggers, global error middleware returning `{error}` JSON.
+- Listening on `0.0.0.0:$PORT`, `trust proxy = 1` (Replit deploy proxy).
+- Health check: `GET /health` → `{ status: "ok" }` (also `GET /api/healthz`).
+- SSE `/api/events` now requires auth (`requireAuth`, accepts `?token=` for EventSource).
+
 ### Development demo data
 - Development DB is populated with realistic Jatek test data: 14 restaurants/shops/pharmacies/courier services, 55 menu/product items, demo orders, order items, favorites, addresses, payment methods, support tickets, quotes, consents, notification preferences, dashboard todos, and staff accounts.
 - New mobile Home filters have data coverage for `businessType`: `restaurant`, `shop`, `pharmacy`, and `courier`.

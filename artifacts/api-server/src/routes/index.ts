@@ -19,6 +19,7 @@ import userConsentsRouter from "./userConsents";
 import quotesRouter from "./quotes";
 import backendRouter from "./backend";
 import { subscribe } from "../lib/sse";
+import { requireAuth } from "../middlewares/auth";
 
 const router: IRouter = Router();
 
@@ -51,7 +52,7 @@ router.use(backendRouter);
  *   available_orders    → orders ready for pickup (for driver app)
  *   driver:{id}         → location updates (for customer tracking live map)
  */
-router.get("/events", (req, res) => {
+router.get("/events", requireAuth, (req, res) => {
   const raw = (req.query.channels as string) ?? "";
   const channels = raw.split(",").map((c) => c.trim()).filter(Boolean);
   if (channels.length === 0) {
