@@ -4,6 +4,7 @@ import { eq } from "drizzle-orm";
 
 export async function runSeedIfEmpty() {
   try {
+    await ensureTestClient();
     const existing = await db.select().from(restaurantsTable).limit(1);
     if (existing.length > 0) return;
 
@@ -12,6 +13,28 @@ export async function runSeedIfEmpty() {
     console.log("[seed] Done!");
   } catch (err) {
     console.error("[seed] Error:", err);
+  }
+}
+
+const TEST_CLIENT_EMAIL = "testclient@jatek.ma";
+
+async function ensureTestClient() {
+  const hashedPassword = await bcrypt.hash("password123", 10);
+  const inserted = await db
+    .insert(usersTable)
+    .values({
+      name: "Test Client Jatek",
+      email: TEST_CLIENT_EMAIL,
+      password: hashedPassword,
+      role: "customer",
+      phone: "+212600000099",
+      loyaltyPoints: 0,
+      isActive: true,
+    })
+    .onConflictDoNothing({ target: usersTable.email })
+    .returning({ id: usersTable.id });
+  if (inserted.length > 0) {
+    console.log(`[seed] Created test client account ${TEST_CLIENT_EMAIL}`);
   }
 }
 
