@@ -42,10 +42,10 @@ const CARD_BORDER = "#F0F0F0";
 
 // Service squares (Service Coursier / Boutiques / Offers / Parapharm)
 const SERVICES = [
-  { key: "courier",  label: "Service Coursier", bg: "#D7F6FA", icon: "bicycle"   as const, color: "#0AA5C0", businessType: "services" },
-  { key: "shops",    label: "Boutiques",        bg: "#FFC9D8", icon: "storefront" as const, color: "#C2185B", businessType: "shop" },
-  { key: "offers",   label: "Offers",           bg: "#A8F08A", icon: "pricetag"  as const, color: "#3A7D1B", businessType: "restaurant", isOpen: true },
-  { key: "pharm",    label: "Parapharm",        bg: "#E5A3F0", icon: "medkit"    as const, color: "#7A2A8C", businessType: "parapharmacy" },
+  { key: "courier",  label: "Service Coursier", bg: "#D7F6FA", icon: "bicycle"   as const, color: "#0AA5C0", businessType: "services",     categorySlug: "coursier" },
+  { key: "shops",    label: "Boutiques",        bg: "#FFC9D8", icon: "storefront" as const, color: "#C2185B", businessType: "shop",          categorySlug: "boutiques" },
+  { key: "offers",   label: "Offers",           bg: "#A8F08A", icon: "pricetag"  as const, color: "#3A7D1B", businessType: "restaurant",    categorySlug: null, isOpen: true },
+  { key: "pharm",    label: "Parapharm",        bg: "#E5A3F0", icon: "medkit"    as const, color: "#7A2A8C", businessType: "parapharmacy",  categorySlug: "sante" },
 ];
 
 // Pink pill categories (version B)
@@ -228,6 +228,10 @@ export default function HomeScreen() {
   };
 
   const applyService = (sv: typeof SERVICES[number]) => {
+    if (sv.categorySlug) {
+      router.push({ pathname: "/category/[slug]", params: { slug: sv.categorySlug } });
+      return;
+    }
     setActiveBusinessType(sv.businessType);
     setActiveCat(null);
     setOnlyOpen(sv.isOpen);
@@ -305,7 +309,7 @@ export default function HomeScreen() {
         {/* ─── Top categories: 2 big cards (Restaurants / Supermarche) ─── */}
         <View style={s.topCardsRow}>
           <Pressable
-            onPress={showRestaurants}
+            onPress={() => router.push({ pathname: "/category/[slug]", params: { slug: "restauration" } })}
             style={({ pressed }) => [
               s.topCard,
               { backgroundColor: "#FFE3EC" },
@@ -326,12 +330,7 @@ export default function HomeScreen() {
           </Pressable>
 
           <Pressable
-            onPress={() => {
-              setActiveBusinessType("shop");
-              setActiveCat("Supermarket");
-              setOnlyOpen(undefined);
-              setActiveLabel("Supermarche");
-            }}
+            onPress={() => router.push({ pathname: "/category/[slug]", params: { slug: "supermarche" } })}
             style={({ pressed }) => [
               s.topCard,
               { backgroundColor: "#FBE7CF" },
