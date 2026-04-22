@@ -1,13 +1,23 @@
-import { pgTable, text, serial, timestamp, boolean, integer } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, timestamp, boolean, integer, jsonb } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
+
+/**
+ * Custom-permissions payload stored when role === 'other'.
+ *  - inheritedRoles: list of base roles the user inherits permissions from
+ *  - grants: extra granular permission keys (e.g. "shops.write", "wallets.*")
+ */
+export type CustomPermissions = {
+  inheritedRoles?: string[];
+  grants?: string[];
+};
 
 export const usersTable = pgTable("users", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
   email: text("email").notNull().unique(),
   password: text("password").notNull(),
-  /** customer | driver | restaurant_owner | employee | manager | admin | super_admin */
+  /** customer | driver | restaurant_owner | employee | manager | admin | super_admin | other */
   role: text("role").notNull().default("customer"),
   phone: text("phone"),
   address: text("address"),
@@ -16,6 +26,8 @@ export const usersTable = pgTable("users", {
   loyaltyPoints: integer("loyalty_points").notNull().default(0),
   /** Set when role=employee — the shop they are assigned to. */
   assignedShopId: integer("assigned_shop_id"),
+  /** Custom permissions, used when role === 'other'. Set by super_admin. */
+  permissions: jsonb("permissions").$type<CustomPermissions>(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 });

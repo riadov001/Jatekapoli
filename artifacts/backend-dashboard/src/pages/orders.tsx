@@ -1,5 +1,9 @@
 import { useState } from "react";
-import { useListBackendOrders, Order } from "@workspace/api-client-react";
+import { useListBackendOrders, useUpdateOrderStatus, getListBackendOrdersQueryKey, Order, UpdateOrderStatusBodyStatus } from "@workspace/api-client-react";
+import { useQueryClient } from "@tanstack/react-query";
+import { useToast } from "@/hooks/use-toast";
+import { Button } from "@/components/ui/button";
+import { Loader2 } from "lucide-react";
 import { 
   Table,
   TableBody,
@@ -32,6 +36,22 @@ export default function Orders() {
     search: search || undefined, 
     status: status !== "all" ? status : undefined 
   });
+  const updateStatus = useUpdateOrderStatus();
+  const qc = useQueryClient();
+  const { toast } = useToast();
+  const [newStatus, setNewStatus] = useState<string>("");
+
+  const handleStatusUpdate = () => {
+    if (!selectedOrder || !newStatus) return;
+    updateStatus.mutate({ id: selectedOrder.id, data: { status: newStatus as UpdateOrderStatusBodyStatus } }, {
+      onSuccess: () => {
+        qc.invalidateQueries({ queryKey: getListBackendOrdersQueryKey() });
+        setSelectedOrder({ ...selectedOrder, status: newStatus as any });
+        toast({ title: "Statut mis à jour" });
+      },
+      onError: (e: any) => toast({ title: "Erreur", description: e?.message, variant: "destructive" }),
+    });
+  };
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
@@ -143,6 +163,27 @@ export default function Orders() {
                   <div className="text-right">
                     <p className="text-sm text-muted-foreground mb-1">Total</p>
                     <p className="text-xl font-bold text-primary">{selectedOrder.total} DH</p>
+                  </div>
+                </div>
+
+                <div className="border rounded-lg p-3 space-y-2">
+                  <p className="text-sm font-medium">Changer le statut</p>
+                  <div className="flex gap-2">
+                    <Select value={newStatus || selectedOrder.status} onValueChange={setNewStatus}>
+                      <SelectTrigger className="flex-1"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="pending">Pending</SelectItem>
+                        <SelectItem value="accepted">Accepted</SelectItem>
+                        <SelectItem value="preparing">Preparing</SelectItem>
+                        <SelectItem value="ready">Ready</SelectItem>
+                        <SelectItem value="picked_up">Picked Up</SelectItem>
+                        <SelectItem value="delivered">Delivered</SelectItem>
+                        <SelectItem value="cancelled">Cancelled</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Button onClick={handleStatusUpdate} disabled={updateStatus.isPending || !newStatus || newStatus === selectedOrder.status}>
+                      {updateStatus.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Appliquer"}
+                    </Button>
                   </div>
                 </div>
 

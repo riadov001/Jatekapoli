@@ -19,7 +19,40 @@ const router: IRouter = Router();
 const JWT_SECRET = process.env.SESSION_SECRET || "jatek-secret-2024";
 
 // ---------- Roles + permissions ----------
-type RoleKey = "super_admin" | "admin" | "manager" | "restaurant_owner" | "employee" | "customer" | "driver";
+type RoleKey = "super_admin" | "admin" | "manager" | "restaurant_owner" | "employee" | "customer" | "driver" | "other";
+
+/**
+ * All permission keys exposed to the dashboard. Super admins use this list when
+ * customizing per-user (role='other') access.
+ */
+export const ALL_PERMISSION_KEYS: { key: string; label: string; group: string }[] = [
+  { key: "dashboard.view", label: "Voir le tableau de bord", group: "Général" },
+  { key: "orders.read", label: "Lire les commandes", group: "Commandes" },
+  { key: "orders.write", label: "Modifier les commandes", group: "Commandes" },
+  { key: "orders.update_status", label: "Changer le statut", group: "Commandes" },
+  { key: "shops.read", label: "Lire les boutiques", group: "Boutiques" },
+  { key: "shops.write", label: "Créer/éditer boutiques", group: "Boutiques" },
+  { key: "shops.delete", label: "Supprimer boutiques", group: "Boutiques" },
+  { key: "products.read", label: "Lire les produits", group: "Produits" },
+  { key: "products.write", label: "Créer/éditer produits", group: "Produits" },
+  { key: "products.delete", label: "Supprimer produits", group: "Produits" },
+  { key: "categories.read", label: "Lire catégories", group: "Catégories" },
+  { key: "categories.write", label: "Gérer catégories", group: "Catégories" },
+  { key: "customers.read", label: "Lire les clients", group: "Clients" },
+  { key: "customers.write", label: "Éditer/désactiver clients", group: "Clients" },
+  { key: "deliverymen.read", label: "Lire les livreurs", group: "Livreurs" },
+  { key: "deliverymen.write", label: "Gérer les livreurs", group: "Livreurs" },
+  { key: "reviews.read", label: "Lire les avis", group: "Avis" },
+  { key: "reviews.delete", label: "Supprimer des avis", group: "Avis" },
+  { key: "staff.read", label: "Lire le personnel", group: "Personnel" },
+  { key: "staff.write", label: "Gérer le personnel", group: "Personnel" },
+  { key: "promotions.read", label: "Lire promotions", group: "Promotions" },
+  { key: "promotions.write", label: "Gérer promotions", group: "Promotions" },
+  { key: "wallets.read", label: "Lire les wallets", group: "Wallets" },
+  { key: "wallets.write", label: "Gérer les wallets", group: "Wallets" },
+  { key: "content.read", label: "Lire le contenu", group: "Contenu" },
+  { key: "content.write", label: "Éditer le contenu", group: "Contenu" },
+];
 
 const ROLE_DEFS: { key: RoleKey; label: string; description: string; permissions: string[] }[] = [
   {
@@ -83,12 +116,41 @@ const ROLE_DEFS: { key: RoleKey; label: string; description: string; permissions
     description: "Pas d'accès au dashboard backend (utilise l'app livreur)",
     permissions: [],
   },
+  {
+    key: "other",
+    label: "Personnalisé",
+    description: "Accès personnalisés assignés par un super admin",
+    permissions: [],
+  },
 ];
 
-const STAFF_ROLES: RoleKey[] = ["super_admin", "admin", "manager", "restaurant_owner", "employee"];
+const STAFF_ROLES: RoleKey[] = ["super_admin", "admin", "manager", "restaurant_owner", "employee", "other"];
 
 function getPermissionsForRole(role: string): string[] {
   return ROLE_DEFS.find((r) => r.key === role)?.permissions ?? [];
+}
+
+/**
+ * Compute the effective permission keys for a user, expanding wildcards.
+ * For role='other', merges inheritedRoles + grants.
+ */
+function computeEffectivePermissions(role: string, custom: { inheritedRoles?: string[]; grants?: string[] } | null): string[] {
+  if (role !== "other") return getPermissionsForRole(role);
+  const inherited = (custom?.inheritedRoles ?? []).flatMap((r) => getPermissionsForRole(r));
+  const grants = custom?.grants ?? [];
+  return Array.from(new Set([...inherited, ...grants]));
+}
+
+/**
+ * True when the user has the given permission. Supports '*' wildcard, group
+ * wildcards like 'shops.*', and exact matches.
+ */
+function hasPermission(role: string, custom: { inheritedRoles?: string[]; grants?: string[] } | null, perm: string): boolean {
+  const effective = computeEffectivePermissions(role, custom);
+  if (effective.includes("*")) return true;
+  if (effective.includes(perm)) return true;
+  const [group] = perm.split(".");
+  return effective.includes(`${group}.*`);
 }
 
 /** Returns the list of shop IDs the user is scoped to, or null = no restriction. */
@@ -103,7 +165,7 @@ async function getScopedShopIds(userId: number, role: string, assignedShopId: nu
   return null; // unrestricted
 }
 
-async function requireBackendUser(req: AuthedRequest, res: Response): Promise<{ id: number; role: string; assignedShopId: number | null } | null> {
+async function requireBackendUser(req: AuthedRequest, res: Response): Promise<{ id: number; role: string; assignedShopId: number | null; permissions: { inheritedRoles?: string[]; grants?: string[] } | null } | null> {
   const userId = req.userId;
   const role = req.userRole;
   if (!userId || !role) {
@@ -119,7 +181,8 @@ async function requireBackendUser(req: AuthedRequest, res: Response): Promise<{ 
     res.status(401).json({ error: "User not found" });
     return null;
   }
-  return { id: user.id, role: user.role, assignedShopId: user.assignedShopId };
+  const permissions = (user as { permissions?: unknown }).permissions as { inheritedRoles?: string[]; grants?: string[] } | null ?? null;
+  return { id: user.id, role: user.role, assignedShopId: user.assignedShopId, permissions };
 }
 
 // ---------- Auth ----------
@@ -151,7 +214,7 @@ router.get("/backend/me", requireAuth, async (req: AuthedRequest, res): Promise<
   const scoped = await getScopedShopIds(ctx.id, ctx.role, ctx.assignedShopId);
   res.json({
     user: safe,
-    permissions: getPermissionsForRole(ctx.role),
+    permissions: computeEffectivePermissions(ctx.role, ctx.permissions),
     scopedShopIds: scoped ?? [],
   });
 });
@@ -315,7 +378,7 @@ router.get("/backend/staff", requireAuth, async (req: AuthedRequest, res): Promi
 
 const STAFF_FIELD_ALLOWLIST = ["name", "email", "password", "role", "phone", "isActive", "assignedShopId"] as const;
 const ROLE_TRANSITIONS: Record<string, RoleKey[]> = {
-  super_admin: ["super_admin", "admin", "manager", "restaurant_owner", "employee"],
+  super_admin: ["super_admin", "admin", "manager", "restaurant_owner", "employee", "other"],
   admin: ["admin", "manager", "restaurant_owner", "employee"],
   restaurant_owner: ["employee"],
 };
@@ -385,6 +448,44 @@ router.patch("/backend/staff/:id", requireAuth, async (req: AuthedRequest, res):
   }
 
   const [u] = await db.update(usersTable).set(updates).where(eq(usersTable.id, id)).returning();
+  if (!u) { res.status(404).json({ error: "Not found" }); return; }
+  const { password: _, ...safe } = u;
+  res.json(safe);
+});
+
+/**
+ * Set custom permissions on a user (super_admin only). Forces role='other' and
+ * stores `{ inheritedRoles, grants }`. Pass `permissions: null` to clear.
+ */
+router.patch("/backend/staff/:id/permissions", requireAuth, async (req: AuthedRequest, res): Promise<void> => {
+  const ctx = await requireBackendUser(req, res);
+  if (!ctx) return;
+  if (ctx.role !== "super_admin") { res.status(403).json({ error: "Only super admins may customize permissions" }); return; }
+  const id = Number(req.params.id);
+  const [target] = await db.select().from(usersTable).where(eq(usersTable.id, id)).limit(1);
+  if (!target) { res.status(404).json({ error: "Not found" }); return; }
+  if (target.role === "super_admin") { res.status(403).json({ error: "Cannot customize a super admin" }); return; }
+
+  const body = req.body || {};
+  if (body.permissions === null) {
+    // Clear: revert to baseRole or employee
+    const baseRole: RoleKey = (body.baseRole as RoleKey) || "employee";
+    const [u] = await db.update(usersTable).set({ role: baseRole, permissions: null }).where(eq(usersTable.id, id)).returning();
+    const { password: _p, ...safe } = u!;
+    res.json(safe);
+    return;
+  }
+  const inheritedRoles: string[] = Array.isArray(body.inheritedRoles) ? body.inheritedRoles.filter((r: any) => typeof r === "string") : [];
+  const grants: string[] = Array.isArray(body.grants) ? body.grants.filter((g: any) => typeof g === "string") : [];
+  const allowedKeys = new Set(ALL_PERMISSION_KEYS.map((p) => p.key));
+  const cleanGrants = grants.filter((g) => allowedKeys.has(g));
+  const allowedInherit = ["admin", "manager", "restaurant_owner", "employee"];
+  const cleanInherit = inheritedRoles.filter((r) => allowedInherit.includes(r));
+
+  const [u] = await db.update(usersTable).set({
+    role: "other",
+    permissions: { inheritedRoles: cleanInherit, grants: cleanGrants },
+  }).where(eq(usersTable.id, id)).returning();
   if (!u) { res.status(404).json({ error: "Not found" }); return; }
   const { password: _, ...safe } = u;
   res.json(safe);
@@ -461,6 +562,13 @@ router.get("/backend/roles", requireAuth, async (req: AuthedRequest, res): Promi
   const ctx = await requireBackendUser(req, res);
   if (!ctx) return;
   res.json(ROLE_DEFS);
+});
+
+/** All permission keys available to assign to a 'other' role user. */
+router.get("/backend/permissions", requireAuth, async (req: AuthedRequest, res): Promise<void> => {
+  const ctx = await requireBackendUser(req, res);
+  if (!ctx) return;
+  res.json(ALL_PERMISSION_KEYS);
 });
 
 // ---------- Todos ----------
