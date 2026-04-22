@@ -16,7 +16,6 @@ import {
   Settings,
   LogOut,
   Menu,
-  MoreVertical,
   ChevronDown,
 } from "lucide-react";
 import { useBackendMe } from "@workspace/api-client-react";
@@ -29,8 +28,13 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { useState } from "react";
 
 type NavGroup = {
@@ -42,7 +46,7 @@ type NavItem = {
   href: string;
   label: string;
   icon: React.ElementType;
-  roles?: string[]; // If undefined, available to all
+  roles?: string[];
 };
 
 const navGroups: NavGroup[] = [
@@ -91,10 +95,56 @@ const navGroups: NavGroup[] = [
   },
 ];
 
+function NavList({
+  groups,
+  location,
+  showLabels = true,
+  onNavigate,
+}: {
+  groups: NavGroup[];
+  location: string;
+  showLabels?: boolean;
+  onNavigate?: () => void;
+}) {
+  return (
+    <div className="space-y-6">
+      {groups.map((group, idx) => (
+        <div key={idx} className="px-3">
+          {showLabels && (
+            <h3 className="mb-2 px-4 text-xs font-semibold text-sidebar-foreground/50 uppercase tracking-wider">
+              {group.label}
+            </h3>
+          )}
+          <div className="space-y-1">
+            {group.items.map((item) => {
+              const isActive = location === item.href;
+              return (
+                <Link key={item.href} href={item.href} className="block" onClick={onNavigate}>
+                  <div
+                    className={`flex items-center px-4 py-2 text-sm rounded-md transition-colors ${
+                      isActive
+                        ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
+                        : "text-sidebar-foreground hover:bg-sidebar-accent/50"
+                    } ${!showLabels && "justify-center"}`}
+                  >
+                    <item.icon className={`h-5 w-5 ${showLabels ? "mr-3" : ""}`} />
+                    {showLabels && <span>{item.label}</span>}
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export function Layout({ children }: { children: React.ReactNode }) {
   const [location, setLocation] = useLocation();
   const { data: me } = useBackendMe();
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   if (!me) return null;
 
@@ -103,22 +153,22 @@ export function Layout({ children }: { children: React.ReactNode }) {
     setLocation("/login");
   };
 
-  const filteredGroups = navGroups.map((group) => {
-    return {
+  const filteredGroups = navGroups
+    .map((group) => ({
       ...group,
       items: group.items.filter(
         (item) => !item.roles || item.roles.includes(me.user.role)
       ),
-    };
-  }).filter((group) => group.items.length > 0);
+    }))
+    .filter((group) => group.items.length > 0);
 
   return (
     <div className="flex h-screen overflow-hidden bg-background">
-      {/* Sidebar */}
+      {/* Desktop Sidebar */}
       <aside
         className={`${
           sidebarOpen ? "w-64" : "w-20"
-        } transition-all duration-300 border-r border-border bg-sidebar flex flex-col hidden md:flex`}
+        } transition-all duration-300 border-r border-border bg-sidebar flex-col hidden md:flex`}
       >
         <div className="h-16 flex items-center justify-between px-4 border-b border-sidebar-border">
           {sidebarOpen && <span className="font-black text-xl text-primary tracking-tight">Jatek Backend</span>}
@@ -127,44 +177,44 @@ export function Layout({ children }: { children: React.ReactNode }) {
             <Menu className="h-5 w-5" />
           </Button>
         </div>
-        <div className="flex-1 overflow-y-auto py-4 space-y-6">
-          {filteredGroups.map((group, idx) => (
-            <div key={idx} className="px-3">
-              {sidebarOpen && (
-                <h3 className="mb-2 px-4 text-xs font-semibold text-sidebar-foreground/50 uppercase tracking-wider">
-                  {group.label}
-                </h3>
-              )}
-              <div className="space-y-1">
-                {group.items.map((item) => {
-                  const isActive = location === item.href;
-                  return (
-                    <Link key={item.href} href={item.href} className="block">
-                      <div
-                        className={`flex items-center px-4 py-2 text-sm rounded-md transition-colors ${
-                          isActive
-                            ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
-                            : "text-sidebar-foreground hover:bg-sidebar-accent/50"
-                        } ${!sidebarOpen && "justify-center"}`}
-                      >
-                        <item.icon className={`h-5 w-5 ${sidebarOpen ? "mr-3" : ""}`} />
-                        {sidebarOpen && <span>{item.label}</span>}
-                      </div>
-                    </Link>
-                  );
-                })}
-              </div>
-            </div>
-          ))}
+        <div className="flex-1 overflow-y-auto py-4">
+          <NavList groups={filteredGroups} location={location} showLabels={sidebarOpen} />
         </div>
       </aside>
+
+      {/* Mobile Drawer */}
+      <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
+        <SheetContent side="left" className="w-72 p-0 bg-sidebar border-sidebar-border">
+          <SheetHeader className="h-16 flex flex-row items-center justify-start px-6 border-b border-sidebar-border space-y-0">
+            <SheetTitle className="font-black text-xl text-primary tracking-tight text-left">
+              Jatek Backend
+            </SheetTitle>
+          </SheetHeader>
+          <div className="flex-1 overflow-y-auto py-4">
+            <NavList
+              groups={filteredGroups}
+              location={location}
+              showLabels
+              onNavigate={() => setMobileOpen(false)}
+            />
+          </div>
+        </SheetContent>
+      </Sheet>
 
       {/* Main Content */}
       <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {/* Topbar */}
-        <header className="h-16 flex items-center justify-between px-6 border-b border-border bg-card">
-          <div className="flex items-center md:hidden">
-            <span className="font-black text-xl text-primary tracking-tight mr-4">Jatek</span>
+        <header className="h-16 flex items-center justify-between px-4 md:px-6 border-b border-border bg-card gap-2">
+          <div className="flex items-center md:hidden gap-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setMobileOpen(true)}
+              aria-label="Open menu"
+            >
+              <Menu className="h-5 w-5" />
+            </Button>
+            <span className="font-black text-xl text-primary tracking-tight">Jatek</span>
           </div>
           <div className="flex-1" />
           <div className="flex items-center space-x-4">
@@ -176,7 +226,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                       {me.user.name.charAt(0).toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
-                  <div className="flex flex-col items-start">
+                  <div className="hidden sm:flex flex-col items-start">
                     <span className="text-sm font-semibold leading-none">{me.user.name}</span>
                     <span className="text-xs text-muted-foreground capitalize leading-none mt-1">{me.user.role.replace("_", " ")}</span>
                   </div>
@@ -201,7 +251,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         </header>
 
         {/* Page Content */}
-        <div className="flex-1 overflow-auto bg-background p-6">
+        <div className="flex-1 overflow-auto bg-background p-4 md:p-6">
           <div className="max-w-6xl mx-auto">
             {children}
           </div>
