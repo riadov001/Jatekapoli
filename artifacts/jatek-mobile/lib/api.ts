@@ -4,8 +4,9 @@
  */
 import * as SecureStore from "expo-secure-store";
 import { Platform } from "react-native";
+import { getApiBaseSafe } from "./apiBase";
 
-const API_BASE = `https://${process.env.EXPO_PUBLIC_DOMAIN}`;
+const API_BASE = getApiBaseSafe();
 const TOKEN_KEY = "jatek_jwt";
 
 async function getToken(): Promise<string | null> {

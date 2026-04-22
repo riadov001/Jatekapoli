@@ -13,17 +13,13 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { CartProvider } from "@/contexts/CartContext";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import CookieConsentBanner from "@/components/CookieConsentBanner";
+import { getApiBaseSafe } from "@/lib/apiBase";
 
-// Configure the API base URL — fail loud if the deployment forgot to inject
-// EXPO_PUBLIC_DOMAIN, otherwise the entire app would silently 404 every call.
-const apiDomain = process.env.EXPO_PUBLIC_DOMAIN;
-if (!apiDomain) {
-  console.warn(
-    "[Boot] EXPO_PUBLIC_DOMAIN is not set — API calls will fail. " +
-    "Check the deployment env vars.",
-  );
-}
-setBaseUrl(`https://${apiDomain ?? "missing-domain"}`);
+// Configure the API base URL — robustly resolves from EXPO_PUBLIC_DOMAIN, then
+// expo-constants extra, then Metro hostUri (LAN dev). Never throws at boot.
+const apiBase = getApiBaseSafe();
+console.log(`[Boot] API base = ${apiBase}`);
+setBaseUrl(apiBase);
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 // Wrap in try/catch — on web (and some Expo Go reloads) preventAutoHideAsync

@@ -61,6 +61,8 @@ function serveManifest(platform, res) {
     "content-type": "application/json",
     "expo-protocol-version": "1",
     "expo-sfv-version": "0",
+    "cache-control": "no-store, no-cache, must-revalidate",
+    "pragma": "no-cache",
   });
   res.end(manifest);
 }
@@ -110,7 +112,18 @@ function serveStaticFile(urlPath, res, req) {
   const ext = path.extname(filePath).toLowerCase();
   const contentType = MIME_TYPES[ext] || "application/octet-stream";
   const content = fs.readFileSync(filePath);
-  res.writeHead(200, { "content-type": contentType });
+  // Hashed Expo bundles (timestamped folders + content-hashed filenames)
+  // can be cached aggressively. Everything else (HTML, manifests, fallback
+  // assets) must revalidate on every load so a fresh deploy is picked up
+  // immediately instead of being masked by CDN/proxy caches.
+  const isHashedBundle = /\/_expo\/static\//.test(safePath);
+  const cacheControl = isHashedBundle
+    ? "public, max-age=31536000, immutable"
+    : "no-store, no-cache, must-revalidate";
+  res.writeHead(200, {
+    "content-type": contentType,
+    "cache-control": cacheControl,
+  });
   res.end(content);
 }
 
