@@ -60,19 +60,19 @@ export default function Orders() {
       </div>
 
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-          <div className="flex items-center space-x-2">
-            <div className="relative w-64">
+        <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-2 sm:space-y-0 pb-4">
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="relative w-full sm:w-64">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input 
                 placeholder="Search orders..." 
-                className="pl-8" 
+                className="pl-8 w-full" 
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
               />
             </div>
             <Select value={status} onValueChange={setStatus}>
-              <SelectTrigger className="w-[180px]">
+              <SelectTrigger className="w-full sm:w-[180px]">
                 <SelectValue placeholder="Filter by status" />
               </SelectTrigger>
               <SelectContent>
@@ -93,9 +93,9 @@ export default function Orders() {
             <TableHeader>
               <TableRow>
                 <TableHead>ID</TableHead>
-                <TableHead>Date</TableHead>
+                <TableHead className="hidden sm:table-cell">Date</TableHead>
                 <TableHead>Customer</TableHead>
-                <TableHead>Restaurant</TableHead>
+                <TableHead className="hidden sm:table-cell">Restaurant</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="text-right">Total</TableHead>
               </TableRow>
@@ -105,9 +105,9 @@ export default function Orders() {
                 Array.from({ length: 5 }).map((_, i) => (
                   <TableRow key={i}>
                     <TableCell><Skeleton className="h-4 w-8" /></TableCell>
-                    <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                    <TableCell className="hidden sm:table-cell"><Skeleton className="h-4 w-24" /></TableCell>
                     <TableCell><Skeleton className="h-4 w-32" /></TableCell>
-                    <TableCell><Skeleton className="h-4 w-32" /></TableCell>
+                    <TableCell className="hidden sm:table-cell"><Skeleton className="h-4 w-32" /></TableCell>
                     <TableCell><Skeleton className="h-6 w-20 rounded-full" /></TableCell>
                     <TableCell className="text-right"><Skeleton className="h-4 w-16 ml-auto" /></TableCell>
                   </TableRow>
@@ -126,9 +126,9 @@ export default function Orders() {
                     onClick={() => setSelectedOrder(order)}
                   >
                     <TableCell className="font-medium">#{order.id}</TableCell>
-                    <TableCell>{format(new Date(order.createdAt), "MMM d, yyyy HH:mm")}</TableCell>
+                    <TableCell className="hidden sm:table-cell">{format(new Date(order.createdAt), "MMM d, yyyy HH:mm")}</TableCell>
                     <TableCell>{order.userName}</TableCell>
-                    <TableCell>{order.restaurantName}</TableCell>
+                    <TableCell className="hidden sm:table-cell">{order.restaurantName}</TableCell>
                     <TableCell>
                       <Badge variant="outline" className="uppercase bg-primary/10 text-primary border-primary/20">
                         {order.status}
@@ -144,7 +144,7 @@ export default function Orders() {
       </Card>
 
       <Sheet open={!!selectedOrder} onOpenChange={(o) => !o && setSelectedOrder(null)}>
-        <SheetContent className="sm:max-w-md overflow-y-auto">
+        <SheetContent className="w-full sm:max-w-md overflow-y-auto">
           {selectedOrder && (
             <>
               <SheetHeader className="mb-6">

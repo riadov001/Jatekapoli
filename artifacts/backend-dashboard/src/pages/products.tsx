@@ -98,7 +98,7 @@ export default function Products() {
         <h1 className="text-3xl font-bold tracking-tight">Produits</h1>
         <Dialog open={createOpen} onOpenChange={setCreateOpen}>
           <DialogTrigger asChild><Button className="gap-2"><Plus className="h-4 w-4" /> Nouveau produit</Button></DialogTrigger>
-          <DialogContent className="max-w-lg">
+          <DialogContent className="sm:max-w-lg">
             <DialogHeader><DialogTitle>Créer un produit</DialogTitle></DialogHeader>
             <form onSubmit={handleCreate} className="space-y-3 pt-4">
               <Field label="Boutique">
@@ -116,7 +116,7 @@ export default function Products() {
 
       <Card>
         <CardHeader className="pb-4">
-          <div className="relative w-72">
+          <div className="relative w-full sm:w-72">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input placeholder="Rechercher..." className="pl-8" value={search} onChange={(e) => setSearch(e.target.value)} />
           </div>
@@ -126,7 +126,7 @@ export default function Products() {
             <TableHeader>
               <TableRow>
                 <TableHead>Nom</TableHead>
-                <TableHead>Catégorie</TableHead>
+                <TableHead className="hidden sm:table-cell">Catégorie</TableHead>
                 <TableHead>Prix</TableHead>
                 <TableHead>Disponible</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
@@ -134,7 +134,13 @@ export default function Products() {
             </TableHeader>
             <TableBody>
               {isLoading ? Array.from({ length: 5 }).map((_, i) => (
-                <TableRow key={i}><TableCell><Skeleton className="h-4 w-32" /></TableCell><TableCell><Skeleton className="h-4 w-20" /></TableCell><TableCell><Skeleton className="h-4 w-16" /></TableCell><TableCell><Skeleton className="h-6 w-12" /></TableCell><TableCell className="text-right"><Skeleton className="h-8 w-16 ml-auto" /></TableCell></TableRow>
+                <TableRow key={i}>
+                  <TableCell><Skeleton className="h-4 w-32" /></TableCell>
+                  <TableCell className="hidden sm:table-cell"><Skeleton className="h-4 w-20" /></TableCell>
+                  <TableCell><Skeleton className="h-4 w-16" /></TableCell>
+                  <TableCell><Skeleton className="h-6 w-12" /></TableCell>
+                  <TableCell className="text-right"><Skeleton className="h-8 w-16 ml-auto" /></TableCell>
+                </TableRow>
               )) : products?.length === 0 ? (
                 <TableRow><TableCell colSpan={5} className="h-24 text-center text-muted-foreground">Aucun produit.</TableCell></TableRow>
               ) : products?.map((p) => (
@@ -145,12 +151,12 @@ export default function Products() {
                       <span>{p.name}</span>
                     </div>
                   </TableCell>
-                  <TableCell><Badge variant="secondary">{p.category}</Badge></TableCell>
+                  <TableCell className="hidden sm:table-cell"><Badge variant="secondary">{p.category}</Badge></TableCell>
                   <TableCell className="font-semibold">{p.price} DH</TableCell>
                   <TableCell><Switch checked={p.isAvailable} onCheckedChange={(v) => handleToggle(p, v)} /></TableCell>
                   <TableCell className="text-right space-x-1">
-                    <Button variant="ghost" size="icon" onClick={() => openEdit(p)}><Pencil className="h-4 w-4" /></Button>
-                    <Button variant="ghost" size="icon" className="text-destructive hover:bg-destructive/10" onClick={() => handleDelete(p.id)}><Trash2 className="h-4 w-4" /></Button>
+                    <Button variant="ghost" size="icon" className="h-10 w-10" onClick={() => openEdit(p)}><Pencil className="h-4 w-4" /></Button>
+                    <Button variant="ghost" size="icon" className="h-10 w-10 text-destructive hover:bg-destructive/10" onClick={() => handleDelete(p.id)}><Trash2 className="h-4 w-4" /></Button>
                   </TableCell>
                 </TableRow>
               ))}
@@ -160,7 +166,7 @@ export default function Products() {
       </Card>
 
       <Dialog open={!!editing} onOpenChange={(o) => !o && setEditing(null)}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="sm:max-w-lg">
           <DialogHeader><DialogTitle>Modifier {editing?.name}</DialogTitle></DialogHeader>
           {editing && (
             <form onSubmit={handleUpdate} className="space-y-3 pt-4">
@@ -178,7 +184,7 @@ function ProductFields({ form, setForm }: any) {
   const set = (k: string, v: any) => setForm({ ...form, [k]: v });
   return (
     <>
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <Field label="Nom"><Input required value={form.name} onChange={(e: any) => set("name", e.target.value)} /></Field>
         <Field label="Catégorie"><Input required value={form.category} onChange={(e: any) => set("category", e.target.value)} /></Field>
         <Field label="Prix (DH)"><Input required type="number" step="0.01" value={form.price} onChange={(e: any) => set("price", e.target.value)} /></Field>

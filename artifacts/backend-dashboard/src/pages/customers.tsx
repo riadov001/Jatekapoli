@@ -59,7 +59,7 @@ export default function Customers() {
 
       <Card>
         <CardHeader className="pb-4">
-          <div className="relative w-72">
+          <div className="relative w-full sm:w-72">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input placeholder="Rechercher..." className="pl-8" value={search} onChange={(e) => setSearch(e.target.value)} />
           </div>
@@ -69,16 +69,23 @@ export default function Customers() {
             <TableHeader>
               <TableRow>
                 <TableHead>Client</TableHead>
-                <TableHead>Contact</TableHead>
-                <TableHead>Points</TableHead>
-                <TableHead>Inscrit</TableHead>
+                <TableHead className="hidden md:table-cell">Contact</TableHead>
+                <TableHead className="hidden sm:table-cell">Points</TableHead>
+                <TableHead className="hidden md:table-cell">Inscrit</TableHead>
                 <TableHead>Statut</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? Array.from({ length: 5 }).map((_, i) => (
-                <TableRow key={i}><TableCell><Skeleton className="h-10 w-48" /></TableCell><TableCell><Skeleton className="h-8 w-32" /></TableCell><TableCell><Skeleton className="h-4 w-16" /></TableCell><TableCell><Skeleton className="h-4 w-24" /></TableCell><TableCell><Skeleton className="h-6 w-16 rounded-full" /></TableCell><TableCell><Skeleton className="h-8 w-16 ml-auto" /></TableCell></TableRow>
+                <TableRow key={i}>
+                  <TableCell><Skeleton className="h-10 w-48" /></TableCell>
+                  <TableCell className="hidden md:table-cell"><Skeleton className="h-8 w-32" /></TableCell>
+                  <TableCell className="hidden sm:table-cell"><Skeleton className="h-4 w-16" /></TableCell>
+                  <TableCell className="hidden md:table-cell"><Skeleton className="h-4 w-24" /></TableCell>
+                  <TableCell><Skeleton className="h-6 w-16 rounded-full" /></TableCell>
+                  <TableCell><Skeleton className="h-8 w-16 ml-auto" /></TableCell>
+                </TableRow>
               )) : customers?.length === 0 ? (
                 <TableRow><TableCell colSpan={6} className="h-24 text-center text-muted-foreground">Aucun client.</TableCell></TableRow>
               ) : customers?.map((c) => (
@@ -89,18 +96,18 @@ export default function Customers() {
                       <div><div className="font-bold">{c.name}</div><div className="text-xs text-muted-foreground">{c.email}</div></div>
                     </div>
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="hidden md:table-cell">
                     <div className="space-y-1">
                       {c.phone && <div className="text-xs text-muted-foreground flex items-center"><Phone className="h-3 w-3 mr-1" /> {c.phone}</div>}
                       {c.address && <div className="text-xs text-muted-foreground flex items-center"><MapPin className="h-3 w-3 mr-1" /> <span className="truncate max-w-[150px]">{c.address}</span></div>}
                     </div>
                   </TableCell>
-                  <TableCell className="font-medium text-primary">{c.loyaltyPoints} pts</TableCell>
-                  <TableCell className="text-sm">{format(new Date(c.createdAt), "dd MMM yyyy")}</TableCell>
+                  <TableCell className="hidden sm:table-cell font-medium text-primary">{c.loyaltyPoints} pts</TableCell>
+                  <TableCell className="hidden md:table-cell text-sm">{format(new Date(c.createdAt), "dd MMM yyyy")}</TableCell>
                   <TableCell><Badge variant={c.isActive ? "default" : "secondary"}>{c.isActive ? "Actif" : "Inactif"}</Badge></TableCell>
                   <TableCell className="text-right space-x-1">
-                    <Button variant="ghost" size="icon" onClick={() => openEdit(c)}><Pencil className="h-4 w-4" /></Button>
-                    <Button variant="ghost" size="icon" className="text-destructive hover:bg-destructive/10" onClick={() => handleDelete(c.id)}><Trash2 className="h-4 w-4" /></Button>
+                    <Button variant="ghost" size="icon" className="h-10 w-10" onClick={() => openEdit(c)}><Pencil className="h-4 w-4" /></Button>
+                    <Button variant="ghost" size="icon" className="h-10 w-10 text-destructive hover:bg-destructive/10" onClick={() => handleDelete(c.id)}><Trash2 className="h-4 w-4" /></Button>
                   </TableCell>
                 </TableRow>
               ))}

@@ -152,7 +152,7 @@ export default function Staff() {
               <TableRow>
                 <TableHead className="px-6">Nom</TableHead>
                 <TableHead>Rôle</TableHead>
-                <TableHead>Contact</TableHead>
+                <TableHead className="hidden sm:table-cell">Contact</TableHead>
                 <TableHead>Statut</TableHead>
                 {canManage && <TableHead className="text-right px-6">Actions</TableHead>}
               </TableRow>
@@ -162,7 +162,7 @@ export default function Staff() {
                 <TableRow key={i}>
                   <TableCell className="px-6"><Skeleton className="h-4 w-32" /></TableCell>
                   <TableCell><Skeleton className="h-6 w-20 rounded-full" /></TableCell>
-                  <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                  <TableCell className="hidden sm:table-cell"><Skeleton className="h-4 w-24" /></TableCell>
                   <TableCell><Skeleton className="h-4 w-16" /></TableCell>
                   {canManage && <TableCell className="text-right px-6"><Skeleton className="h-8 w-8 ml-auto" /></TableCell>}
                 </TableRow>
@@ -179,7 +179,7 @@ export default function Staff() {
                       {u.role.replace("_", " ")}
                     </Badge>
                   </TableCell>
-                  <TableCell className="text-sm text-muted-foreground">{u.email}</TableCell>
+                  <TableCell className="hidden sm:table-cell text-sm text-muted-foreground">{u.email}</TableCell>
                   <TableCell>
                     <span className="inline-flex items-center space-x-1">
                       <span className={`h-2 w-2 rounded-full ${u.isActive ? "bg-green-500" : "bg-red-500"}`}></span>
@@ -189,15 +189,15 @@ export default function Staff() {
                   {canManage && (
                     <TableCell className="text-right px-6 space-x-1">
                       {isSuperAdmin && u.role !== "super_admin" && (
-                        <Button variant="ghost" size="icon" title="Personnaliser les accès" onClick={() => setPermsTarget(u)}>
+                        <Button variant="ghost" size="icon" className="h-10 w-10" title="Personnaliser les accès" onClick={() => setPermsTarget(u)}>
                           <Shield className="h-4 w-4 text-primary" />
                         </Button>
                       )}
-                      <Button variant="ghost" size="icon" title="Modifier" onClick={() => openEdit(u)}>
+                      <Button variant="ghost" size="icon" className="h-10 w-10" title="Modifier" onClick={() => openEdit(u)}>
                         <Pencil className="h-4 w-4" />
                       </Button>
                       {u.id !== me?.user.id && (
-                        <Button variant="ghost" size="icon" className="text-destructive hover:bg-destructive/10" onClick={() => handleDelete(u.id)} disabled={deleteStaff.isPending}>
+                        <Button variant="ghost" size="icon" className="h-10 w-10 text-destructive hover:bg-destructive/10" onClick={() => handleDelete(u.id)} disabled={deleteStaff.isPending}>
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       )}
@@ -306,7 +306,7 @@ function PermissionsDialog({ target, onClose, onSaved }: { target: StaffUser | n
 
   return (
     <Dialog open={!!target} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-2xl sm:max-h-[85vh] sm:overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Personnaliser les accès — {target.name}</DialogTitle>
           <DialogDescription>
@@ -317,9 +317,9 @@ function PermissionsDialog({ target, onClose, onSaved }: { target: StaffUser | n
         <div className="space-y-6 py-4">
           <section>
             <h3 className="font-semibold mb-2">Rôles hérités</h3>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {INHERITABLE_ROLES.map((r) => (
-                <label key={r.value} className="flex items-center gap-2 border rounded-md p-2 cursor-pointer hover:bg-muted/50">
+                <label key={r.value} className="flex items-center gap-2 border rounded-md p-3 cursor-pointer hover:bg-muted/50 min-h-[44px]">
                   <Checkbox checked={inherited.includes(r.value)} onCheckedChange={() => toggleInherit(r.value)} />
                   <span className="text-sm">{r.label}</span>
                 </label>
@@ -333,9 +333,9 @@ function PermissionsDialog({ target, onClose, onSaved }: { target: StaffUser | n
               {Object.entries(grouped).map(([group, list]) => (
                 <div key={group}>
                   <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">{group}</div>
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     {list.map((p) => (
-                      <label key={p.key} className="flex items-center gap-2 text-sm cursor-pointer">
+                      <label key={p.key} className="flex items-center gap-2 text-sm cursor-pointer min-h-[40px]">
                         <Checkbox checked={grants.includes(p.key)} onCheckedChange={() => toggleGrant(p.key)} />
                         <span>{p.label}</span>
                       </label>

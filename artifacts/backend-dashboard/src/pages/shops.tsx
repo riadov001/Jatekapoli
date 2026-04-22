@@ -89,7 +89,7 @@ export default function Shops() {
         <h1 className="text-3xl font-bold tracking-tight">Boutiques</h1>
         <Dialog open={createOpen} onOpenChange={setCreateOpen}>
           <DialogTrigger asChild><Button className="gap-2"><Plus className="h-4 w-4" /> Nouvelle boutique</Button></DialogTrigger>
-          <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+          <DialogContent className="sm:max-w-2xl sm:max-h-[85vh] sm:overflow-y-auto">
             <DialogHeader><DialogTitle>Créer une boutique</DialogTitle></DialogHeader>
             <ShopForm form={form} setForm={setForm} onSubmit={handleCreate} pending={create.isPending} submitLabel="Créer" />
           </DialogContent>
@@ -98,7 +98,7 @@ export default function Shops() {
 
       <Card>
         <CardHeader className="pb-4">
-          <div className="relative w-72">
+          <div className="relative w-full sm:w-72">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input placeholder="Rechercher..." className="pl-8" value={search} onChange={(e) => setSearch(e.target.value)} />
           </div>
@@ -108,9 +108,9 @@ export default function Shops() {
             <TableHeader>
               <TableRow>
                 <TableHead>Boutique</TableHead>
-                <TableHead>Catégorie</TableHead>
-                <TableHead>Contact</TableHead>
-                <TableHead>Note</TableHead>
+                <TableHead className="hidden sm:table-cell">Catégorie</TableHead>
+                <TableHead className="hidden md:table-cell">Contact</TableHead>
+                <TableHead className="hidden md:table-cell">Note</TableHead>
                 <TableHead>Statut</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
@@ -119,9 +119,9 @@ export default function Shops() {
               {isLoading ? Array.from({ length: 5 }).map((_, i) => (
                 <TableRow key={i}>
                   <TableCell><Skeleton className="h-10 w-48" /></TableCell>
-                  <TableCell><Skeleton className="h-4 w-20" /></TableCell>
-                  <TableCell><Skeleton className="h-8 w-32" /></TableCell>
-                  <TableCell><Skeleton className="h-4 w-12" /></TableCell>
+                  <TableCell className="hidden sm:table-cell"><Skeleton className="h-4 w-20" /></TableCell>
+                  <TableCell className="hidden md:table-cell"><Skeleton className="h-8 w-32" /></TableCell>
+                  <TableCell className="hidden md:table-cell"><Skeleton className="h-4 w-12" /></TableCell>
                   <TableCell><Skeleton className="h-6 w-16 rounded-full" /></TableCell>
                   <TableCell><Skeleton className="h-8 w-16 ml-auto" /></TableCell>
                 </TableRow>
@@ -140,9 +140,9 @@ export default function Shops() {
                       </div>
                     </div>
                   </TableCell>
-                  <TableCell><Badge variant="outline">{shop.category}</Badge></TableCell>
-                  <TableCell><div className="text-sm text-muted-foreground flex items-center"><Phone className="h-3 w-3 mr-1" />{shop.phone || "N/A"}</div></TableCell>
-                  <TableCell>
+                  <TableCell className="hidden sm:table-cell"><Badge variant="outline">{shop.category}</Badge></TableCell>
+                  <TableCell className="hidden md:table-cell"><div className="text-sm text-muted-foreground flex items-center"><Phone className="h-3 w-3 mr-1" />{shop.phone || "N/A"}</div></TableCell>
+                  <TableCell className="hidden md:table-cell">
                     <div className="flex items-center space-x-1">
                       <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
                       <span className="font-medium">{shop.rating || "Nouveau"}</span>
@@ -151,8 +151,8 @@ export default function Shops() {
                   </TableCell>
                   <TableCell><Badge className={shop.isOpen ? "bg-green-500 hover:bg-green-600" : "bg-destructive"}>{shop.isOpen ? "Ouvert" : "Fermé"}</Badge></TableCell>
                   <TableCell className="text-right space-x-1">
-                    <Button variant="ghost" size="icon" onClick={() => openEdit(shop)}><Pencil className="h-4 w-4" /></Button>
-                    <Button variant="ghost" size="icon" className="text-destructive hover:bg-destructive/10" onClick={() => handleDelete(shop.id)}><Trash2 className="h-4 w-4" /></Button>
+                    <Button variant="ghost" size="icon" className="h-10 w-10" onClick={() => openEdit(shop)}><Pencil className="h-4 w-4" /></Button>
+                    <Button variant="ghost" size="icon" className="h-10 w-10 text-destructive hover:bg-destructive/10" onClick={() => handleDelete(shop.id)}><Trash2 className="h-4 w-4" /></Button>
                   </TableCell>
                 </TableRow>
               ))}
@@ -162,7 +162,7 @@ export default function Shops() {
       </Card>
 
       <Dialog open={!!editing} onOpenChange={(o) => !o && setEditing(null)}>
-        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-2xl sm:max-h-[85vh] sm:overflow-y-auto">
           <DialogHeader><DialogTitle>Modifier {editing?.name}</DialogTitle></DialogHeader>
           {editing && (
             <ShopForm
@@ -185,7 +185,7 @@ function ShopForm({ form, setForm, onSubmit, pending, submitLabel, extra }: any)
   const set = (k: string, v: any) => setForm({ ...form, [k]: v });
   return (
     <form onSubmit={onSubmit} className="space-y-4 pt-4">
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <Field label="Nom"><Input required value={form.name} onChange={(e: any) => set("name", e.target.value)} /></Field>
         <Field label="Catégorie"><Input value={form.category} onChange={(e: any) => set("category", e.target.value)} /></Field>
         <Field label="Adresse" full><Input required value={form.address} onChange={(e: any) => set("address", e.target.value)} /></Field>
@@ -206,5 +206,5 @@ function ShopForm({ form, setForm, onSubmit, pending, submitLabel, extra }: any)
 }
 
 function Field({ label, children, full }: any) {
-  return <div className={`space-y-1 ${full ? "col-span-2" : ""}`}><Label className="text-xs">{label}</Label>{children}</div>;
+  return <div className={`space-y-1 ${full ? "col-span-full" : ""}`}><Label className="text-xs">{label}</Label>{children}</div>;
 }
