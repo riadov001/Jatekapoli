@@ -1,0 +1,36 @@
+{
+  "cli": {
+    "version": ">= 14.0.0",
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "android": {
+        "buildType": "apk"
+      }
+    },
+    "preview": {
+      "distribution": "internal",
+      "android": {
+        "buildType": "apk"
+      },
+      "env": {
+        "EXPO_PUBLIC_DOMAIN": "126e6691-f4c9-4cdb-9b07-a9f97f9b8ac8-00-zifgglaqxcl9.picard.replit.dev"
+      }
+    },
+    "production": {
+      "channel": "production",
+      "android": {
+        "buildType": "app-bundle"
+      },
+      "env": {
+        "EXPO_PUBLIC_DOMAIN": "126e6691-f4c9-4cdb-9b07-a9f97f9b8ac8-00-zifgglaqxcl9.picard.replit.dev"
+      }
+    }
+  },
+  "submit": {
+    "production": {}
+  }
+}
