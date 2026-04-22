@@ -47,6 +47,7 @@ type NavItem = {
   label: string;
   icon: React.ElementType;
   roles?: string[];
+  hidden?: boolean;
 };
 
 const navGroups: NavGroup[] = [
@@ -75,22 +76,22 @@ const navGroups: NavGroup[] = [
   {
     label: "Marketing",
     items: [
-      { href: "/promotions", label: "Promotions", icon: Tags, roles: ["super_admin", "admin", "manager"] },
-      { href: "/notifications", label: "Notifications", icon: Bell, roles: ["super_admin", "admin", "manager"] },
+      { href: "/promotions", label: "Promotions", icon: Tags, roles: ["super_admin", "admin", "manager"], hidden: true },
+      { href: "/notifications", label: "Notifications", icon: Bell, roles: ["super_admin", "admin", "manager"], hidden: true },
     ],
   },
   {
     label: "Finance",
     items: [
-      { href: "/wallets", label: "Wallets", icon: Wallet, roles: ["super_admin", "admin", "manager"] },
-      { href: "/reports", label: "Reports", icon: BarChart3, roles: ["super_admin", "admin", "manager"] },
+      { href: "/wallets", label: "Wallets", icon: Wallet, roles: ["super_admin", "admin", "manager"], hidden: true },
+      { href: "/reports", label: "Reports", icon: BarChart3, roles: ["super_admin", "admin", "manager"], hidden: true },
     ],
   },
   {
     label: "System",
     items: [
       { href: "/roles", label: "Roles", icon: Shield, roles: ["super_admin"] },
-      { href: "/settings", label: "Settings", icon: Settings, roles: ["super_admin", "admin"] },
+      { href: "/settings", label: "Settings", icon: Settings, roles: ["super_admin", "admin"], hidden: true },
     ],
   },
 ];
@@ -157,7 +158,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
     .map((group) => ({
       ...group,
       items: group.items.filter(
-        (item) => !item.roles || item.roles.includes(me.user.role)
+        (item) => !item.hidden && (!item.roles || item.roles.includes(me.user.role))
       ),
     }))
     .filter((group) => group.items.length > 0);
@@ -184,13 +185,13 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
       {/* Mobile Drawer */}
       <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
-        <SheetContent side="left" className="w-72 p-0 bg-sidebar border-sidebar-border">
-          <SheetHeader className="h-16 flex flex-row items-center justify-start px-6 border-b border-sidebar-border space-y-0">
+        <SheetContent side="left" className="w-72 p-0 bg-sidebar border-sidebar-border flex flex-col">
+          <SheetHeader className="h-16 shrink-0 flex flex-row items-center justify-start px-6 border-b border-sidebar-border space-y-0">
             <SheetTitle className="font-black text-xl text-primary tracking-tight text-left">
               Jatek Backend
             </SheetTitle>
           </SheetHeader>
-          <div className="flex-1 overflow-y-auto py-4">
+          <div className="flex-1 overflow-y-auto min-h-0 py-4">
             <NavList
               groups={filteredGroups}
               location={location}
