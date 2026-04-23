@@ -1,4 +1,5 @@
 import { useFonts } from "expo-font";
+import { Ionicons, MaterialCommunityIcons, MaterialIcons, FontAwesome, FontAwesome5 } from "@expo/vector-icons";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
@@ -50,6 +51,11 @@ export default function RootLayout() {
     Inter_600SemiBold: require("../assets/fonts/Inter_600SemiBold.ttf"),
     Inter_700Bold: require("../assets/fonts/Inter_700Bold.ttf"),
     Inter_900Black: require("../assets/fonts/Inter_900Black.ttf"),
+    ...Ionicons.font,
+    ...MaterialCommunityIcons.font,
+    ...MaterialIcons.font,
+    ...FontAwesome.font,
+    ...FontAwesome5.font,
   });
   // Hide the splash as soon as fonts are ready OR a 1.5 s safety timeout
   // elapses — whichever comes first. Without this fallback, a slow bundle
