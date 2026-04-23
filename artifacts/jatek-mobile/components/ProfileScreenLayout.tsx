@@ -29,7 +29,18 @@ export default function ProfileScreenLayout({ title, children, scroll = true, he
           { paddingTop: insets.top + 12 + webTopPad, borderBottomColor: colors.border, backgroundColor: colors.background },
         ]}
       >
-        <TouchableOpacity onPress={() => router.back()} hitSlop={12} style={styles.backBtn}>
+        <TouchableOpacity
+          onPress={() => {
+            try {
+              if (router.canGoBack()) { router.back(); }
+              else { router.replace("/(tabs)/profile" as any); }
+            } catch {
+              router.replace("/(tabs)/profile" as any);
+            }
+          }}
+          hitSlop={12}
+          style={styles.backBtn}
+        >
           <Ionicons name="chevron-back" size={26} color={colors.heading} />
         </TouchableOpacity>
         <Text style={[styles.title, { color: colors.heading }]} numberOfLines={1}>

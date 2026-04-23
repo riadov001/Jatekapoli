@@ -119,7 +119,7 @@ export default function RestaurantScreen() {
 
       {/* ─── Overlapping info card ─── */}
       <View style={styles.cardOuter}>
-        <View style={[styles.infoCard, { backgroundColor: "rgba(245, 235, 215, 0.8)" }]}>
+        <View style={[styles.infoCard, { backgroundColor: "#fff" }]}>
           <View style={styles.infoTopRow}>
             <View style={[styles.logoBox, { backgroundColor: "#fff" }]}>
               {restaurant.logoUrl ? (
@@ -395,37 +395,39 @@ const styles = StyleSheet.create({
   },
 
   // Overlapping info card
-  cardOuter: { paddingHorizontal: SIDE, marginTop: -56 },
+  cardOuter: { paddingHorizontal: SIDE, marginTop: -44 },
   infoCard: {
     borderRadius: 14,
     paddingHorizontal: 12,
-    paddingVertical: 10,
-    gap: 6,
-    shadowColor: "#000", shadowOpacity: 0.08, shadowRadius: 12, shadowOffset: { width: 0, height: 4 }, elevation: 4,
+    paddingVertical: 8,
+    gap: 4,
+    shadowColor: "#000", shadowOpacity: 0.08, shadowRadius: 10, shadowOffset: { width: 0, height: 3 }, elevation: 4,
+    borderWidth: 1,
+    borderColor: "#F3F4F6",
   },
   infoTopRow: { flexDirection: "row", alignItems: "center", gap: 12 },
   logoBox: {
-    width: 56, height: 56, borderRadius: 12,
+    width: 48, height: 48, borderRadius: 10,
     alignItems: "center", justifyContent: "center", overflow: "hidden",
     borderWidth: 1, borderColor: "#F0F0F0",
   },
   logoImg: { width: "100%", height: "100%" },
-  logoLetter: { fontSize: 22, fontFamily: "Inter_700Bold" },
-  infoTextWrap: { flex: 1, gap: 2 },
-  rName: { fontSize: 18, fontFamily: "Inter_700Bold" },
-  rTags: { fontSize: 12, fontFamily: "Inter_400Regular" },
-  ratingRow: { flexDirection: "row", alignItems: "center", gap: 4, marginTop: 2 },
-  ratingTxt: { fontSize: 13, fontFamily: "Inter_700Bold" },
-  ratingCount: { fontSize: 12, fontFamily: "Inter_400Regular" },
-  rDesc: { fontSize: 13, fontFamily: "Inter_400Regular", lineHeight: 18 },
-  divider: { height: 1, marginVertical: 2 },
+  logoLetter: { fontSize: 19, fontFamily: "Inter_700Bold" },
+  infoTextWrap: { flex: 1, gap: 1 },
+  rName: { fontSize: 16, fontFamily: "Inter_700Bold" },
+  rTags: { fontSize: 11, fontFamily: "Inter_400Regular" },
+  ratingRow: { flexDirection: "row", alignItems: "center", gap: 4, marginTop: 1 },
+  ratingTxt: { fontSize: 12, fontFamily: "Inter_700Bold" },
+  ratingCount: { fontSize: 11, fontFamily: "Inter_400Regular" },
+  rDesc: { fontSize: 12, fontFamily: "Inter_400Regular", lineHeight: 17 },
+  divider: { height: 1, marginVertical: 1 },
   metaRow: { flexDirection: "row", alignItems: "center", gap: 8, flexWrap: "wrap" },
   metaItem: { flexDirection: "row", alignItems: "center", gap: 4 },
-  metaText: { fontSize: 12, fontFamily: "Inter_600SemiBold" },
+  metaText: { fontSize: 11, fontFamily: "Inter_600SemiBold" },
   metaDot: { width: 3, height: 3, borderRadius: 1.5, backgroundColor: "#D1D5DB" },
-  openDot: { width: 7, height: 7, borderRadius: 3.5 },
+  openDot: { width: 6, height: 6, borderRadius: 3 },
   hoursRow: { flexDirection: "row", alignItems: "center", gap: 6 },
-  hoursTxt: { fontSize: 12, fontFamily: "Inter_500Medium" },
+  hoursTxt: { fontSize: 11, fontFamily: "Inter_500Medium" },
 
   warningBanner: {
     marginHorizontal: SIDE, marginTop: 14, padding: 10, borderRadius: 10, borderWidth: 1,

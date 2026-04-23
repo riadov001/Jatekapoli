@@ -8,7 +8,6 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { apiBase } from "@/lib/api";
 import { WaveEdge } from "@/components/WaveEdge";
-import { LinearGradient } from "expo-linear-gradient";
 import { useCart } from "@/contexts/CartContext";
 import { AddressQuickPicker } from "@/components/AddressQuickPicker";
 
@@ -162,32 +161,30 @@ export default function ProfileScreen() {
       contentContainerStyle={{ paddingBottom: insets.bottom + (Platform.OS === "web" ? 34 : 90) }}
       showsVerticalScrollIndicator={false}
     >
-      {/* Gradient hero — style Talabat Account */}
-      <View style={{ position: "relative" }}>
-        <LinearGradient
-          colors={[PINK_LIGHT, PINK, PINK_DEEP]}
-          locations={[0, 0.55, 1]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 0, y: 1 }}
-          style={[styles.heroPink, { paddingTop: insets.top + 28 + webTopPad }]}
-        >
-          <View style={styles.heroTopRow}>
-            <View style={styles.avatar}>
-              <Text style={styles.avatarText}>{(user?.name ?? "J").charAt(0).toUpperCase()}</Text>
-            </View>
-            <Text style={styles.heroHello}>
-              {user?.name?.split(" ")[0] ?? "Vous"}
-            </Text>
-            {user?.email ? (
-              <Text style={styles.heroEmail}>{user.email}</Text>
-            ) : null}
-          </View>
-        </LinearGradient>
-        <WaveEdge color={PINK_DEEP} height={28}
-          gradientStops={[{ offset: 0, color: PINK }, { offset: 1, color: PINK_DEEP }]} />
+      {/* Simple flat header — same style as sub-screens */}
+      <View style={[styles.flatHeader, { paddingTop: insets.top + 12 + webTopPad }]}>
+        <Text style={styles.flatHeaderTitle}>Mon profil</Text>
       </View>
 
-      {/* Floating quick-action cards row */}
+      {/* Clean user card */}
+      <Animated.View entering={FadeInDown.duration(320)} style={styles.userCard}>
+        <View style={styles.userCardAvatar}>
+          <Text style={styles.avatarText}>{(user?.name ?? "J").charAt(0).toUpperCase()}</Text>
+        </View>
+        <View style={styles.userCardInfo}>
+          <Text style={styles.userCardName}>{user?.name ?? "Vous"}</Text>
+          {user?.email ? <Text style={styles.userCardEmail}>{user.email}</Text> : null}
+        </View>
+        <TouchableOpacity
+          style={styles.userCardEdit}
+          onPress={() => router.push("/profile/info" as any)}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="create-outline" size={20} color={PINK} />
+        </TouchableOpacity>
+      </Animated.View>
+
+      {/* Quick-action cards row */}
       <Animated.View entering={FadeInDown.duration(380)} style={styles.quickRow}>
         <QuickCard icon="heart-outline" label="Favoris" onPress={() => router.push("/profile/favorites" as any)} />
         <QuickCard icon="bag-handle-outline" label="Commandes" onPress={() => router.push("/(tabs)/orders")} />
@@ -287,27 +284,56 @@ export default function ProfileScreen() {
 }
 
 const styles = StyleSheet.create({
-  // Hero
-  heroPink: { paddingHorizontal: 24, paddingBottom: 28, alignItems: "center" },
-  heroTopRow: { alignItems: "center", gap: 10 },
-  avatar: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: "rgba(255,255,255,0.25)",
+  // Flat header (matches ProfileScreenLayout)
+  flatHeader: {
+    backgroundColor: "#fff",
+    paddingHorizontal: 16,
+    paddingBottom: 14,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: "#F0F0F0",
+    alignItems: "center",
+  },
+  flatHeaderTitle: { fontSize: 18, fontFamily: "Inter_700Bold", color: "#0A1B3D" },
+
+  // Clean user card
+  userCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 14,
+    marginHorizontal: 16,
+    marginTop: 16,
+    padding: 16,
+    backgroundColor: "#fff",
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: "#F3F4F6",
+    shadowColor: "#000",
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
+  },
+  userCardAvatar: {
+    width: 54,
+    height: 54,
+    borderRadius: 27,
+    backgroundColor: PINK,
     alignItems: "center",
     justifyContent: "center",
-    borderWidth: 3,
-    borderColor: "#fff",
-    shadowColor: "#000",
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 3 },
-    elevation: 4,
   },
-  avatarText: { color: "#fff", fontSize: 24, fontFamily: "Inter_700Bold" },
-  heroHello: { fontSize: 20, fontFamily: "Inter_700Bold", lineHeight: 26, letterSpacing: -0.3, color: "#fff", textAlign: "center" },
-  heroEmail: { fontSize: 12, fontFamily: "Inter_400Regular", color: "rgba(255,255,255,0.75)", textAlign: "center" },
+  avatarText: { color: "#fff", fontSize: 22, fontFamily: "Inter_700Bold" },
+  userCardInfo: { flex: 1, gap: 3 },
+  userCardName: { fontSize: 17, fontFamily: "Inter_700Bold", color: "#0A1B3D" },
+  userCardEmail: { fontSize: 13, fontFamily: "Inter_400Regular", color: "#6B7280" },
+  userCardEdit: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "#FFF0F5",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
   guestHero: { paddingHorizontal: 24, paddingBottom: 28, alignItems: "center" },
   guestHeaderWrap: { backgroundColor: PINK, position: "relative", marginBottom: 28 },
   guestHomeHeader: { paddingHorizontal: 16, paddingBottom: 30, backgroundColor: PINK },
@@ -324,7 +350,7 @@ const styles = StyleSheet.create({
   guestCtaWrap: { paddingHorizontal: 16, marginTop: 16, gap: 10 },
 
   // Quick action cards
-  quickRow: { flexDirection: "row", gap: 10, paddingHorizontal: 16, marginTop: -28 },
+  quickRow: { flexDirection: "row", gap: 10, paddingHorizontal: 16, marginTop: 14 },
   quickCard: { flex: 1, height: 96, borderRadius: 16, borderWidth: 1, alignItems: "center", justifyContent: "center", gap: 8, shadowColor: "#000", shadowOpacity: 0.05, shadowRadius: 6, shadowOffset: { width: 0, height: 2 }, elevation: 2 },
   quickLabel: { fontSize: 12, fontFamily: "Inter_600SemiBold", textAlign: "center", paddingHorizontal: 4 },
 

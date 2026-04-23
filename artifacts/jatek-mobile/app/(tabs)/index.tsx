@@ -28,6 +28,8 @@ import { getApiBaseSafe } from "@/lib/apiBase";
 import { WaveEdge } from "@/components/WaveEdge";
 import { ShortPlayerModal } from "@/components/ShortPlayerModal";
 import { AddressQuickPicker } from "@/components/AddressQuickPicker";
+import { JatekAdSheet } from "@/components/JatekAdSheet";
+import { JatekScrollingBanner } from "@/components/JatekScrollingBanner";
 
 function trackBannerClick(restaurantId: number) {
   try {
@@ -91,11 +93,17 @@ const GRID_CARD_W = (SCREEN_W - GRID_SIDE * 2 - GRID_GAP) / 2;
 function PromoBanner({ onPress }: { onPress: () => void }) {
   return (
     <Pressable onPress={onPress} style={({ pressed }) => [s.promoBanner, pressed && { opacity: 0.9 }]}>
-      <View style={{ flex: 1 }}>
-        <Text style={s.promoMinus}>-10%</Text>
-        <Text style={s.promoCode}>WELCOME10</Text>
+      <View style={s.promoBannerLeft}>
+        <View style={s.promoTagBadge}>
+          <Text style={s.promoTagTxt}>CODE PROMO</Text>
+        </View>
+        <Text style={s.promoMinusClean}>-10%</Text>
+        <Text style={s.promoCodeClean}>avec WELCOME10</Text>
       </View>
-      <Text style={s.promoBrand}>Jatek</Text>
+      <View style={s.promoBrandWrap}>
+        <Text style={s.promoBrandClean}>Jatek</Text>
+        <Ionicons name="arrow-forward-circle" size={24} color={PINK} />
+      </View>
     </Pressable>
   );
 }
@@ -249,6 +257,7 @@ export default function HomeScreen() {
   const [addressPickerOpen, setAddressPickerOpen] = useState(false);
   const [shortsVisible, setShortsVisible] = useState(false);
   const [initialShort, setInitialShort] = useState(0);
+  const [adSheetVisible, setAdSheetVisible] = useState(false);
 
   const params = useMemo<ListRestaurantsParams>(() => {
     const p: ListRestaurantsParams = { businessType: activeBusinessType };
@@ -381,6 +390,9 @@ export default function HomeScreen() {
           ))}
         </ScrollView>
 
+        {/* ─── JATEK brand scrolling banner ─── */}
+        <JatekScrollingBanner />
+
         {/* ─── Partenaires VIP & promotions (Talabat-style horizontal slider) ─── */}
         <View style={s.vipHeaderWrap}>
           <Text style={s.vipSectionTitle}>Partenaires VIP & Promos</Text>
@@ -493,7 +505,18 @@ export default function HomeScreen() {
           )}
         </View>
       </ScrollView>
+      {/* ─── JATEK Ad floating trigger button ─── */}
+      <TouchableOpacity
+        onPress={() => setAdSheetVisible(true)}
+        activeOpacity={0.85}
+        style={s.adTriggerBtn}
+      >
+        <Ionicons name="chevron-up" size={18} color="#fff" />
+        <Text style={s.adTriggerTxt}>Offres Jatek</Text>
+      </TouchableOpacity>
+
       <AddressQuickPicker visible={addressPickerOpen} onClose={() => setAddressPickerOpen(false)} />
+      <JatekAdSheet visible={adSheetVisible} onClose={() => setAdSheetVisible(false)} />
       <ShortPlayerModal
         visible={shortsVisible}
         shorts={shorts}
@@ -671,38 +694,57 @@ const s = StyleSheet.create({
     color: TEXT_DARK,
   },
 
-  // ── Promo banner ──
+  // ── Promo banner (clean, no colored bg) ──
   promoBanner: {
     width: "100%",
-    height: 110,
-    backgroundColor: PINK,
+    height: 84,
+    backgroundColor: "#fff",
     borderRadius: 16,
     paddingHorizontal: 18,
     flexDirection: "row",
     alignItems: "center",
+    justifyContent: "space-between",
+    borderWidth: 1,
+    borderColor: "#F3F4F6",
+    shadowColor: "#000",
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
     overflow: "hidden",
   },
-  promoMinus: {
-    fontSize: 44,
-    fontFamily: "Inter_900Black",
-    color: "#fff",
-    letterSpacing: -1.5,
-    lineHeight: 48,
+  promoBannerLeft: { gap: 2 },
+  promoTagBadge: {
+    alignSelf: "flex-start",
+    backgroundColor: PINK_SOFT,
+    borderRadius: 6,
+    paddingHorizontal: 7,
+    paddingVertical: 2,
   },
-  promoCode: {
-    fontSize: 16,
-    fontFamily: "Inter_700Bold",
-    color: NEW_GREEN,
-    letterSpacing: 1,
-    marginTop: 2,
-  },
-  promoBrand: {
-    fontSize: 38,
+  promoTagTxt: { fontSize: 10, fontFamily: "Inter_700Bold", color: PINK, letterSpacing: 0.5 },
+  promoMinusClean: {
+    fontSize: 26,
     fontFamily: "Inter_900Black",
-    color: "#fff",
+    color: TEXT_DARK,
+    letterSpacing: -0.5,
+    lineHeight: 30,
+  },
+  promoCodeClean: {
+    fontSize: 13,
+    fontFamily: "Inter_500Medium",
+    color: TEXT_MUTED,
+  },
+  promoBrandWrap: { alignItems: "center", gap: 4 },
+  promoBrandClean: {
+    fontSize: 22,
+    fontFamily: "Inter_900Black",
+    color: PINK,
     fontStyle: "italic",
-    letterSpacing: -1,
+    letterSpacing: -0.5,
   },
+  promoMinus: { fontSize: 44, fontFamily: "Inter_900Black", color: "#fff", letterSpacing: -1.5, lineHeight: 48 },
+  promoCode: { fontSize: 16, fontFamily: "Inter_700Bold", color: NEW_GREEN, letterSpacing: 1, marginTop: 2 },
+  promoBrand: { fontSize: 38, fontFamily: "Inter_900Black", color: "#fff", fontStyle: "italic", letterSpacing: -1 },
 
   // ── VIP partners horizontal slider ──
   vipHeaderWrap: {
@@ -936,5 +978,32 @@ const s = StyleSheet.create({
     flexDirection: "row",
     flexWrap: "wrap",
     gap: GRID_GAP,
+  },
+
+  // ── Jatek Ad trigger button ──
+  adTriggerBtn: {
+    position: "absolute",
+    bottom: 90,
+    alignSelf: "center",
+    left: "50%",
+    marginLeft: -64,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    backgroundColor: PINK,
+    paddingHorizontal: 18,
+    paddingVertical: 10,
+    borderRadius: 24,
+    shadowColor: PINK,
+    shadowOpacity: 0.35,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 8,
+  },
+  adTriggerTxt: {
+    color: "#fff",
+    fontSize: 13,
+    fontFamily: "Inter_700Bold",
+    letterSpacing: 0.2,
   },
 });
