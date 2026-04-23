@@ -324,7 +324,7 @@ export default function HomeScreen() {
               onPress={() => router.push({ pathname: "/category/[slug]", params: { slug: c.slug } })}
               style={({ pressed }) => [s.shopCatItem, pressed && { opacity: 0.85, transform: [{ scale: 0.96 }] }]}
             >
-              <View style={[s.shopCatTile, { backgroundColor: CAT_TINT }]}>
+              <View style={s.shopCatTile}>
                 <Image source={c.image} style={s.shopCatImg} resizeMode="contain" />
               </View>
               <Text style={[s.shopCatLabel, { color: c.accent }]} numberOfLines={1}>
@@ -541,18 +541,12 @@ const s = StyleSheet.create({
   shopCatTile: {
     width: 80,
     height: 80,
-    borderRadius: 22,
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: "#8B7D3A",
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 4,
   },
   shopCatImg: {
-    width: 64,
-    height: 64,
+    width: 72,
+    height: 72,
   },
   shopCatLabel: {
     fontSize: 11,
