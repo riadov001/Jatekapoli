@@ -505,14 +505,15 @@ export default function HomeScreen() {
           )}
         </View>
       </ScrollView>
-      {/* ─── JATEK Ad floating trigger button ─── */}
+      {/* ─── JATEK Ad floating trigger bar (full-width, aligned with tab bar) ─── */}
       <TouchableOpacity
         onPress={() => setAdSheetVisible(true)}
-        activeOpacity={0.85}
-        style={s.adTriggerBtn}
+        activeOpacity={0.75}
+        style={[s.adTriggerBtn, { bottom: tabBarPad - 24 }]}
       >
-        <Ionicons name="chevron-up" size={18} color="#fff" />
-        <Text style={s.adTriggerTxt}>Offres Jatek</Text>
+        <Ionicons name="chevron-up" size={15} color="#0E7490" />
+        <Text style={s.adTriggerTxt}>Offres & Avantages Jatek</Text>
+        <Ionicons name="chevron-up" size={15} color="#0E7490" />
       </TouchableOpacity>
 
       <AddressQuickPicker visible={addressPickerOpen} onClose={() => setAddressPickerOpen(false)} />
@@ -980,30 +981,24 @@ const s = StyleSheet.create({
     gap: GRID_GAP,
   },
 
-  // ── Jatek Ad trigger button ──
+  // ── Jatek Ad trigger bar (full-width, aligned with tab bar) ──
   adTriggerBtn: {
     position: "absolute",
-    bottom: 90,
-    alignSelf: "center",
-    left: "50%",
-    marginLeft: -64,
+    left: 0,
+    right: 0,
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
-    backgroundColor: PINK,
-    paddingHorizontal: 18,
-    paddingVertical: 10,
-    borderRadius: 24,
-    shadowColor: PINK,
-    shadowOpacity: 0.35,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 8,
+    justifyContent: "center",
+    gap: 8,
+    backgroundColor: "rgba(207, 250, 254, 0.5)",
+    paddingVertical: 8,
+    borderTopWidth: 1,
+    borderTopColor: "rgba(34, 211, 238, 0.3)",
   },
   adTriggerTxt: {
-    color: "#fff",
-    fontSize: 13,
-    fontFamily: "Inter_700Bold",
-    letterSpacing: 0.2,
+    color: "#0E7490",
+    fontSize: 12,
+    fontFamily: "Inter_600SemiBold",
+    letterSpacing: 0.3,
   },
 });

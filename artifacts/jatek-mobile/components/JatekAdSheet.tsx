@@ -9,7 +9,6 @@ import {
   Pressable,
   ScrollView,
   Dimensions,
-  Image,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -27,7 +26,6 @@ const ADS = [
     sub: "Abonnez-vous et économisez chaque jour",
     accent: PINK,
     icon: "rocket" as const,
-    light: false,
   },
   {
     key: "vip",
@@ -36,25 +34,22 @@ const ADS = [
     sub: "Rejoignez le club VIP et bénéficiez d'avantages uniques",
     accent: NAVY,
     icon: "star" as const,
-    light: false,
   },
   {
     key: "premium",
     tag: "JATEK PREMIUM",
     title: "L'expérience\nultime",
     sub: "Coursier dédié, support 24/7 et réductions maxi",
-    accent: "#8B1A6B",
+    accent: "#7C3AED",
     icon: "sparkles" as const,
-    light: false,
   },
   {
     key: "fast",
     tag: "JATEK FAST",
     title: "Livré en\n20 minutes",
     sub: "Notre réseau express pour les plus pressés",
-    accent: "#FF6B00",
+    accent: "#EA580C",
     icon: "flash" as const,
-    light: false,
   },
 ];
 
@@ -65,35 +60,116 @@ interface Props {
 
 export function JatekAdSheet({ visible, onClose }: Props) {
   const insets = useSafeAreaInsets();
-  const slideAnim = useRef(new Animated.Value(SCREEN_H)).current;
 
-  useEffect(() => {
-    if (visible) {
-      Animated.spring(slideAnim, {
-        toValue: 0,
+  // Sheet slide-up
+  const slideY = useRef(new Animated.Value(SCREEN_H)).current;
+  // Overlay fade
+  const overlayOpacity = useRef(new Animated.Value(0)).current;
+
+  // Staggered content anims (header, sub, cards row, dots)
+  const contentAnims = useRef(
+    Array.from({ length: 4 }, () => ({
+      opacity: new Animated.Value(0),
+      translateY: new Animated.Value(18),
+    }))
+  ).current;
+
+  const runOpen = () => {
+    // Reset content
+    contentAnims.forEach(({ opacity, translateY }) => {
+      opacity.setValue(0);
+      translateY.setValue(18);
+    });
+    slideY.setValue(SCREEN_H);
+    overlayOpacity.setValue(0);
+
+    Animated.parallel([
+      // Overlay fade in
+      Animated.timing(overlayOpacity, {
+        toValue: 1,
+        duration: 280,
         useNativeDriver: true,
-        friction: 11,
-        tension: 80,
-      }).start();
-    } else {
-      Animated.timing(slideAnim, {
+      }),
+      // Sheet spring up
+      Animated.spring(slideY, {
+        toValue: 0,
+        friction: 10,
+        tension: 75,
+        useNativeDriver: true,
+      }),
+      // Staggered content fade + slide
+      Animated.stagger(
+        70,
+        contentAnims.map(({ opacity, translateY }) =>
+          Animated.parallel([
+            Animated.timing(opacity, {
+              toValue: 1,
+              duration: 300,
+              useNativeDriver: true,
+            }),
+            Animated.spring(translateY, {
+              toValue: 0,
+              friction: 9,
+              tension: 80,
+              useNativeDriver: true,
+            }),
+          ])
+        )
+      ),
+    ]).start();
+  };
+
+  const runClose = () => {
+    Animated.parallel([
+      Animated.timing(overlayOpacity, {
+        toValue: 0,
+        duration: 220,
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideY, {
         toValue: SCREEN_H,
         duration: 260,
         useNativeDriver: true,
-      }).start();
+      }),
+    ]).start();
+  };
+
+  useEffect(() => {
+    if (visible) {
+      // Small delay so modal mounts before animating
+      const t = setTimeout(runOpen, 20);
+      return () => clearTimeout(t);
+    } else {
+      runClose();
     }
-  }, [visible, slideAnim]);
+  }, [visible]);
+
+  const animStyle = (i: number) => ({
+    opacity: contentAnims[i].opacity,
+    transform: [{ translateY: contentAnims[i].translateY }],
+  });
 
   return (
-    <Modal transparent visible={visible} animationType="none" onRequestClose={onClose}>
-      <Pressable style={styles.overlay} onPress={onClose} />
-      <Animated.View style={[styles.sheet, { paddingBottom: insets.bottom + 16, transform: [{ translateY: slideAnim }] }]}>
-        {/* Handle */}
+    <Modal transparent visible={visible} animationType="none" onRequestClose={onClose} statusBarTranslucent>
+      {/* Dimmed overlay */}
+      <Animated.View style={[styles.overlay, { opacity: overlayOpacity }]}>
+        <Pressable style={StyleSheet.absoluteFillObject} onPress={onClose} />
+      </Animated.View>
+
+      {/* Sheet */}
+      <Animated.View
+        style={[
+          styles.sheet,
+          { paddingBottom: insets.bottom + 16, transform: [{ translateY: slideY }] },
+        ]}
+      >
+        {/* Handle — always visible immediately */}
         <View style={styles.handleWrap}>
           <View style={styles.handle} />
         </View>
-        {/* Header */}
-        <View style={styles.sheetHeader}>
+
+        {/* Header — anim[0] */}
+        <Animated.View style={[styles.sheetHeader, animStyle(0)]}>
           <View style={styles.sheetLogoWrap}>
             <Ionicons name="bag-handle" size={20} color="#fff" />
           </View>
@@ -101,44 +177,57 @@ export function JatekAdSheet({ visible, onClose }: Props) {
           <TouchableOpacity onPress={onClose} hitSlop={12} style={styles.closeBtn}>
             <Ionicons name="close" size={22} color="#6B7280" />
           </TouchableOpacity>
-        </View>
-        <Text style={styles.sheetSub}>Découvrez nos formules exclusives</Text>
+        </Animated.View>
 
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.adsRow}
-          decelerationRate="fast"
-          snapToInterval={SCREEN_W * 0.8 + 12}
-        >
-          {ADS.map((ad) => (
-            <TouchableOpacity
-              key={ad.key}
-              activeOpacity={0.88}
-              style={[styles.adCard, { backgroundColor: ad.accent }]}
-            >
-              <View style={styles.adIconWrap}>
-                <Ionicons name={ad.icon} size={28} color={GOLD} />
-              </View>
-              <View style={[styles.adTag]}>
-                <Text style={styles.adTagTxt}>{ad.tag}</Text>
-              </View>
-              <Text style={styles.adTitle}>{ad.title}</Text>
-              <Text style={styles.adSub}>{ad.sub}</Text>
-              <View style={styles.adCtaRow}>
-                <View style={styles.adCta}>
-                  <Text style={[styles.adCtaTxt, { color: ad.accent }]}>Découvrir</Text>
+        {/* Subtitle — anim[1] */}
+        <Animated.Text style={[styles.sheetSub, animStyle(1)]}>
+          Découvrez nos formules exclusives
+        </Animated.Text>
+
+        {/* Cards — anim[2] */}
+        <Animated.View style={animStyle(2)}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.adsRow}
+            decelerationRate="fast"
+            snapToInterval={SCREEN_W * 0.8 + 12}
+            pagingEnabled={false}
+          >
+            {ADS.map((ad) => (
+              <TouchableOpacity
+                key={ad.key}
+                activeOpacity={0.88}
+                style={[styles.adCard, { backgroundColor: ad.accent }]}
+              >
+                {/* Decorative circle */}
+                <View style={styles.decorCircle} />
+
+                <View style={styles.adIconWrap}>
+                  <Ionicons name={ad.icon} size={28} color={GOLD} />
                 </View>
-              </View>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
+                <View style={styles.adTag}>
+                  <Text style={styles.adTagTxt}>{ad.tag}</Text>
+                </View>
+                <Text style={styles.adTitle}>{ad.title}</Text>
+                <Text style={styles.adSub}>{ad.sub}</Text>
+                <View style={styles.adCtaRow}>
+                  <View style={styles.adCta}>
+                    <Text style={[styles.adCtaTxt, { color: ad.accent }]}>Découvrir</Text>
+                    <Ionicons name="arrow-forward" size={14} color={ad.accent} />
+                  </View>
+                </View>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </Animated.View>
 
-        <View style={styles.dotsRow}>
+        {/* Dots — anim[3] */}
+        <Animated.View style={[styles.dotsRow, animStyle(3)]}>
           {ADS.map((_, i) => (
             <View key={i} style={[styles.dot, i === 0 && styles.dotActive]} />
           ))}
-        </View>
+        </Animated.View>
       </Animated.View>
     </Modal>
   );
@@ -147,7 +236,7 @@ export function JatekAdSheet({ visible, onClose }: Props) {
 const styles = StyleSheet.create({
   overlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0,0,0,0.48)",
+    backgroundColor: "rgba(0,0,0,0.52)",
   },
   sheet: {
     position: "absolute",
@@ -155,72 +244,99 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     backgroundColor: "#fff",
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
+    borderTopLeftRadius: 26,
+    borderTopRightRadius: 26,
     shadowColor: "#000",
-    shadowOpacity: 0.18,
-    shadowRadius: 24,
-    shadowOffset: { width: 0, height: -6 },
-    elevation: 20,
+    shadowOpacity: 0.2,
+    shadowRadius: 28,
+    shadowOffset: { width: 0, height: -8 },
+    elevation: 24,
   },
-  handleWrap: { alignItems: "center", paddingTop: 10, paddingBottom: 2 },
-  handle: { width: 40, height: 4, borderRadius: 2, backgroundColor: "#D1D5DB" },
+  handleWrap: { alignItems: "center", paddingTop: 10, paddingBottom: 4 },
+  handle: { width: 44, height: 4, borderRadius: 2, backgroundColor: "#D1D5DB" },
   sheetHeader: {
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 20,
-    paddingTop: 12,
+    paddingTop: 10,
     paddingBottom: 2,
-    gap: 10,
+    gap: 12,
   },
   sheetLogoWrap: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     backgroundColor: PINK,
     alignItems: "center",
     justifyContent: "center",
   },
-  sheetTitle: { flex: 1, fontSize: 18, fontFamily: "Inter_700Bold", color: "#0A1B3D" },
-  closeBtn: { width: 32, height: 32, alignItems: "center", justifyContent: "center" },
-  sheetSub: { fontSize: 13, fontFamily: "Inter_400Regular", color: "#6B7280", paddingHorizontal: 20, marginBottom: 16 },
+  sheetTitle: { flex: 1, fontSize: 19, fontFamily: "Inter_700Bold", color: "#0A1B3D" },
+  closeBtn: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: "#F3F4F6",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  sheetSub: {
+    fontSize: 13,
+    fontFamily: "Inter_400Regular",
+    color: "#6B7280",
+    paddingHorizontal: 20,
+    marginTop: 4,
+    marginBottom: 18,
+  },
 
-  adsRow: { paddingHorizontal: 16, gap: 12, paddingBottom: 4 },
+  adsRow: { paddingHorizontal: 16, gap: 12, paddingBottom: 6 },
   adCard: {
     width: SCREEN_W * 0.8,
-    borderRadius: 20,
-    padding: 20,
+    borderRadius: 22,
+    padding: 22,
     gap: 10,
     overflow: "hidden",
+    position: "relative",
+  },
+  decorCircle: {
+    position: "absolute",
+    right: -30,
+    top: -30,
+    width: 130,
+    height: 130,
+    borderRadius: 65,
+    backgroundColor: "rgba(255,255,255,0.08)",
   },
   adIconWrap: {
     width: 52,
     height: 52,
     borderRadius: 26,
-    backgroundColor: "rgba(255,255,255,0.15)",
+    backgroundColor: "rgba(255,255,255,0.18)",
     alignItems: "center",
     justifyContent: "center",
   },
   adTag: {
     alignSelf: "flex-start",
-    backgroundColor: "rgba(255,255,255,0.2)",
+    backgroundColor: "rgba(255,255,255,0.22)",
     borderRadius: 10,
     paddingHorizontal: 10,
     paddingVertical: 4,
   },
-  adTagTxt: { color: "#fff", fontSize: 11, fontFamily: "Inter_700Bold", letterSpacing: 1 },
-  adTitle: { color: "#fff", fontSize: 22, fontFamily: "Inter_900Black", lineHeight: 28, letterSpacing: -0.5 },
+  adTagTxt: { color: "#fff", fontSize: 11, fontFamily: "Inter_700Bold", letterSpacing: 0.8 },
+  adTitle: { color: "#fff", fontSize: 22, fontFamily: "Inter_900Black", lineHeight: 28, letterSpacing: -0.4 },
   adSub: { color: "rgba(255,255,255,0.82)", fontSize: 13, fontFamily: "Inter_400Regular", lineHeight: 18 },
-  adCtaRow: { marginTop: 8 },
+  adCtaRow: { marginTop: 6 },
   adCta: {
     alignSelf: "flex-start",
     backgroundColor: "#fff",
     borderRadius: 22,
-    paddingHorizontal: 18,
+    paddingHorizontal: 16,
     paddingVertical: 9,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
   },
-  adCtaTxt: { fontSize: 14, fontFamily: "Inter_700Bold" },
-  dotsRow: { flexDirection: "row", gap: 6, justifyContent: "center", paddingTop: 12, paddingBottom: 4 },
+  adCtaTxt: { fontSize: 13, fontFamily: "Inter_700Bold" },
+  dotsRow: { flexDirection: "row", gap: 6, justifyContent: "center", paddingTop: 14, paddingBottom: 6 },
   dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: "#D1D5DB" },
-  dotActive: { backgroundColor: PINK, width: 18 },
+  dotActive: { backgroundColor: PINK, width: 20, borderRadius: 3 },
 });
