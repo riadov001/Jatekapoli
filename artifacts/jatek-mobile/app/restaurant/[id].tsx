@@ -119,7 +119,7 @@ export default function RestaurantScreen() {
 
       {/* ─── Overlapping info card ─── */}
       <View style={styles.cardOuter}>
-        <View style={[styles.infoCard, { backgroundColor: "rgba(242, 237, 208, 0.8)" }]}>
+        <View style={[styles.infoCard, { backgroundColor: "rgba(245, 235, 215, 0.8)" }]}>
           <View style={styles.infoTopRow}>
             <View style={[styles.logoBox, { backgroundColor: "#fff" }]}>
               {restaurant.logoUrl ? (
@@ -397,9 +397,10 @@ const styles = StyleSheet.create({
   // Overlapping info card
   cardOuter: { paddingHorizontal: SIDE, marginTop: -56 },
   infoCard: {
-    borderRadius: 16,
-    padding: 14,
-    gap: 10,
+    borderRadius: 14,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    gap: 6,
     shadowColor: "#000", shadowOpacity: 0.08, shadowRadius: 12, shadowOffset: { width: 0, height: 4 }, elevation: 4,
   },
   infoTopRow: { flexDirection: "row", alignItems: "center", gap: 12 },

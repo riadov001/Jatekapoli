@@ -369,29 +369,6 @@ export default function HomeScreen() {
           ))}
         </ScrollView>
 
-        {/* ─── 4 service squares ─── */}
-        <View style={s.servicesRow}>
-          {SERVICES.map((sv) => (
-            <Pressable
-              key={sv.key}
-              onPress={() => applyService(sv)}
-              style={({ pressed }) => [s.serviceItem, pressed && { opacity: 0.85, transform: [{ scale: 0.98 }] }]}
-            >
-              <View style={[s.serviceSquare, { backgroundColor: sv.bg }]}>
-                <Ionicons name={sv.icon} size={26} color={sv.color} />
-              </View>
-              <Text style={s.serviceLabel} numberOfLines={1}>
-                {sv.label}
-              </Text>
-            </Pressable>
-          ))}
-        </View>
-
-        {/* ─── Promo banner -10% Jatek WELCOME10 ─── */}
-        <View style={{ paddingHorizontal: 16, marginTop: 18 }}>
-          <PromoBanner onPress={() => router.push("/profile/coupons?code=WELCOME10" as any)} />
-        </View>
-
         {/* ─── Partenaires VIP & promotions (Talabat-style horizontal slider) ─── */}
         <View style={s.vipHeaderWrap}>
           <Text style={s.vipSectionTitle}>Partenaires VIP & Promos</Text>
@@ -418,6 +395,11 @@ export default function HomeScreen() {
             <Text style={s.emptyTxt}>Aucune offre disponible pour le moment</Text>
           )}
         </ScrollView>
+
+        {/* ─── Promo banner -10% Jatek WELCOME10 ─── */}
+        <View style={{ paddingHorizontal: 16, marginTop: 18 }}>
+          <PromoBanner onPress={() => router.push("/profile/coupons?code=WELCOME10" as any)} />
+        </View>
 
         {/* ─── Découvrir en vidéo ─── */}
         <SectionHeader title="Decouvrir en video" />
