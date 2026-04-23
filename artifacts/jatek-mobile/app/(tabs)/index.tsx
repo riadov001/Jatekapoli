@@ -41,13 +41,15 @@ const NEW_GREEN = "#7BE36A";
 const CARD_BORDER = "#F0F0F0";
 
 // Shop categories (3×2 grid below the header)
+const CAT_TINT = "#F2EDD0"; // light yellow-olive — shared tile background
+
 const SHOP_CATEGORIES = [
-  { slug: "restauration", label: "Restauration", image: require("../../assets/images/cat-restauration-nb.png"), tint: "#FFE9F2", accent: "#E91E63" },
-  { slug: "epicerie",     label: "Épicerie",      image: require("../../assets/images/cat-epicerie-nb.png"),     tint: "#FFF3E8", accent: "#F97316" },
-  { slug: "sante",        label: "Santé",         image: require("../../assets/images/cat-sante-nb.png"),        tint: "#F0EAFF", accent: "#8B5CF6" },
-  { slug: "supermarche",  label: "Supermarché",   image: require("../../assets/images/cat-supermarche-nb.png"), tint: "#E5F7FA", accent: "#0AA5C0" },
-  { slug: "boutiques",    label: "Boutiques",     image: require("../../assets/images/cat-boutiques-nb.png"),    tint: "#FFE5EE", accent: "#C2185B" },
-  { slug: "coursier",     label: "Coursier",      image: require("../../assets/images/cat-coursier-nb.png"),     tint: "#E8F6E0", accent: "#3A7D1B" },
+  { slug: "restauration", label: "Restauration", image: require("../../assets/images/icon-restauration.jpg"),  accent: "#B85C00" },
+  { slug: "epicerie",     label: "Épicerie",      image: require("../../assets/images/icon-epicerie.jpg"),      accent: "#2E7D32" },
+  { slug: "sante",        label: "Santé",         image: require("../../assets/images/icon-sante.jpg"),         accent: "#C62828" },
+  { slug: "supermarche",  label: "Supermarché",   image: require("../../assets/images/icon-supermarche.jpg"),  accent: "#E65100" },
+  { slug: "boutiques",    label: "Boutiques",     image: require("../../assets/images/icon-boutiques.jpg"),     accent: "#880E4F" },
+  { slug: "coursier",     label: "Coursier",      image: require("../../assets/images/icon-coursier.jpg"),      accent: "#1A237E" },
 ];
 
 // Service squares (Service Coursier / Boutiques / Offers / Parapharm)
@@ -322,7 +324,7 @@ export default function HomeScreen() {
               onPress={() => router.push({ pathname: "/category/[slug]", params: { slug: c.slug } })}
               style={({ pressed }) => [s.shopCatItem, pressed && { opacity: 0.85, transform: [{ scale: 0.96 }] }]}
             >
-              <View style={[s.shopCatTile, { backgroundColor: c.tint }]}>
+              <View style={[s.shopCatTile, { backgroundColor: CAT_TINT }]}>
                 <Image source={c.image} style={s.shopCatImg} resizeMode="contain" />
               </View>
               <Text style={[s.shopCatLabel, { color: c.accent }]} numberOfLines={1}>
@@ -533,28 +535,28 @@ const s = StyleSheet.create({
   },
   shopCatItem: {
     alignItems: "center",
-    gap: 7,
-    width: 78,
+    gap: 8,
+    width: 90,
   },
   shopCatTile: {
-    width: 64,
-    height: 64,
-    borderRadius: 20,
+    width: 80,
+    height: 80,
+    borderRadius: 22,
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.07,
-    shadowRadius: 6,
-    elevation: 2,
+    shadowColor: "#8B7D3A",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 4,
   },
   shopCatImg: {
-    width: 42,
-    height: 42,
+    width: 64,
+    height: 64,
   },
   shopCatLabel: {
     fontSize: 11,
-    fontFamily: "Inter_600SemiBold",
+    fontFamily: "Inter_700Bold",
     textAlign: "center",
     lineHeight: 14,
   },
