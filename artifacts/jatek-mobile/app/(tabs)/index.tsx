@@ -87,6 +87,39 @@ function PromoBanner({ onPress }: { onPress: () => void }) {
   );
 }
 
+function VipBannerCard({
+  title,
+  subtitle,
+  bgColor,
+  badge,
+  imageUrl,
+  onPress,
+}: {
+  title: string;
+  subtitle: string;
+  bgColor: string;
+  badge: string;
+  imageUrl?: string | null;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable onPress={onPress} style={({ pressed }) => [s.vipCard, { backgroundColor: bgColor }, pressed && { opacity: 0.92 }]}>
+      {imageUrl ? (
+        <Image source={{ uri: imageUrl }} style={s.vipCardImg} resizeMode="cover" />
+      ) : null}
+      <View style={s.vipCardScrim} />
+      <View style={s.vipBadge}>
+        <Ionicons name="star" size={11} color="#fff" />
+        <Text style={s.vipBadgeTxt}>{badge}</Text>
+      </View>
+      <View style={s.vipCardBody}>
+        <Text style={s.vipCardTitle} numberOfLines={1}>{title}</Text>
+        <Text style={s.vipCardSubtitle} numberOfLines={2}>{subtitle}</Text>
+      </View>
+    </Pressable>
+  );
+}
+
 function SectionHeader({ title, onMore }: { title: string; onMore?: () => void }) {
   return (
     <View style={s.sectionHead}>
@@ -356,6 +389,37 @@ export default function HomeScreen() {
         <View style={{ paddingHorizontal: 16, marginTop: 18 }}>
           <PromoBanner onPress={() => router.push("/profile/coupons?code=WELCOME10" as any)} />
         </View>
+
+        {/* ─── Partenaires VIP & promotions (Talabat-style horizontal slider) ─── */}
+        <View style={s.vipHeaderWrap}>
+          <Text style={s.vipSectionTitle}>Partenaires VIP & Promos</Text>
+        </View>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={s.vipScrollRow}
+          decelerationRate="fast"
+          snapToInterval={SCREEN_W * 0.78 + 12}
+        >
+          {(restaurants ?? [])
+            .filter((r) => r.isOpen !== false)
+            .sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0))
+            .slice(0, 5)
+            .map((r, i) => (
+              <VipBannerCard
+                key={`vip-${r.id}`}
+                title={r.name}
+                subtitle={i % 2 === 0 ? "-20% sur votre première commande" : "Livraison gratuite aujourd'hui"}
+                bgColor={i % 2 === 0 ? PINK : "#0A1B3D"}
+                badge={i % 2 === 0 ? "VIP" : "PROMO"}
+                imageUrl={r.imageUrl ?? r.coverImageUrl}
+                onPress={() => goRestaurant(r.id)}
+              />
+            ))}
+          {(restaurants ?? []).length === 0 && !isLoading && (
+            <Text style={s.emptyTxt}>Aucune offre disponible pour le moment</Text>
+          )}
+        </ScrollView>
 
         {/* ─── Découvrir en vidéo ─── */}
         <SectionHeader title="Decouvrir en video" />
@@ -647,6 +711,56 @@ const s = StyleSheet.create({
     fontStyle: "italic",
     letterSpacing: -1,
   },
+
+  // ── VIP partners horizontal slider ──
+  vipHeaderWrap: {
+    paddingHorizontal: 16,
+    marginTop: 22,
+    marginBottom: 10,
+  },
+  vipSectionTitle: {
+    fontSize: 18,
+    fontFamily: "Inter_700Bold",
+    color: TEXT_DARK,
+    letterSpacing: -0.3,
+  },
+  vipScrollRow: {
+    paddingHorizontal: 16,
+    gap: 12,
+    paddingVertical: 2,
+  },
+  vipCard: {
+    width: SCREEN_W * 0.78,
+    height: 130,
+    borderRadius: 18,
+    overflow: "hidden",
+    justifyContent: "flex-end",
+    padding: 14,
+  },
+  vipCardImg: {
+    ...StyleSheet.absoluteFillObject,
+    opacity: 0.45,
+  },
+  vipCardScrim: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0,0,0,0.25)",
+  },
+  vipBadge: {
+    position: "absolute",
+    top: 12,
+    right: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    backgroundColor: "rgba(255,255,255,0.22)",
+    borderRadius: 12,
+    paddingHorizontal: 9,
+    paddingVertical: 4,
+  },
+  vipBadgeTxt: { color: "#fff", fontSize: 10, fontFamily: "Inter_700Bold", letterSpacing: 0.4 },
+  vipCardBody: { gap: 2 },
+  vipCardTitle: { color: "#fff", fontSize: 18, fontFamily: "Inter_900Black", letterSpacing: -0.3 },
+  vipCardSubtitle: { color: "#fff", fontSize: 12, fontFamily: "Inter_500Medium", opacity: 0.95 },
 
   // ── Section headers ──
   sectionHead: {

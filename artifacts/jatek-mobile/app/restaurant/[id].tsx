@@ -119,7 +119,7 @@ export default function RestaurantScreen() {
 
       {/* ─── Overlapping info card ─── */}
       <View style={styles.cardOuter}>
-        <View style={[styles.infoCard, { backgroundColor: colors.card }]}>
+        <View style={[styles.infoCard, { backgroundColor: "rgba(242, 237, 208, 0.8)" }]}>
           <View style={styles.infoTopRow}>
             <View style={[styles.logoBox, { backgroundColor: "#fff" }]}>
               {restaurant.logoUrl ? (

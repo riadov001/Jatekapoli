@@ -22,7 +22,8 @@ const PINK = "#E91E63";
 const TEXT_DARK = "#0A1B3D";
 const TEXT_MUTED = "#6B7280";
 const CARD_BG = "#FFFFFF";
-const BG = "#F8F8F8";
+const BG = "#FAFAFA";
+const STAR = "#FFB400";
 const FALLBACK_IMG =
   "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=600&q=80&auto=format&fit=crop";
 
@@ -32,7 +33,6 @@ const { width: SCREEN_W } = Dimensions.get("window");
 type SubcatConfig = {
   id: string;
   label: string;
-  /** Filter restaurants by `category` field on the menu/business */
   apiCategory?: string;
   icon: string;
 };
@@ -40,8 +40,7 @@ type SubcatConfig = {
 type SlugConfig = {
   label: string;
   color: string;
-  image: any;
-  /** Backend `businessType` for the API filter */
+  bannerImage: any;
   businessType: string;
   subcategories: SubcatConfig[];
 };
@@ -50,25 +49,25 @@ const SLUG_CONFIG: Record<string, SlugConfig> = {
   restauration: {
     label: "Restauration",
     color: "#E91E63",
-    image: require("../../assets/images/cat-restauration-nb.png"),
+    bannerImage: require("../../assets/images/cat-restauration.jpg"),
     businessType: "restaurant",
     subcategories: [
-      { id: "all",        label: "Tout",       icon: "grid-outline" },
-      { id: "Pizza",      label: "Pizza",       icon: "pizza",           apiCategory: "Pizza" },
-      { id: "Burgers",    label: "Burgers",     icon: "fast-food",       apiCategory: "Burgers" },
-      { id: "Sandwiches", label: "Sandwichs",   icon: "nutrition",       apiCategory: "Sandwiches" },
-      { id: "Moroccan",   label: "Marocain",    icon: "leaf",            apiCategory: "Moroccan" },
-      { id: "Chicken",    label: "Poulet",      icon: "restaurant",      apiCategory: "Chicken" },
-      { id: "Sushi",      label: "Sushi",       icon: "fish",            apiCategory: "Sushi" },
+      { id: "all",        label: "Tout",       icon: "grid" },
+      { id: "Pizza",      label: "Pizza",       icon: "pizza",        apiCategory: "Pizza" },
+      { id: "Burgers",    label: "Burgers",     icon: "fast-food",    apiCategory: "Burgers" },
+      { id: "Sandwiches", label: "Sandwichs",   icon: "nutrition",    apiCategory: "Sandwiches" },
+      { id: "Moroccan",   label: "Marocain",    icon: "leaf",         apiCategory: "Moroccan" },
+      { id: "Chicken",    label: "Poulet",      icon: "restaurant",   apiCategory: "Chicken" },
+      { id: "Sushi",      label: "Sushi",       icon: "fish",         apiCategory: "Sushi" },
     ],
   },
   epicerie: {
     label: "Épicerie",
     color: "#F97316",
-    image: require("../../assets/images/cat-epicerie-nb.png"),
+    bannerImage: require("../../assets/images/cat-epicerie.jpg"),
     businessType: "shop",
     subcategories: [
-      { id: "all",      label: "Tout",                icon: "grid-outline" },
+      { id: "all",      label: "Tout",                icon: "grid" },
       { id: "fruits",   label: "Fruits & Légumes",    icon: "leaf",      apiCategory: "Fruits & Légumes" },
       { id: "bakery",   label: "Boulangerie",         icon: "cafe",      apiCategory: "Boulangerie" },
       { id: "drinks",   label: "Boissons",            icon: "wine",      apiCategory: "Boissons" },
@@ -79,10 +78,10 @@ const SLUG_CONFIG: Record<string, SlugConfig> = {
   sante: {
     label: "Santé",
     color: "#8B5CF6",
-    image: require("../../assets/images/cat-sante-nb.png"),
+    bannerImage: require("../../assets/images/cat-sante.jpg"),
     businessType: "pharmacy",
     subcategories: [
-      { id: "all",         label: "Tout",          icon: "grid-outline" },
+      { id: "all",         label: "Tout",          icon: "grid" },
       { id: "pharmacy",    label: "Pharmacie",     icon: "medkit",   apiCategory: "Pharmacie" },
       { id: "parapharma",  label: "Parapharmacie", icon: "heart",    apiCategory: "Parapharmacie" },
       { id: "wellness",    label: "Bien-être",     icon: "fitness",  apiCategory: "Bien-être" },
@@ -93,10 +92,10 @@ const SLUG_CONFIG: Record<string, SlugConfig> = {
   supermarche: {
     label: "Supermarché",
     color: "#0AA5C0",
-    image: require("../../assets/images/cat-supermarche-nb.png"),
+    bannerImage: require("../../assets/images/cat-supermarche.jpg"),
     businessType: "shop",
     subcategories: [
-      { id: "all",       label: "Tout",              icon: "grid-outline" },
+      { id: "all",       label: "Tout",              icon: "grid" },
       { id: "food",      label: "Alimentation",      icon: "basket",   apiCategory: "Alimentation" },
       { id: "frozen",    label: "Surgelés",          icon: "snow",     apiCategory: "Surgelés" },
       { id: "hygiene",   label: "Hygiène & Beauté",  icon: "rose",     apiCategory: "Hygiène" },
@@ -107,10 +106,10 @@ const SLUG_CONFIG: Record<string, SlugConfig> = {
   boutiques: {
     label: "Boutiques",
     color: "#C2185B",
-    image: require("../../assets/images/cat-boutiques-nb.png"),
+    bannerImage: require("../../assets/images/cat-boutiques.jpg"),
     businessType: "shop",
     subcategories: [
-      { id: "all",         label: "Tout",          icon: "grid-outline" },
+      { id: "all",         label: "Tout",          icon: "grid" },
       { id: "fashion",     label: "Mode",          icon: "shirt",         apiCategory: "Mode" },
       { id: "cosmetics",   label: "Cosmétiques",   icon: "sparkles",      apiCategory: "Cosmétiques" },
       { id: "home",        label: "Maison & Déco", icon: "home",          apiCategory: "Maison" },
@@ -121,10 +120,10 @@ const SLUG_CONFIG: Record<string, SlugConfig> = {
   coursier: {
     label: "Coursier",
     color: "#3A7D1B",
-    image: require("../../assets/images/cat-coursier-nb.png"),
+    bannerImage: require("../../assets/images/cat-coursier.jpg"),
     businessType: "courier",
     subcategories: [
-      { id: "all",      label: "Tout",              icon: "grid-outline" },
+      { id: "all",      label: "Tout",              icon: "grid" },
       { id: "express",  label: "Livraison Express", icon: "flash",  apiCategory: "Express" },
       { id: "errands",  label: "Courses à faire",   icon: "list",   apiCategory: "Courses" },
       { id: "parcel",   label: "Envoi de Colis",    icon: "cube",   apiCategory: "Colis" },
@@ -134,10 +133,76 @@ const SLUG_CONFIG: Record<string, SlugConfig> = {
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
+function SubcatIcon({
+  sub,
+  active,
+  color,
+  onPress,
+}: {
+  sub: SubcatConfig;
+  active: boolean;
+  color: string;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.subcatItem,
+        pressed && { opacity: 0.85, transform: [{ scale: 0.96 }] },
+      ]}
+    >
+      <View
+        style={[
+          styles.subcatCircle,
+          { backgroundColor: active ? color : color + "1A", borderColor: active ? color : "transparent" },
+        ]}
+      >
+        <Ionicons name={sub.icon as any} size={26} color={active ? "#fff" : color} />
+      </View>
+      <Text
+        style={[
+          styles.subcatLabel,
+          active && { color: color, fontFamily: "Inter_700Bold" },
+        ]}
+        numberOfLines={1}
+      >
+        {sub.label}
+      </Text>
+    </Pressable>
+  );
+}
+
+function PromoBannerCard({
+  title,
+  subtitle,
+  bgColor,
+  badge,
+  onPress,
+}: {
+  title: string;
+  subtitle: string;
+  bgColor: string;
+  badge: string;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable onPress={onPress} style={({ pressed }) => [styles.promoCard, { backgroundColor: bgColor }, pressed && { opacity: 0.92 }]}>
+      <View style={styles.promoBadge}>
+        <Ionicons name="star" size={11} color="#fff" />
+        <Text style={styles.promoBadgeTxt}>{badge}</Text>
+      </View>
+      <Text style={styles.promoTitle} numberOfLines={1}>{title}</Text>
+      <Text style={styles.promoSubtitle} numberOfLines={2}>{subtitle}</Text>
+    </Pressable>
+  );
+}
+
 function RestaurantCardGrid({ restaurant, onPress, color }: { restaurant: Restaurant; onPress: () => void; color: string }) {
   const img = restaurant.imageUrl || FALLBACK_IMG;
   const rating = restaurant.rating ?? 4.5;
   const time = restaurant.deliveryTime ?? 25;
+  const fee = restaurant.deliveryFee ?? 10;
 
   return (
     <Pressable
@@ -147,27 +212,31 @@ function RestaurantCardGrid({ restaurant, onPress, color }: { restaurant: Restau
         pressed && { opacity: 0.9, transform: [{ scale: 0.97 }] },
       ]}
     >
-      <Image source={{ uri: img }} style={styles.gridCardImg} resizeMode="cover" />
-      {restaurant.isOpen === false && (
-        <View style={styles.closedBadge}>
-          <Text style={styles.closedText}>Fermé</Text>
-        </View>
-      )}
-      {restaurant.logoUrl ? (
-        <Image source={{ uri: restaurant.logoUrl }} style={styles.gridCardLogo} resizeMode="contain" />
-      ) : (
-        <View style={[styles.gridCardLogo, { backgroundColor: color, alignItems: "center", justifyContent: "center" }]}>
-          <Text style={styles.cardLogoLetter}>{restaurant.name.charAt(0).toUpperCase()}</Text>
-        </View>
-      )}
+      <View style={styles.gridImgWrap}>
+        <Image source={{ uri: img }} style={styles.gridCardImg} resizeMode="cover" />
+        {restaurant.isOpen === false && (
+          <View style={styles.closedBadge}>
+            <Text style={styles.closedText}>Fermé</Text>
+          </View>
+        )}
+        {restaurant.logoUrl ? (
+          <Image source={{ uri: restaurant.logoUrl }} style={styles.gridCardLogo} resizeMode="contain" />
+        ) : (
+          <View style={[styles.gridCardLogo, { backgroundColor: color, alignItems: "center", justifyContent: "center" }]}>
+            <Text style={styles.cardLogoLetter}>{restaurant.name.charAt(0).toUpperCase()}</Text>
+          </View>
+        )}
+      </View>
       <View style={styles.gridCardBody}>
         <Text style={styles.cardName} numberOfLines={1}>{restaurant.name}</Text>
         <View style={styles.cardMeta}>
-          <View style={styles.metaChip}>
-            <Ionicons name="star" size={10} color={color} />
-            <Text style={styles.metaTxt}>{rating.toFixed(1)}</Text>
-          </View>
+          <Ionicons name="star" size={12} color={STAR} />
+          <Text style={styles.metaTxtBold}>{rating.toFixed(1)}</Text>
+          <Text style={styles.metaDot}>·</Text>
+          <Ionicons name="time-outline" size={11} color={TEXT_MUTED} />
           <Text style={styles.metaTxt}>{time} min</Text>
+          <Text style={styles.metaDot}>·</Text>
+          <Text style={styles.metaTxt}>{fee} MAD</Text>
         </View>
       </View>
     </Pressable>
@@ -198,9 +267,9 @@ export default function CategoryScreen() {
   const config = SLUG_CONFIG[slug ?? ""] ?? {
     label: slug ?? "Catégorie",
     color: PINK,
-    image: null,
+    bannerImage: null,
     businessType: "restaurant",
-    subcategories: [{ id: "all", label: "Tout", icon: "grid-outline" }],
+    subcategories: [{ id: "all", label: "Tout", icon: "grid" }],
   };
 
   const activeSub = config.subcategories.find((s) => s.id === activeSubId) ?? config.subcategories[0];
@@ -221,92 +290,131 @@ export default function CategoryScreen() {
     );
   }, [restaurants, search]);
 
+  // VIP / promo partners — top-rated open ones
+  const vipPartners = useMemo(() => {
+    return (restaurants ?? [])
+      .filter((r) => r.isOpen !== false)
+      .sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0))
+      .slice(0, 5);
+  }, [restaurants]);
+
   const goRestaurant = (id: number) =>
     router.push({ pathname: "/restaurant/[id]", params: { id: String(id) } });
 
   return (
-    <View style={[styles.root, { paddingTop: insets.top }]}>
-      {/* ─── Header ─── */}
-      <View style={[styles.header, { backgroundColor: config.color }]}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} activeOpacity={0.8}>
-          <Ionicons name="arrow-back" size={22} color="#fff" />
-        </TouchableOpacity>
-        <View style={styles.headerCenter}>
-          {config.image && (
-            <Image source={config.image} style={styles.headerImg} resizeMode="contain" />
-          )}
-          <Text style={styles.headerTitle}>{config.label}</Text>
-        </View>
-        <View style={{ width: 40 }} />
-      </View>
-
-      {/* ─── Search bar ─── */}
-      <View style={styles.searchWrap}>
-        <Ionicons name="search" size={16} color={TEXT_MUTED} />
-        <TextInput
-          style={styles.searchInput}
-          placeholder={`Rechercher dans ${config.label}…`}
-          placeholderTextColor={TEXT_MUTED}
-          value={search}
-          onChangeText={setSearch}
-          returnKeyType="search"
-        />
-        {search.length > 0 && (
-          <TouchableOpacity onPress={() => setSearch("")} hitSlop={8}>
-            <Ionicons name="close-circle" size={16} color={TEXT_MUTED} />
-          </TouchableOpacity>
+    <View style={[styles.root]}>
+      {/* ─── Banner header with placeholder image at 80% opacity ─── */}
+      <View style={[styles.bannerWrap, { paddingTop: insets.top + 6 }]}>
+        {config.bannerImage && (
+          <Image source={config.bannerImage} style={styles.bannerImg} resizeMode="cover" />
         )}
+        <View style={styles.bannerOverlay} />
+        <View style={styles.bannerTopRow}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} activeOpacity={0.8}>
+            <Ionicons name="arrow-back" size={22} color={TEXT_DARK} />
+          </TouchableOpacity>
+          <View style={{ flex: 1 }} />
+        </View>
+        <View style={styles.bannerTitleWrap}>
+          <Text style={[styles.bannerTitle, { color: TEXT_DARK }]}>{config.label}</Text>
+          <Text style={[styles.bannerSub, { color: TEXT_DARK }]}>
+            Découvrez les meilleurs partenaires
+          </Text>
+        </View>
       </View>
 
-      {/* ─── Sub-category filter chips ─── */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={styles.chipsScroll}
-        contentContainerStyle={styles.chipsContent}
-      >
-        {config.subcategories.map((sub) => {
-          const active = sub.id === activeSubId;
-          return (
-            <TouchableOpacity
-              key={sub.id}
-              onPress={() => setActiveSubId(sub.id)}
-              style={[styles.chip, active && { backgroundColor: config.color, borderColor: config.color }]}
-              activeOpacity={0.8}
-            >
-              <Ionicons name={sub.icon as any} size={13} color={active ? "#fff" : TEXT_MUTED} style={{ marginRight: 4 }} />
-              <Text style={[styles.chipTxt, active && styles.chipTxtActive]}>{sub.label}</Text>
-            </TouchableOpacity>
-          );
-        })}
-      </ScrollView>
+      <FlatList
+        data={filtered}
+        keyExtractor={(r) => String(r.id)}
+        numColumns={2}
+        contentContainerStyle={[styles.grid, { paddingBottom: insets.bottom + 24 }]}
+        columnWrapperStyle={{ gap: 12 }}
+        showsVerticalScrollIndicator={false}
+        ListHeaderComponent={
+          <>
+            {/* ─── Search bar ─── */}
+            <View style={styles.searchWrap}>
+              <Ionicons name="search" size={16} color={TEXT_MUTED} />
+              <TextInput
+                style={styles.searchInput}
+                placeholder={`Rechercher dans ${config.label}…`}
+                placeholderTextColor={TEXT_MUTED}
+                value={search}
+                onChangeText={setSearch}
+                returnKeyType="search"
+              />
+              {search.length > 0 && (
+                <TouchableOpacity onPress={() => setSearch("")} hitSlop={8}>
+                  <Ionicons name="close-circle" size={16} color={TEXT_MUTED} />
+                </TouchableOpacity>
+              )}
+            </View>
 
-      {/* ─── Content ─── */}
-      {isLoading ? (
-        <View style={styles.loaderWrap}>
-          <ActivityIndicator size="large" color={config.color} />
-          <Text style={styles.loaderTxt}>Chargement…</Text>
-        </View>
-      ) : filtered.length === 0 ? (
-        <EmptyCategorySection color={config.color} label={config.label} />
-      ) : (
-        <FlatList
-          data={filtered}
-          keyExtractor={(r) => String(r.id)}
-          numColumns={2}
-          contentContainerStyle={styles.grid}
-          columnWrapperStyle={{ gap: 12 }}
-          showsVerticalScrollIndicator={false}
-          ListHeaderComponent={
-            <Text style={styles.resultsCount}>
-              {filtered.length} établissement{filtered.length > 1 ? "s" : ""}
-            </Text>
-          }
-          renderItem={({ item }) => (
-            <RestaurantCardGrid restaurant={item} onPress={() => goRestaurant(item.id)} color={config.color} />
-          )}
-        />
-      )}
+            {/* ─── Sub-categories as icon slider ─── */}
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={styles.subcatScroll}
+              contentContainerStyle={styles.subcatContent}
+            >
+              {config.subcategories.map((sub) => (
+                <SubcatIcon
+                  key={sub.id}
+                  sub={sub}
+                  active={sub.id === activeSubId}
+                  color={config.color}
+                  onPress={() => setActiveSubId(sub.id)}
+                />
+              ))}
+            </ScrollView>
+
+            {/* ─── VIP / Promo partners horizontal slider (Talabat style) ─── */}
+            {vipPartners.length > 0 && (
+              <View style={styles.vipSection}>
+                <View style={styles.vipHeader}>
+                  <Text style={styles.vipTitle}>Partenaires VIP & Promotions</Text>
+                </View>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.vipRow}
+                >
+                  {vipPartners.map((p, i) => (
+                    <PromoBannerCard
+                      key={p.id}
+                      title={p.name}
+                      subtitle={i % 2 === 0 ? "-20% sur votre première commande" : "Livraison gratuite aujourd'hui"}
+                      bgColor={i % 2 === 0 ? config.color : "#0A1B3D"}
+                      badge={i % 2 === 0 ? "VIP" : "PROMO"}
+                      onPress={() => goRestaurant(p.id)}
+                    />
+                  ))}
+                </ScrollView>
+              </View>
+            )}
+
+            {/* ─── Results count ─── */}
+            {!isLoading && filtered.length > 0 && (
+              <Text style={styles.resultsCount}>
+                {filtered.length} établissement{filtered.length > 1 ? "s" : ""}
+              </Text>
+            )}
+
+            {isLoading && (
+              <View style={styles.loaderWrap}>
+                <ActivityIndicator size="large" color={config.color} />
+                <Text style={styles.loaderTxt}>Chargement…</Text>
+              </View>
+            )}
+          </>
+        }
+        renderItem={({ item }) => (
+          <RestaurantCardGrid restaurant={item} onPress={() => goRestaurant(item.id)} color={config.color} />
+        )}
+        ListEmptyComponent={
+          !isLoading ? <EmptyCategorySection color={config.color} label={config.label} /> : null
+        }
+      />
     </View>
   );
 }
@@ -317,35 +425,59 @@ const SIDE = 16;
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: BG },
 
-  header: {
+  // ── Banner header ──
+  bannerWrap: {
+    width: "100%",
+    height: 160,
+    paddingHorizontal: SIDE,
+    paddingBottom: 16,
+    justifyContent: "space-between",
+    overflow: "hidden",
+    backgroundColor: "#FFF",
+  },
+  bannerImg: {
+    ...StyleSheet.absoluteFillObject,
+    width: "100%",
+    height: "100%",
+    opacity: 0.2, // image at 80% transparency (20% opacity)
+  },
+  bannerOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(255,255,255,0.4)",
+  },
+  bannerTopRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: SIDE,
-    paddingVertical: 14,
   },
   backBtn: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: "rgba(255,255,255,0.2)",
+    backgroundColor: "rgba(255,255,255,0.95)",
     alignItems: "center",
     justifyContent: "center",
+    shadowColor: "#000",
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
   },
-  headerCenter: { flexDirection: "row", alignItems: "center", gap: 8 },
-  headerImg: { width: 32, height: 32 },
-  headerTitle: { fontSize: 20, fontFamily: "Inter_700Bold", color: "#fff" },
+  bannerTitleWrap: { gap: 4 },
+  bannerTitle: { fontSize: 26, fontFamily: "Inter_900Black", letterSpacing: -0.5 },
+  bannerSub: { fontSize: 13, fontFamily: "Inter_500Medium", opacity: 0.75 },
 
+  // ── Search ──
   searchWrap: {
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: CARD_BG,
     marginHorizontal: SIDE,
-    marginTop: 12,
+    marginTop: 14,
     marginBottom: 4,
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
     gap: 8,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
@@ -361,50 +493,88 @@ const styles = StyleSheet.create({
     padding: 0,
   },
 
-  chipsScroll: { marginTop: 8, flexGrow: 0 },
-  chipsContent: { paddingHorizontal: SIDE, gap: 8, paddingVertical: 4 },
-  chip: {
+  // ── Sub-category icons slider ──
+  subcatScroll: { marginTop: 14, flexGrow: 0 },
+  subcatContent: { paddingHorizontal: SIDE, gap: 14, paddingVertical: 4 },
+  subcatItem: { alignItems: "center", gap: 6, width: 70 },
+  subcatCircle: {
+    width: 58,
+    height: 58,
+    borderRadius: 29,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 2,
+  },
+  subcatLabel: {
+    fontSize: 11,
+    fontFamily: "Inter_500Medium",
+    color: TEXT_DARK,
+    textAlign: "center",
+  },
+
+  // ── VIP / promo banners ──
+  vipSection: { marginTop: 18 },
+  vipHeader: {
+    paddingHorizontal: SIDE,
+    marginBottom: 10,
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderRadius: 999,
-    backgroundColor: CARD_BG,
-    borderWidth: 1.5,
-    borderColor: "#E5E7EB",
+    justifyContent: "space-between",
   },
-  chipTxt: { fontSize: 13, fontFamily: "Inter_500Medium", color: TEXT_DARK },
-  chipTxtActive: { color: "#fff" },
+  vipTitle: { fontSize: 16, fontFamily: "Inter_700Bold", color: TEXT_DARK, letterSpacing: -0.2 },
+  vipRow: { paddingHorizontal: SIDE, gap: 12, paddingVertical: 2 },
+  promoCard: {
+    width: SCREEN_W * 0.78,
+    height: 110,
+    borderRadius: 16,
+    padding: 16,
+    justifyContent: "flex-end",
+    overflow: "hidden",
+  },
+  promoBadge: {
+    position: "absolute",
+    top: 12,
+    right: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    backgroundColor: "rgba(255,255,255,0.22)",
+    borderRadius: 12,
+    paddingHorizontal: 9,
+    paddingVertical: 4,
+  },
+  promoBadgeTxt: { color: "#fff", fontSize: 10, fontFamily: "Inter_700Bold", letterSpacing: 0.4 },
+  promoTitle: { color: "#fff", fontSize: 17, fontFamily: "Inter_900Black", letterSpacing: -0.3 },
+  promoSubtitle: { color: "#fff", fontSize: 12, fontFamily: "Inter_500Medium", opacity: 0.95, marginTop: 2 },
 
-  loaderWrap: { flex: 1, alignItems: "center", justifyContent: "center", gap: 12 },
+  // ── Loader / empty ──
+  loaderWrap: { alignItems: "center", justifyContent: "center", paddingVertical: 40, gap: 12 },
   loaderTxt: { fontSize: 14, fontFamily: "Inter_400Regular", color: TEXT_MUTED },
-
   emptyWrap: {
-    flex: 1,
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 40,
+    paddingVertical: 60,
     gap: 14,
   },
-  emptyIcon: {
-    width: 88, height: 88, borderRadius: 24,
-    alignItems: "center", justifyContent: "center",
-  },
+  emptyIcon: { width: 88, height: 88, borderRadius: 24, alignItems: "center", justifyContent: "center" },
   emptyTitle: { fontSize: 17, fontFamily: "Inter_700Bold", color: TEXT_DARK, textAlign: "center" },
   emptySub: { fontSize: 13, fontFamily: "Inter_400Regular", color: TEXT_MUTED, textAlign: "center", lineHeight: 20 },
 
+  // ── Results & grid ──
   resultsCount: {
     fontSize: 13,
     fontFamily: "Inter_500Medium",
     color: TEXT_MUTED,
-    marginBottom: 8,
+    marginTop: 18,
+    marginBottom: 10,
+    paddingHorizontal: SIDE,
   },
-
-  grid: { padding: SIDE, paddingTop: 12, gap: 12 },
+  grid: { paddingHorizontal: SIDE, paddingTop: 0, gap: 12 },
   gridCard: {
     flex: 1,
     backgroundColor: CARD_BG,
-    borderRadius: 14,
+    borderRadius: 16,
     overflow: "hidden",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 3 },
@@ -412,17 +582,20 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 2,
     position: "relative",
+    marginBottom: 12,
   },
-  gridCardImg: { width: "100%", height: 110 },
+  gridImgWrap: { width: "100%", height: 110, position: "relative" },
+  gridCardImg: { width: "100%", height: "100%" },
   gridCardLogo: {
     position: "absolute",
     top: 6,
     right: 6,
-    width: 30,
-    height: 30,
-    borderRadius: 7,
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    backgroundColor: "#fff",
   },
-  gridCardBody: { padding: 8, gap: 3 },
+  gridCardBody: { padding: 10, gap: 4 },
   cardLogoLetter: { color: "#fff", fontFamily: "Inter_700Bold", fontSize: 14 },
   closedBadge: {
     position: "absolute",
@@ -434,8 +607,9 @@ const styles = StyleSheet.create({
     borderRadius: 5,
   },
   closedText: { color: "#fff", fontSize: 10, fontFamily: "Inter_600SemiBold" },
-  cardName: { fontSize: 14, fontFamily: "Inter_600SemiBold", color: TEXT_DARK },
-  cardMeta: { flexDirection: "row", gap: 8, alignItems: "center" },
-  metaChip: { flexDirection: "row", alignItems: "center", gap: 3 },
+  cardName: { fontSize: 14, fontFamily: "Inter_700Bold", color: TEXT_DARK },
+  cardMeta: { flexDirection: "row", alignItems: "center", gap: 4 },
   metaTxt: { fontSize: 11, fontFamily: "Inter_400Regular", color: TEXT_MUTED },
+  metaTxtBold: { fontSize: 11, fontFamily: "Inter_700Bold", color: TEXT_DARK },
+  metaDot: { fontSize: 11, color: TEXT_MUTED, marginHorizontal: 1 },
 });

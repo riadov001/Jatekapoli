@@ -33,7 +33,7 @@ export function LocationMapPicker({ latitude, longitude, onChange, height = 220 
   var center=[${lat},${lng}];
   var oujda=[${OUJDA_CENTER.latitude},${OUJDA_CENTER.longitude}];
   var map=L.map('m',{zoomControl:true,attributionControl:false}).setView(center,14);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19}).addTo(map);
+  L.tileLayer('https://mt{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}',{maxZoom:20,subdomains:['0','1','2','3']}).addTo(map);
   L.circle(oujda,{radius:${MAX_RADIUS_KM * 1000},color:'${PINK}',weight:1.5,fillColor:'${PINK}',fillOpacity:0.07}).addTo(map);
   var marker=L.marker(center,{draggable:true}).addTo(map);
   function send(latlng){

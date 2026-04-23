@@ -1,23 +1,92 @@
 import { Tabs } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import React from "react";
-import { Platform, StyleSheet, View, Text } from "react-native";
+import React, { useEffect, useRef } from "react";
+import { Platform, StyleSheet, View, Text, Animated, Easing } from "react-native";
+import { useListOrders } from "@workspace/api-client-react";
+import { useAuth } from "@/contexts/AuthContext";
 
 const PINK = "#E91E63";
 const INACTIVE = "#B5B5B5";
 const TAB_H = Platform.OS === "web" ? 84 : 72;
 
+const ACTIVE_STATUSES = new Set([
+  "pending",
+  "accepted",
+  "confirmed",
+  "preparing",
+  "ready",
+  "picked_up",
+  "in_transit",
+  "out_for_delivery",
+]);
+
+function useActiveOrdersCount(): number {
+  const { token, user } = useAuth();
+  const { data } = useListOrders(
+    {},
+    {
+      query: {
+        enabled: !!token && !!user,
+        refetchInterval: 15000,
+      },
+    } as any,
+  );
+  if (!data) return 0;
+  return (data as any[]).filter((o) => ACTIVE_STATUSES.has(String(o.status))).length;
+}
+
 function JatekTabIcon({ focused }: { focused: boolean }) {
   return (
     <View style={s.jWrap}>
-      <Text style={[s.jWordmark, { color: focused ? PINK : INACTIVE }]}>
-        Jatek
-      </Text>
+      <Text style={[s.jLetter, { color: focused ? PINK : INACTIVE }]}>J</Text>
     </View>
   );
 }
 
+function OrdersTabIcon({ focused, count }: { focused: boolean; count: number }) {
+  const pulse = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    if (count > 0) {
+      const loop = Animated.loop(
+        Animated.sequence([
+          Animated.timing(pulse, {
+            toValue: 1.15,
+            duration: 600,
+            easing: Easing.inOut(Easing.ease),
+            useNativeDriver: true,
+          }),
+          Animated.timing(pulse, {
+            toValue: 1,
+            duration: 600,
+            easing: Easing.inOut(Easing.ease),
+            useNativeDriver: true,
+          }),
+        ]),
+      );
+      loop.start();
+      return () => loop.stop();
+    } else {
+      pulse.setValue(1);
+    }
+  }, [count, pulse]);
+
+  const color = focused ? PINK : INACTIVE;
+  return (
+    <Animated.View style={[s.iconWrap, { transform: [{ scale: pulse }] }]}>
+      <Ionicons name="bag-handle" size={26} color={color} />
+      {count > 0 && (
+        <View style={s.badge}>
+          <Text style={s.badgeTxt}>{count > 9 ? "9+" : count}</Text>
+        </View>
+      )}
+    </Animated.View>
+  );
+}
+
 export default function TabLayout() {
+  const ordersCount = useActiveOrdersCount();
+
   return (
     <Tabs
       screenOptions={{
@@ -26,7 +95,7 @@ export default function TabLayout() {
         headerShown: false,
         tabBarShowLabel: true,
         tabBarLabelStyle: {
-          fontFamily: "Inter_500Medium",
+          fontFamily: "Inter_600SemiBold",
           fontSize: 11,
           marginTop: 2,
         },
@@ -42,57 +111,72 @@ export default function TabLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: "",
-          tabBarLabel: () => null,
+          title: "Accueil",
           tabBarIcon: ({ focused }) => <JatekTabIcon focused={focused} />,
-        }}
-      />
-      <Tabs.Screen
-        name="restaurants"
-        options={{
-          title: "Restaurants",
-          tabBarIcon: ({ color }) => (
-            <Ionicons name="fast-food-outline" size={24} color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="favoris"
-        options={{
-          title: "Favoris",
-          tabBarIcon: ({ color }) => (
-            <Ionicons name="heart-outline" size={24} color={color} />
-          ),
         }}
       />
       <Tabs.Screen
         name="orders"
         options={{
           title: "Commandes",
-          tabBarIcon: ({ color }) => (
-            <Ionicons name="bag-outline" size={24} color={color} />
-          ),
+          tabBarIcon: ({ focused }) => <OrdersTabIcon focused={focused} count={ordersCount} />,
+        }}
+      />
+      <Tabs.Screen
+        name="profile"
+        options={{
+          title: "Profil",
+          tabBarIcon: ({ color }) => <Ionicons name="person-circle-outline" size={26} color={color} />,
         }}
       />
       {/* Hidden screens — kept for navigation but excluded from the tab bar */}
+      <Tabs.Screen name="restaurants" options={{ href: null }} />
+      <Tabs.Screen name="favoris" options={{ href: null }} />
       <Tabs.Screen name="deliver" options={{ href: null }} />
       <Tabs.Screen name="manage" options={{ href: null }} />
-      <Tabs.Screen name="profile" options={{ href: null }} />
     </Tabs>
   );
 }
 
 const s = StyleSheet.create({
   jWrap: {
-    height: 26,
+    width: 30,
+    height: 30,
+    borderRadius: 8,
     justifyContent: "center",
     alignItems: "center",
   },
-  jWordmark: {
+  jLetter: {
     fontFamily: "Inter_900Black",
-    fontSize: 18,
+    fontSize: 24,
     fontStyle: "italic",
-    letterSpacing: -0.5,
-    lineHeight: 22,
+    letterSpacing: -1,
+    lineHeight: 28,
+  },
+  iconWrap: {
+    width: 36,
+    height: 30,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  badge: {
+    position: "absolute",
+    top: -4,
+    right: -2,
+    minWidth: 18,
+    height: 18,
+    paddingHorizontal: 4,
+    borderRadius: 9,
+    backgroundColor: PINK,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1.5,
+    borderColor: "#fff",
+  },
+  badgeTxt: {
+    color: "#fff",
+    fontSize: 10,
+    fontFamily: "Inter_700Bold",
+    lineHeight: 12,
   },
 });
