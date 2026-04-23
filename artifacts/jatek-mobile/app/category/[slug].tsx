@@ -27,12 +27,12 @@ const FALLBACK_IMG =
   "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=600&q=80&auto=format&fit=crop";
 
 const { width: SCREEN_W } = Dimensions.get("window");
-const CARD_W = SCREEN_W * 0.56;
 
 // ─── Sub-category config per slug ─────────────────────────────────────────────
 type SubcatConfig = {
   id: string;
   label: string;
+  /** Filter restaurants by `category` field on the menu/business */
   apiCategory?: string;
   icon: string;
 };
@@ -41,6 +41,8 @@ type SlugConfig = {
   label: string;
   color: string;
   image: any;
+  /** Backend `businessType` for the API filter */
+  businessType: string;
   subcategories: SubcatConfig[];
 };
 
@@ -49,6 +51,7 @@ const SLUG_CONFIG: Record<string, SlugConfig> = {
     label: "Restauration",
     color: "#E91E63",
     image: require("../../assets/images/cat-restauration-nb.png"),
+    businessType: "restaurant",
     subcategories: [
       { id: "all",        label: "Tout",       icon: "grid-outline" },
       { id: "Pizza",      label: "Pizza",       icon: "pizza",           apiCategory: "Pizza" },
@@ -63,121 +66,75 @@ const SLUG_CONFIG: Record<string, SlugConfig> = {
     label: "Épicerie",
     color: "#F97316",
     image: require("../../assets/images/cat-epicerie-nb.png"),
+    businessType: "shop",
     subcategories: [
       { id: "all",      label: "Tout",                icon: "grid-outline" },
-      { id: "fruits",   label: "Fruits & Légumes",    icon: "leaf" },
-      { id: "bakery",   label: "Boulangerie",          icon: "cafe" },
-      { id: "drinks",   label: "Boissons",             icon: "wine" },
-      { id: "dairy",    label: "Produits Laitiers",    icon: "nutrition" },
-      { id: "spices",   label: "Épices & Condiments",  icon: "flask" },
+      { id: "fruits",   label: "Fruits & Légumes",    icon: "leaf",      apiCategory: "Fruits & Légumes" },
+      { id: "bakery",   label: "Boulangerie",         icon: "cafe",      apiCategory: "Boulangerie" },
+      { id: "drinks",   label: "Boissons",            icon: "wine",      apiCategory: "Boissons" },
+      { id: "dairy",    label: "Produits Laitiers",   icon: "nutrition", apiCategory: "Laitiers" },
+      { id: "spices",   label: "Épices & Condiments", icon: "flask",     apiCategory: "Épices" },
     ],
   },
   sante: {
     label: "Santé",
     color: "#8B5CF6",
     image: require("../../assets/images/cat-sante-nb.png"),
+    businessType: "pharmacy",
     subcategories: [
-      { id: "all",         label: "Tout",               icon: "grid-outline" },
-      { id: "pharmacy",    label: "Pharmacie",           icon: "medkit" },
-      { id: "parapharma",  label: "Parapharmacie",       icon: "heart" },
-      { id: "wellness",    label: "Bien-être",           icon: "fitness" },
-      { id: "optics",      label: "Optique",             icon: "eye" },
-      { id: "supplements", label: "Compléments",         icon: "flask" },
+      { id: "all",         label: "Tout",          icon: "grid-outline" },
+      { id: "pharmacy",    label: "Pharmacie",     icon: "medkit",   apiCategory: "Pharmacie" },
+      { id: "parapharma",  label: "Parapharmacie", icon: "heart",    apiCategory: "Parapharmacie" },
+      { id: "wellness",    label: "Bien-être",     icon: "fitness",  apiCategory: "Bien-être" },
+      { id: "optics",      label: "Optique",       icon: "eye",      apiCategory: "Optique" },
+      { id: "supplements", label: "Compléments",   icon: "flask",    apiCategory: "Compléments" },
     ],
   },
   supermarche: {
     label: "Supermarché",
     color: "#0AA5C0",
     image: require("../../assets/images/cat-supermarche-nb.png"),
+    businessType: "shop",
     subcategories: [
-      { id: "all",       label: "Tout",            icon: "grid-outline" },
-      { id: "food",      label: "Alimentation",    icon: "basket" },
-      { id: "frozen",    label: "Surgelés",        icon: "snow" },
-      { id: "hygiene",   label: "Hygiène & Beauté", icon: "rose" },
-      { id: "cleaning",  label: "Produits Ménagers", icon: "sparkles" },
-      { id: "beverages", label: "Boissons",        icon: "wine" },
+      { id: "all",       label: "Tout",              icon: "grid-outline" },
+      { id: "food",      label: "Alimentation",      icon: "basket",   apiCategory: "Alimentation" },
+      { id: "frozen",    label: "Surgelés",          icon: "snow",     apiCategory: "Surgelés" },
+      { id: "hygiene",   label: "Hygiène & Beauté",  icon: "rose",     apiCategory: "Hygiène" },
+      { id: "cleaning",  label: "Produits Ménagers", icon: "sparkles", apiCategory: "Ménagers" },
+      { id: "beverages", label: "Boissons",          icon: "wine",     apiCategory: "Boissons" },
     ],
   },
   boutiques: {
     label: "Boutiques",
     color: "#C2185B",
     image: require("../../assets/images/cat-boutiques-nb.png"),
+    businessType: "shop",
     subcategories: [
       { id: "all",         label: "Tout",          icon: "grid-outline" },
-      { id: "fashion",     label: "Mode",          icon: "shirt" },
-      { id: "cosmetics",   label: "Cosmétiques",   icon: "sparkles" },
-      { id: "home",        label: "Maison & Déco", icon: "home" },
-      { id: "gifts",       label: "Cadeaux",       icon: "gift" },
-      { id: "electronics", label: "Électronique",  icon: "hardware-chip" },
+      { id: "fashion",     label: "Mode",          icon: "shirt",         apiCategory: "Mode" },
+      { id: "cosmetics",   label: "Cosmétiques",   icon: "sparkles",      apiCategory: "Cosmétiques" },
+      { id: "home",        label: "Maison & Déco", icon: "home",          apiCategory: "Maison" },
+      { id: "gifts",       label: "Cadeaux",       icon: "gift",          apiCategory: "Cadeaux" },
+      { id: "electronics", label: "Électronique",  icon: "hardware-chip", apiCategory: "Électronique" },
     ],
   },
   coursier: {
     label: "Coursier",
     color: "#3A7D1B",
     image: require("../../assets/images/cat-coursier-nb.png"),
+    businessType: "courier",
     subcategories: [
-      { id: "all",      label: "Tout",               icon: "grid-outline" },
-      { id: "express",  label: "Livraison Express",  icon: "flash" },
-      { id: "errands",  label: "Courses à faire",    icon: "list" },
-      { id: "parcel",   label: "Envoi de Colis",     icon: "cube" },
+      { id: "all",      label: "Tout",              icon: "grid-outline" },
+      { id: "express",  label: "Livraison Express", icon: "flash",  apiCategory: "Express" },
+      { id: "errands",  label: "Courses à faire",   icon: "list",   apiCategory: "Courses" },
+      { id: "parcel",   label: "Envoi de Colis",    icon: "cube",   apiCategory: "Colis" },
     ],
   },
 };
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
-function RestaurantCard({ restaurant, onPress, width }: { restaurant: Restaurant; onPress: () => void; width?: number }) {
-  const img = restaurant.imageUrl || FALLBACK_IMG;
-  const rating = restaurant.rating ?? 4.5;
-  const time = restaurant.deliveryTime ?? 25;
-  const fee = restaurant.deliveryFee ?? 10;
-
-  return (
-    <Pressable
-      onPress={onPress}
-      style={({ pressed }) => [
-        styles.card,
-        width ? { width } : undefined,
-        pressed && { opacity: 0.9, transform: [{ scale: 0.97 }] },
-      ]}
-    >
-      <View style={styles.cardImgWrap}>
-        <Image source={{ uri: img }} style={styles.cardImg} resizeMode="cover" />
-        {restaurant.isOpen === false && (
-          <View style={styles.closedBadge}>
-            <Text style={styles.closedText}>Fermé</Text>
-          </View>
-        )}
-        {restaurant.logoUrl ? (
-          <Image source={{ uri: restaurant.logoUrl }} style={styles.cardLogo} resizeMode="contain" />
-        ) : (
-          <View style={[styles.cardLogo, styles.cardLogoFallback]}>
-            <Text style={styles.cardLogoLetter}>{restaurant.name.charAt(0).toUpperCase()}</Text>
-          </View>
-        )}
-      </View>
-      <View style={styles.cardBody}>
-        <Text style={styles.cardName} numberOfLines={1}>{restaurant.name}</Text>
-        <View style={styles.cardMeta}>
-          <View style={styles.metaChip}>
-            <Ionicons name="star" size={10} color={PINK} />
-            <Text style={styles.metaTxt}>{rating.toFixed(1)}</Text>
-          </View>
-          <View style={styles.metaChip}>
-            <Ionicons name="time-outline" size={10} color={TEXT_MUTED} />
-            <Text style={styles.metaTxt}>{time}-{time + 10} min</Text>
-          </View>
-          <View style={styles.metaChip}>
-            <Ionicons name="bicycle-outline" size={10} color={TEXT_MUTED} />
-            <Text style={styles.metaTxt}>{fee === 0 ? "Gratuit" : `${fee} MAD`}</Text>
-          </View>
-        </View>
-      </View>
-    </Pressable>
-  );
-}
-
-function RestaurantCardGrid({ restaurant, onPress }: { restaurant: Restaurant; onPress: () => void }) {
+function RestaurantCardGrid({ restaurant, onPress, color }: { restaurant: Restaurant; onPress: () => void; color: string }) {
   const img = restaurant.imageUrl || FALLBACK_IMG;
   const rating = restaurant.rating ?? 4.5;
   const time = restaurant.deliveryTime ?? 25;
@@ -199,7 +156,7 @@ function RestaurantCardGrid({ restaurant, onPress }: { restaurant: Restaurant; o
       {restaurant.logoUrl ? (
         <Image source={{ uri: restaurant.logoUrl }} style={styles.gridCardLogo} resizeMode="contain" />
       ) : (
-        <View style={[styles.gridCardLogo, styles.cardLogoFallback]}>
+        <View style={[styles.gridCardLogo, { backgroundColor: color, alignItems: "center", justifyContent: "center" }]}>
           <Text style={styles.cardLogoLetter}>{restaurant.name.charAt(0).toUpperCase()}</Text>
         </View>
       )}
@@ -207,7 +164,7 @@ function RestaurantCardGrid({ restaurant, onPress }: { restaurant: Restaurant; o
         <Text style={styles.cardName} numberOfLines={1}>{restaurant.name}</Text>
         <View style={styles.cardMeta}>
           <View style={styles.metaChip}>
-            <Ionicons name="star" size={10} color={PINK} />
+            <Ionicons name="star" size={10} color={color} />
             <Text style={styles.metaTxt}>{rating.toFixed(1)}</Text>
           </View>
           <Text style={styles.metaTxt}>{time} min</Text>
@@ -217,14 +174,16 @@ function RestaurantCardGrid({ restaurant, onPress }: { restaurant: Restaurant; o
   );
 }
 
-function ComingSoonSection({ sub, color }: { sub: SubcatConfig; color: string }) {
+function EmptyCategorySection({ color, label }: { color: string; label: string }) {
   return (
-    <View style={styles.comingSoonBox}>
-      <View style={[styles.comingSoonIcon, { backgroundColor: color + "22" }]}>
-        <Ionicons name={sub.icon as any} size={36} color={color} />
+    <View style={styles.emptyWrap}>
+      <View style={[styles.emptyIcon, { backgroundColor: color + "1A" }]}>
+        <Ionicons name="storefront-outline" size={42} color={color} />
       </View>
-      <Text style={styles.comingSoonTitle}>{sub.label}</Text>
-      <Text style={styles.comingSoonSub}>Bientôt disponible</Text>
+      <Text style={styles.emptyTitle}>Aucun établissement disponible</Text>
+      <Text style={styles.emptySub}>
+        Les commerces de la catégorie {label} seront bientôt disponibles dans votre zone.
+      </Text>
     </View>
   );
 }
@@ -240,37 +199,34 @@ export default function CategoryScreen() {
     label: slug ?? "Catégorie",
     color: PINK,
     image: null,
+    businessType: "restaurant",
     subcategories: [{ id: "all", label: "Tout", icon: "grid-outline" }],
   };
 
   const activeSub = config.subcategories.find((s) => s.id === activeSubId) ?? config.subcategories[0];
-
   const apiCategory = activeSub.id === "all" ? undefined : activeSub.apiCategory;
-  const hasApiCategory = slug === "restauration";
 
-  const { data: restaurants, isLoading } = useListRestaurants(
-    hasApiCategory
-      ? { category: apiCategory, search: search.trim() || undefined }
-      : undefined,
-    { query: { enabled: hasApiCategory } }
-  );
+  const { data: restaurants, isLoading } = useListRestaurants({
+    businessType: config.businessType,
+    category: apiCategory,
+    search: search.trim() || undefined,
+  });
 
   const filtered = useMemo(() => {
     if (!restaurants) return [];
     if (!search.trim()) return restaurants;
     const q = search.toLowerCase();
-    return restaurants.filter((r) => r.name.toLowerCase().includes(q) || (r.category ?? "").toLowerCase().includes(q));
+    return restaurants.filter((r: Restaurant) =>
+      r.name.toLowerCase().includes(q) || (r.category ?? "").toLowerCase().includes(q),
+    );
   }, [restaurants, search]);
 
   const goRestaurant = (id: number) =>
     router.push({ pathname: "/restaurant/[id]", params: { id: String(id) } });
 
-  const showComingSoon = !hasApiCategory && activeSub.id !== "all";
-  const showAllComingSoon = !hasApiCategory && activeSub.id === "all";
-
   return (
     <View style={[styles.root, { paddingTop: insets.top }]}>
-      {/* ─── Pink Header ─── */}
+      {/* ─── Header ─── */}
       <View style={[styles.header, { backgroundColor: config.color }]}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} activeOpacity={0.8}>
           <Ionicons name="arrow-back" size={22} color="#fff" />
@@ -326,43 +282,13 @@ export default function CategoryScreen() {
       </ScrollView>
 
       {/* ─── Content ─── */}
-      {isLoading && hasApiCategory ? (
+      {isLoading ? (
         <View style={styles.loaderWrap}>
           <ActivityIndicator size="large" color={config.color} />
           <Text style={styles.loaderTxt}>Chargement…</Text>
         </View>
-      ) : showComingSoon ? (
-        <View style={{ flex: 1 }}>
-          <ComingSoonSection sub={activeSub} color={config.color} />
-        </View>
-      ) : showAllComingSoon ? (
-        /* All sub-categories grid for non-restauration categories */
-        <ScrollView
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.subCatGrid}
-        >
-          {config.subcategories.filter((s) => s.id !== "all").map((sub) => (
-            <Pressable
-              key={sub.id}
-              onPress={() => setActiveSubId(sub.id)}
-              style={({ pressed }) => [styles.subCatBox, pressed && { opacity: 0.85 }]}
-            >
-              <View style={[styles.subCatIcon, { backgroundColor: config.color + "22" }]}>
-                <Ionicons name={sub.icon as any} size={30} color={config.color} />
-              </View>
-              <Text style={styles.subCatLabel}>{sub.label}</Text>
-              <Text style={styles.subCatSoon}>Bientôt</Text>
-            </Pressable>
-          ))}
-        </ScrollView>
-      ) : filtered.length === 0 && !isLoading ? (
-        <View style={styles.emptyWrap}>
-          <Ionicons name="storefront-outline" size={56} color="#E0E0E0" />
-          <Text style={styles.emptyTitle}>Aucun établissement trouvé</Text>
-          <Text style={styles.emptySub}>
-            Essayez une autre sous-catégorie ou modifiez votre recherche.
-          </Text>
-        </View>
+      ) : filtered.length === 0 ? (
+        <EmptyCategorySection color={config.color} label={config.label} />
       ) : (
         <FlatList
           data={filtered}
@@ -372,12 +298,12 @@ export default function CategoryScreen() {
           columnWrapperStyle={{ gap: 12 }}
           showsVerticalScrollIndicator={false}
           ListHeaderComponent={
-            filtered.length > 0 ? (
-              <Text style={styles.resultsCount}>{filtered.length} établissement{filtered.length > 1 ? "s" : ""}</Text>
-            ) : null
+            <Text style={styles.resultsCount}>
+              {filtered.length} établissement{filtered.length > 1 ? "s" : ""}
+            </Text>
           }
           renderItem={({ item }) => (
-            <RestaurantCardGrid restaurant={item} onPress={() => goRestaurant(item.id)} />
+            <RestaurantCardGrid restaurant={item} onPress={() => goRestaurant(item.id)} color={config.color} />
           )}
         />
       )}
@@ -408,11 +334,7 @@ const styles = StyleSheet.create({
   },
   headerCenter: { flexDirection: "row", alignItems: "center", gap: 8 },
   headerImg: { width: 32, height: 32 },
-  headerTitle: {
-    fontSize: 20,
-    fontFamily: "Inter_700Bold",
-    color: "#fff",
-  },
+  headerTitle: { fontSize: 20, fontFamily: "Inter_700Bold", color: "#fff" },
 
   searchWrap: {
     flexDirection: "row",
@@ -439,7 +361,7 @@ const styles = StyleSheet.create({
     padding: 0,
   },
 
-  chipsScroll: { marginTop: 8 },
+  chipsScroll: { marginTop: 8, flexGrow: 0 },
   chipsContent: { paddingHorizontal: SIDE, gap: 8, paddingVertical: 4 },
   chip: {
     flexDirection: "row",
@@ -462,10 +384,13 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 40,
-    paddingTop: 60,
-    gap: 12,
+    gap: 14,
   },
-  emptyTitle: { fontSize: 17, fontFamily: "Inter_600SemiBold", color: TEXT_DARK, textAlign: "center" },
+  emptyIcon: {
+    width: 88, height: 88, borderRadius: 24,
+    alignItems: "center", justifyContent: "center",
+  },
+  emptyTitle: { fontSize: 17, fontFamily: "Inter_700Bold", color: TEXT_DARK, textAlign: "center" },
   emptySub: { fontSize: 13, fontFamily: "Inter_400Regular", color: TEXT_MUTED, textAlign: "center", lineHeight: 20 },
 
   resultsCount: {
@@ -498,109 +423,19 @@ const styles = StyleSheet.create({
     borderRadius: 7,
   },
   gridCardBody: { padding: 8, gap: 3 },
-
-  card: {
-    backgroundColor: CARD_BG,
-    borderRadius: 14,
-    overflow: "hidden",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.07,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  cardImgWrap: { width: "100%", height: 120, position: "relative" },
-  cardImg: { width: "100%", height: "100%" },
-  cardLogo: {
-    position: "absolute",
-    top: 8,
-    right: 8,
-    width: 36,
-    height: 36,
-    borderRadius: 8,
-    backgroundColor: "transparent",
-  },
-  cardLogoFallback: { backgroundColor: PINK, alignItems: "center", justifyContent: "center" },
   cardLogoLetter: { color: "#fff", fontFamily: "Inter_700Bold", fontSize: 14 },
   closedBadge: {
     position: "absolute",
-    bottom: 6,
-    right: 6,
+    top: 6,
+    left: 6,
     backgroundColor: "rgba(0,0,0,0.6)",
     paddingHorizontal: 7,
     paddingVertical: 3,
     borderRadius: 5,
   },
   closedText: { color: "#fff", fontSize: 10, fontFamily: "Inter_600SemiBold" },
-  cardBody: { padding: 10, gap: 4 },
   cardName: { fontSize: 14, fontFamily: "Inter_600SemiBold", color: TEXT_DARK },
-  cardMeta: { flexDirection: "row", gap: 8, flexWrap: "wrap", alignItems: "center" },
+  cardMeta: { flexDirection: "row", gap: 8, alignItems: "center" },
   metaChip: { flexDirection: "row", alignItems: "center", gap: 3 },
   metaTxt: { fontSize: 11, fontFamily: "Inter_400Regular", color: TEXT_MUTED },
-
-  subCatGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    padding: SIDE,
-    gap: 12,
-    paddingTop: 20,
-  },
-  subCatBox: {
-    width: (SCREEN_W - SIDE * 2 - 12 * 2) / 3,
-    alignItems: "center",
-    gap: 8,
-    backgroundColor: CARD_BG,
-    borderRadius: 16,
-    paddingVertical: 18,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 6,
-    elevation: 1,
-  },
-  subCatIcon: {
-    width: 60,
-    height: 60,
-    borderRadius: 16,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  subCatLabel: {
-    fontSize: 12,
-    fontFamily: "Inter_600SemiBold",
-    color: TEXT_DARK,
-    textAlign: "center",
-  },
-  subCatSoon: {
-    fontSize: 10,
-    fontFamily: "Inter_400Regular",
-    color: TEXT_MUTED,
-  },
-
-  comingSoonBox: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 16,
-    paddingHorizontal: 40,
-  },
-  comingSoonIcon: {
-    width: 100,
-    height: 100,
-    borderRadius: 28,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  comingSoonTitle: {
-    fontSize: 20,
-    fontFamily: "Inter_700Bold",
-    color: TEXT_DARK,
-    textAlign: "center",
-  },
-  comingSoonSub: {
-    fontSize: 14,
-    fontFamily: "Inter_400Regular",
-    color: TEXT_MUTED,
-    textAlign: "center",
-  },
 });

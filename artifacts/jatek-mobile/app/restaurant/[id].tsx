@@ -1,7 +1,7 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, useMemo } from "react";
 import {
   StyleSheet, Text, View, FlatList, TouchableOpacity,
-  Image, ActivityIndicator, Platform, ScrollView, Animated, Pressable,
+  Image, ActivityIndicator, Platform, ScrollView, Animated, Pressable, Dimensions,
 } from "react-native";
 import * as Haptics from "expo-haptics";
 import { router, useLocalSearchParams } from "expo-router";
@@ -10,11 +10,17 @@ import { useGetRestaurant, useListMenuItems } from "@workspace/api-client-react"
 import { useColors } from "@/hooks/useColors";
 import { useCart } from "@/contexts/CartContext";
 import { useAuth } from "@/contexts/AuthContext";
-import { MenuItemCard } from "@/components/MenuItemCard";
+import { MenuItemGridCard } from "@/components/MenuItemGridCard";
 import { MenuItemDetailModal } from "@/components/MenuItemDetailModal";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { listFavorites, addFavorite, removeFavorite } from "@/lib/api";
 import { useT } from "@/contexts/LanguageContext";
+
+const { width: SCREEN_W } = Dimensions.get("window");
+const SIDE = 16;
+const COL_GAP = 12;
+const COL_W = (SCREEN_W - SIDE * 2 - COL_GAP) / 2;
+const HERO_H = 240;
 
 export default function RestaurantScreen() {
   const colors = useColors();
@@ -46,10 +52,16 @@ export default function RestaurantScreen() {
   const { data: restaurant, isLoading: rLoading } = useGetRestaurant(restaurantId);
   const { data: menuItems, isLoading: mLoading } = useListMenuItems(restaurantId);
 
-  const categories = ["Tous", ...Array.from(new Set((menuItems ?? []).map((m) => m.category).filter(Boolean)))];
-  const filtered = activeCategory === "Tous"
-    ? (menuItems ?? [])
-    : (menuItems ?? []).filter((m) => m.category === activeCategory);
+  const categories = useMemo(
+    () => ["Tous", ...Array.from(new Set((menuItems ?? []).map((m: any) => m.category).filter(Boolean) as string[]))],
+    [menuItems]
+  );
+  const filtered = useMemo(
+    () => activeCategory === "Tous"
+      ? (menuItems ?? [])
+      : (menuItems ?? []).filter((m: any) => m.category === activeCategory),
+    [menuItems, activeCategory]
+  );
 
   const getQty = (itemId: number) => cartItems.find((i) => i.menuItemId === itemId)?.quantity ?? 0;
   const businessType = (restaurant as any)?.businessType ?? "restaurant";
@@ -62,7 +74,6 @@ export default function RestaurantScreen() {
       </View>
     );
   }
-
   if (!restaurant) {
     return (
       <View style={[styles.flex, styles.center, { backgroundColor: colors.background }]}>
@@ -71,138 +82,214 @@ export default function RestaurantScreen() {
     );
   }
 
+  const heroUri = restaurant.coverImageUrl || restaurant.imageUrl;
+  const isOpen = (restaurant as { isOpen?: boolean | null }).isOpen !== false;
+  const openingHoursText = (restaurant as any).openingHours || "9h00 - 23h00";
+
+  const Header = (
+    <View>
+      {/* ─── Hero image ─── */}
+      <View style={styles.heroWrap}>
+        {heroUri ? (
+          <Image source={{ uri: heroUri }} style={styles.hero} resizeMode="cover" />
+        ) : (
+          <View style={[styles.hero, styles.heroPlaceholder, { backgroundColor: colors.muted }]}>
+            <Ionicons name="restaurant" size={48} color={colors.mutedForeground} />
+          </View>
+        )}
+
+        {/* Floating round controls */}
+        <View style={[styles.heroTop, { top: insets.top + 8 }]}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.roundBtn} activeOpacity={0.85}>
+            <Ionicons name="arrow-back" size={20} color={colors.foreground} />
+          </TouchableOpacity>
+          <View style={styles.heroTopRight}>
+            <TouchableOpacity onPress={toggleFav} style={styles.roundBtn} activeOpacity={0.85}>
+              <Ionicons name={isFav ? "heart" : "heart-outline"} size={20} color={isFav ? colors.primary : colors.foreground} />
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.roundBtn} activeOpacity={0.85}>
+              <Ionicons name="share-outline" size={20} color={colors.foreground} />
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.roundBtn} activeOpacity={0.85}>
+              <Ionicons name="search" size={20} color={colors.foreground} />
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+
+      {/* ─── Overlapping info card ─── */}
+      <View style={styles.cardOuter}>
+        <View style={[styles.infoCard, { backgroundColor: colors.card }]}>
+          <View style={styles.infoTopRow}>
+            <View style={[styles.logoBox, { backgroundColor: "#fff" }]}>
+              {restaurant.logoUrl ? (
+                <Image source={{ uri: restaurant.logoUrl }} style={styles.logoImg} resizeMode="contain" />
+              ) : (
+                <Text style={[styles.logoLetter, { color: colors.primary }]}>
+                  {restaurant.name.charAt(0).toUpperCase()}
+                </Text>
+              )}
+            </View>
+            <View style={styles.infoTextWrap}>
+              <Text style={[styles.rName, { color: colors.foreground }]} numberOfLines={1}>{restaurant.name}</Text>
+              {restaurant.category ? (
+                <Text style={[styles.rTags, { color: colors.mutedForeground }]} numberOfLines={1}>
+                  {restaurant.category}
+                </Text>
+              ) : null}
+              <View style={styles.ratingRow}>
+                <Ionicons name="star" size={13} color={colors.yellow} />
+                <Text style={[styles.ratingTxt, { color: colors.foreground }]}>
+                  {restaurant.rating != null ? restaurant.rating.toFixed(1) : "—"}
+                </Text>
+                {(restaurant as any).reviewCount != null && (
+                  <Text style={[styles.ratingCount, { color: colors.mutedForeground }]}>
+                    ({(restaurant as any).reviewCount}+)
+                  </Text>
+                )}
+              </View>
+            </View>
+            <Ionicons name="chevron-forward" size={22} color={colors.mutedForeground} />
+          </View>
+
+          {restaurant.description ? (
+            <Text style={[styles.rDesc, { color: colors.mutedForeground }]} numberOfLines={2}>
+              {restaurant.description}
+            </Text>
+          ) : null}
+
+          <View style={[styles.divider, { backgroundColor: colors.border }]} />
+
+          <View style={styles.metaRow}>
+            <View style={styles.metaItem}>
+              <Ionicons name="time-outline" size={15} color={colors.mutedForeground} />
+              <Text style={[styles.metaText, { color: colors.foreground }]}>
+                {restaurant.deliveryTime != null ? `${restaurant.deliveryTime}-${restaurant.deliveryTime + 10} min` : "— min"}
+              </Text>
+            </View>
+            <View style={styles.metaDot} />
+            <View style={styles.metaItem}>
+              <Ionicons name="bicycle-outline" size={15} color={restaurant.deliveryFee === 0 ? colors.turquoise : colors.mutedForeground} />
+              <Text style={[styles.metaText, {
+                color: restaurant.deliveryFee === 0 ? colors.turquoise : colors.foreground,
+                fontFamily: restaurant.deliveryFee === 0 ? "Inter_700Bold" : "Inter_600SemiBold",
+              }]}>
+                {restaurant.deliveryFee != null
+                  ? (restaurant.deliveryFee === 0 ? "Gratuit" : `${restaurant.deliveryFee} MAD`)
+                  : "—"}
+              </Text>
+            </View>
+            <View style={styles.metaDot} />
+            <View style={styles.metaItem}>
+              <View style={[styles.openDot, { backgroundColor: isOpen ? colors.turquoise : "#9CA3AF" }]} />
+              <Text style={[styles.metaText, {
+                color: isOpen ? colors.turquoise : colors.mutedForeground,
+                fontFamily: "Inter_700Bold",
+              }]}>
+                {isOpen ? "Ouvert" : "Fermé"}
+              </Text>
+            </View>
+          </View>
+
+          <View style={styles.hoursRow}>
+            <Ionicons name="calendar-outline" size={14} color={colors.mutedForeground} />
+            <Text style={[styles.hoursTxt, { color: colors.mutedForeground }]} numberOfLines={1}>
+              Horaires : {openingHoursText}
+            </Text>
+          </View>
+        </View>
+      </View>
+
+      {/* Cart-conflict warning */}
+      {cartRestaurantId && cartRestaurantId !== restaurantId && (
+        <View style={[styles.warningBanner, { backgroundColor: "#FEF3C7", borderColor: "#FDE68A" }]}>
+          <Ionicons name="warning-outline" size={16} color="#B45309" />
+          <Text style={[styles.warningText, { color: "#B45309" }]}>
+            Ajouter des produits videra votre panier actuel
+          </Text>
+        </View>
+      )}
+
+      {/* Category tabs */}
+      {categories.length > 1 && (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.catRow}
+        >
+          {categories.map((cat) => {
+            const active = activeCategory === cat;
+            return (
+              <TouchableOpacity
+                key={cat}
+                onPress={() => setActiveCategory(cat)}
+                style={[styles.catChip, active && { borderBottomColor: colors.primary }]}
+                activeOpacity={0.85}
+              >
+                <Text style={[
+                  styles.catText,
+                  { color: active ? colors.foreground : colors.mutedForeground },
+                  active && { fontFamily: "Inter_700Bold" },
+                ]}>
+                  {cat}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
+      )}
+
+      {/* Section title */}
+      {filtered.length > 0 && (
+        <View style={styles.sectionTitleWrap}>
+          <Text style={[styles.sectionTitle, { color: colors.foreground }]}>
+            {activeCategory === "Tous" ? "Nos produits" : activeCategory}
+          </Text>
+          <Text style={[styles.sectionSub, { color: colors.mutedForeground }]}>
+            {filtered.length} {filtered.length > 1 ? "articles" : "article"}
+          </Text>
+        </View>
+      )}
+
+      {mLoading && <ActivityIndicator color={colors.primary} style={{ marginTop: 24 }} />}
+    </View>
+  );
+
   return (
     <View style={[styles.flex, { backgroundColor: colors.background }]}>
       <FlatList
         data={filtered}
         keyExtractor={(item) => String(item.id)}
+        numColumns={2}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: insets.bottom + (itemCount > 0 ? 110 : 70) + (Platform.OS === "web" ? 34 : 0) }}
-        ListHeaderComponent={
-          <>
-            {/* Hero image */}
-            <View style={styles.heroWrap}>
-              {(restaurant.coverImageUrl || restaurant.imageUrl) ? (
-                <Image source={{ uri: restaurant.coverImageUrl || restaurant.imageUrl! }} style={styles.hero} resizeMode="cover" />
-              ) : (
-                <View style={[styles.heroPlaceholder, { backgroundColor: colors.muted }]}>
-                  <Ionicons name="restaurant" size={48} color={colors.mutedForeground} />
-                </View>
-              )}
-              {/* Back button (top-left) */}
-              <TouchableOpacity
-                onPress={() => router.back()}
-                style={[styles.backBtn, { backgroundColor: "rgba(0,0,0,0.4)" }]}
-              >
-                <Ionicons name="arrow-back" size={22} color="#fff" />
-              </TouchableOpacity>
-              {/* Merchant logo (top-right, transparent background) */}
-              {(restaurant.logoUrl || restaurant.imageUrl) ? (
-                <View style={styles.heroLogoWrap}>
-                  <Image
-                    source={{ uri: restaurant.logoUrl ?? restaurant.imageUrl! }}
-                    style={styles.heroLogoImg}
-                    resizeMode="contain"
-                  />
-                </View>
-              ) : (
-                <View style={[styles.heroLogoWrap, { backgroundColor: "rgba(0,0,0,0.35)", alignItems: "center", justifyContent: "center" }]}>
-                  <Text style={{ fontSize: 28, color: "#fff", fontFamily: "Inter_700Bold" }}>
-                    {restaurant.name?.charAt(0)?.toUpperCase() ?? "?"}
-                  </Text>
-                </View>
-              )}
-              {/* Favorite button — placed BELOW the logo, top-right column */}
-              <TouchableOpacity
-                onPress={toggleFav}
-                style={styles.heroFavBtn}
-              >
-                <Ionicons name={isFav ? "heart" : "heart-outline"} size={22} color={isFav ? "#E2006A" : "#fff"} />
-              </TouchableOpacity>
-            </View>
-
-            {/* Info */}
-            <View style={[styles.infoSection, { backgroundColor: colors.background, paddingTop: 16 }]}>
-              <Text style={[styles.rName, { color: colors.foreground }]}>{restaurant.name}</Text>
-              {restaurant.description && (
-                <Text style={[styles.rDesc, { color: colors.mutedForeground }]}>{restaurant.description}</Text>
-              )}
-              <View style={styles.metaRow}>
-                {(() => {
-                  const isOpen = (restaurant as { isOpen?: boolean | null }).isOpen;
-                  if (isOpen !== true) return null;
-                  return (
-                    <View style={[styles.openBadge, { backgroundColor: colors.turquoiseSoft }]}>
-                      <View style={[styles.openDot, { backgroundColor: colors.turquoise }]} />
-                      <Text style={[styles.openText, { color: colors.turquoise }]}>Ouvert</Text>
-                    </View>
-                  );
-                })()}
-                {restaurant.rating != null && (
-                  <View style={styles.metaItem}>
-                    <Ionicons name="star" size={14} color={colors.yellow} />
-                    <Text style={[styles.metaText, { color: colors.foreground }]}>{restaurant.rating.toFixed(1)}</Text>
-                  </View>
-                )}
-                {restaurant.deliveryTime != null && (
-                  <View style={styles.metaItem}>
-                    <Ionicons name="time-outline" size={14} color={colors.mutedForeground} />
-                    <Text style={[styles.metaText, { color: colors.mutedForeground }]}>{restaurant.deliveryTime} min</Text>
-                  </View>
-                )}
-                {restaurant.deliveryFee != null && (
-                  <View style={styles.metaItem}>
-                    <Ionicons name="bicycle-outline" size={14} color={restaurant.deliveryFee === 0 ? colors.turquoise : colors.mutedForeground} />
-                    <Text style={[styles.metaText, { color: restaurant.deliveryFee === 0 ? colors.turquoise : colors.mutedForeground, fontFamily: restaurant.deliveryFee === 0 ? "Inter_700Bold" : "Inter_500Medium" }]}>{restaurant.deliveryFee > 0 ? `${restaurant.deliveryFee} MAD` : "Livraison offerte"}</Text>
-                  </View>
-                )}
-              </View>
-            </View>
-
-            {/* Category tabs */}
-            {categories.length > 1 && (
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.catRow}>
-                {categories.map((cat) => (
-                  <TouchableOpacity
-                    key={cat}
-                    onPress={() => setActiveCategory(cat)}
-                    style={[styles.catChip, { backgroundColor: activeCategory === cat ? colors.primary : colors.card, borderColor: activeCategory === cat ? colors.primary : colors.border }]}
-                  >
-                    <Text style={[styles.catText, { color: activeCategory === cat ? "#fff" : colors.mutedForeground }]}>{cat}</Text>
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
-            )}
-
-            {cartRestaurantId && cartRestaurantId !== restaurantId && (
-              <View style={[styles.warningBanner, { backgroundColor: colors.warning + "20", borderColor: colors.warning + "40" }]}>
-                <Ionicons name="warning-outline" size={16} color={colors.warning} />
-                <Text style={[styles.warningText, { color: colors.warning }]}>
-                  Ajouter des produits videra votre panier actuel
-                </Text>
-              </View>
-            )}
-
-            {mLoading ? <ActivityIndicator color={colors.primary} style={{ marginTop: 24 }} /> : null}
-          </>
-        }
+        contentContainerStyle={{
+          paddingBottom: insets.bottom + (itemCount > 0 || isServices ? 110 : 24) + (Platform.OS === "web" ? 34 : 0),
+        }}
+        columnWrapperStyle={styles.colWrap}
+        ListHeaderComponent={Header}
         renderItem={({ item }) => (
-          <View style={styles.menuItemWrap}>
-            <MenuItemCard
-              item={item}
-              quantity={getQty(item.id)}
-              onPressCard={() => setSelectedItem(item)}
-              onAdd={() => {
-                const pricing = restaurant as { deliveryFee?: number | null; freeDeliveryThreshold?: number | null };
-                addItem(restaurantId, restaurant.name, { menuItemId: item.id, name: item.name, price: item.price, imageUrl: item.imageUrl }, { deliveryFee: pricing.deliveryFee, freeDeliveryThreshold: pricing.freeDeliveryThreshold });
-              }}
-              onRemove={() => updateQuantity(item.id, getQty(item.id) - 1)}
-            />
-          </View>
+          <MenuItemGridCard
+            item={item}
+            quantity={getQty(item.id)}
+            width={COL_W}
+            onPressCard={() => setSelectedItem(item)}
+            onAdd={() => {
+              const pricing = restaurant as { deliveryFee?: number | null; freeDeliveryThreshold?: number | null };
+              addItem(restaurantId, restaurant.name, { menuItemId: item.id, name: item.name, price: item.price, imageUrl: item.imageUrl }, { deliveryFee: pricing.deliveryFee, freeDeliveryThreshold: pricing.freeDeliveryThreshold });
+            }}
+          />
         )}
+        ListEmptyComponent={!mLoading ? (
+          <View style={styles.emptyWrap}>
+            <Ionicons name="basket-outline" size={48} color={colors.mutedForeground} />
+            <Text style={[styles.emptyTxt, { color: colors.mutedForeground }]}>
+              Aucun produit pour le moment
+            </Text>
+          </View>
+        ) : null}
       />
 
-      {/* Quote CTA — for service-type merchants (no menu cart) */}
+      {/* Quote CTA — service merchants */}
       {isServices && (
         <View style={[styles.cartBar, { paddingBottom: insets.bottom + (Platform.OS === "web" ? 34 : 10) }]}>
           <TouchableOpacity
@@ -217,21 +304,7 @@ export default function RestaurantScreen() {
         </View>
       )}
 
-      {/* Floating bottom back button (no overlap with hero content) */}
-      <View
-        pointerEvents="box-none"
-        style={[styles.bottomBackWrap, { bottom: insets.bottom + (itemCount > 0 ? 80 : 24) + (Platform.OS === "web" ? 34 : 0) }]}
-      >
-        <TouchableOpacity
-          onPress={() => router.back()}
-          style={[styles.bottomBackBtn, { backgroundColor: colors.card, borderColor: colors.border }]}
-          activeOpacity={0.8}
-        >
-          <Ionicons name="chevron-back" size={20} color={colors.foreground} />
-        </TouchableOpacity>
-      </View>
-
-      {/* Cart CTA — light gradient pill matching "+" style, with bouncy add animation */}
+      {/* Cart pill */}
       {!isServices && itemCount > 0 && (
         <View style={[styles.cartBar, { paddingBottom: insets.bottom + (Platform.OS === "web" ? 34 : 10) }]}>
           <CartPillButton
@@ -243,7 +316,7 @@ export default function RestaurantScreen() {
         </View>
       )}
 
-      {/* Product detail modal */}
+      {/* Detail modal — keeps existing UX */}
       <MenuItemDetailModal
         visible={!!selectedItem}
         item={selectedItem}
@@ -266,24 +339,11 @@ export default function RestaurantScreen() {
   );
 }
 
-// Light "Voir panier" pill — same minimal style as the round "+" buttons,
-// no chunky shadow. Bounces softly each time the cart count grows.
-function CartPillButton({
-  count,
-  label,
-  onPress,
-  color,
-}: {
-  count: number;
-  label: string;
-  onPress: () => void;
-  color: string;
-}) {
+function CartPillButton({ count, label, onPress, color }: { count: number; label: string; onPress: () => void; color: string }) {
   const scale = useRef(new Animated.Value(1)).current;
   const bounce = useRef(new Animated.Value(0)).current;
   const prevCount = useRef(count);
 
-  // Bounce/pulse whenever the cart count increases (item added)
   useEffect(() => {
     if (count > prevCount.current) {
       if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -295,23 +355,12 @@ function CartPillButton({
     prevCount.current = count;
   }, [count, bounce]);
 
-  const onIn = () => {
-    Animated.spring(scale, { toValue: 0.96, useNativeDriver: true, friction: 6 }).start();
-  };
-  const onOut = () => {
-    Animated.spring(scale, { toValue: 1, useNativeDriver: true, friction: 5 }).start();
-  };
-
+  const onIn = () => Animated.spring(scale, { toValue: 0.96, useNativeDriver: true, friction: 6 }).start();
+  const onOut = () => Animated.spring(scale, { toValue: 1, useNativeDriver: true, friction: 5 }).start();
   const bumpScale = bounce.interpolate({ inputRange: [0, 1], outputRange: [1, 1.08] });
 
   return (
-    <Pressable
-      onPress={onPress}
-      onPressIn={onIn}
-      onPressOut={onOut}
-      accessibilityRole="button"
-      accessibilityLabel={label}
-    >
+    <Pressable onPress={onPress} onPressIn={onIn} onPressOut={onOut} accessibilityRole="button" accessibilityLabel={label}>
       <Animated.View style={{ transform: [{ scale }, { scale: bumpScale }] }}>
         <View style={[styles.pillCartBtn, { backgroundColor: color }]}>
           <View style={styles.pillCartQty}>
@@ -328,70 +377,93 @@ function CartPillButton({
 const styles = StyleSheet.create({
   flex: { flex: 1 },
   center: { flex: 1, alignItems: "center", justifyContent: "center" },
+
+  // Hero
   heroWrap: { position: "relative" },
-  hero: { width: "100%", height: 220 },
-  heroPlaceholder: { width: "100%", height: 220, alignItems: "center", justifyContent: "center" },
-  heroLogoWrap: {
-    position: "absolute",
-    top: 44,
-    right: 16,
-    width: 64,
-    height: 64,
-    borderRadius: 14,
-    backgroundColor: "transparent",
-    overflow: "hidden",
-    padding: 0,
+  hero: { width: "100%", height: HERO_H },
+  heroPlaceholder: { alignItems: "center", justifyContent: "center" },
+  heroTop: {
+    position: "absolute", left: SIDE, right: SIDE,
+    flexDirection: "row", justifyContent: "space-between", alignItems: "center",
   },
-  heroLogoImg: { width: "100%", height: "100%", backgroundColor: "transparent" },
-  heroFavBtn: {
-    position: "absolute",
-    top: 116,
-    right: 16,
-    width: 40, height: 40, borderRadius: 20,
+  heroTopRight: { flexDirection: "row", gap: 10 },
+  roundBtn: {
+    width: 38, height: 38, borderRadius: 19,
+    backgroundColor: "rgba(255,255,255,0.95)",
     alignItems: "center", justifyContent: "center",
-    backgroundColor: "rgba(0,0,0,0.4)",
+    shadowColor: "#000", shadowOpacity: 0.15, shadowRadius: 4, shadowOffset: { width: 0, height: 2 }, elevation: 3,
   },
-  backBtn: {
-    position: "absolute", top: 48, left: 16,
-    width: 40, height: 40, borderRadius: 20, alignItems: "center", justifyContent: "center",
+
+  // Overlapping info card
+  cardOuter: { paddingHorizontal: SIDE, marginTop: -56 },
+  infoCard: {
+    borderRadius: 16,
+    padding: 14,
+    gap: 10,
+    shadowColor: "#000", shadowOpacity: 0.08, shadowRadius: 12, shadowOffset: { width: 0, height: 4 }, elevation: 4,
   },
-  infoSection: { padding: 16, paddingTop: 20, gap: 6 },
-  rName: { fontSize: 24, fontFamily: "Inter_700Bold" },
-  rDesc: { fontSize: 14, fontFamily: "Inter_400Regular", lineHeight: 20 },
-  metaRow: { flexDirection: "row", gap: 16, marginTop: 6, flexWrap: "wrap" },
-  metaItem: { flexDirection: "row", alignItems: "center", gap: 5 },
-  openBadge: { flexDirection: "row", alignItems: "center", gap: 5, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 12 },
-  openDot: { width: 6, height: 6, borderRadius: 3 },
-  openText: { fontSize: 11, fontFamily: "Inter_700Bold", textTransform: "uppercase", letterSpacing: 0.4 },
-  metaText: { fontSize: 13, fontFamily: "Inter_500Medium" },
-  catRow: { paddingHorizontal: 16, paddingVertical: 12, gap: 8 },
-  catChip: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, borderWidth: 1 },
-  catText: { fontSize: 13, fontFamily: "Inter_500Medium" },
-  menuItemWrap: { paddingHorizontal: 16 },
+  infoTopRow: { flexDirection: "row", alignItems: "center", gap: 12 },
+  logoBox: {
+    width: 56, height: 56, borderRadius: 12,
+    alignItems: "center", justifyContent: "center", overflow: "hidden",
+    borderWidth: 1, borderColor: "#F0F0F0",
+  },
+  logoImg: { width: "100%", height: "100%" },
+  logoLetter: { fontSize: 22, fontFamily: "Inter_700Bold" },
+  infoTextWrap: { flex: 1, gap: 2 },
+  rName: { fontSize: 18, fontFamily: "Inter_700Bold" },
+  rTags: { fontSize: 12, fontFamily: "Inter_400Regular" },
+  ratingRow: { flexDirection: "row", alignItems: "center", gap: 4, marginTop: 2 },
+  ratingTxt: { fontSize: 13, fontFamily: "Inter_700Bold" },
+  ratingCount: { fontSize: 12, fontFamily: "Inter_400Regular" },
+  rDesc: { fontSize: 13, fontFamily: "Inter_400Regular", lineHeight: 18 },
+  divider: { height: 1, marginVertical: 2 },
+  metaRow: { flexDirection: "row", alignItems: "center", gap: 8, flexWrap: "wrap" },
+  metaItem: { flexDirection: "row", alignItems: "center", gap: 4 },
+  metaText: { fontSize: 12, fontFamily: "Inter_600SemiBold" },
+  metaDot: { width: 3, height: 3, borderRadius: 1.5, backgroundColor: "#D1D5DB" },
+  openDot: { width: 7, height: 7, borderRadius: 3.5 },
+  hoursRow: { flexDirection: "row", alignItems: "center", gap: 6 },
+  hoursTxt: { fontSize: 12, fontFamily: "Inter_500Medium" },
+
   warningBanner: {
-    margin: 16, marginBottom: 0, padding: 10, borderRadius: 10, borderWidth: 1,
+    marginHorizontal: SIDE, marginTop: 14, padding: 10, borderRadius: 10, borderWidth: 1,
     flexDirection: "row", alignItems: "center", gap: 8,
   },
-  warningText: { fontSize: 13, fontFamily: "Inter_400Regular", flex: 1 },
+  warningText: { fontSize: 13, fontFamily: "Inter_500Medium", flex: 1 },
+
+  // Category tabs (underline)
+  catRow: { paddingHorizontal: SIDE, paddingTop: 18, gap: 18, alignItems: "center" },
+  catChip: {
+    paddingVertical: 8,
+    borderBottomWidth: 2,
+    borderBottomColor: "transparent",
+  },
+  catText: { fontSize: 14, fontFamily: "Inter_500Medium" },
+
+  sectionTitleWrap: { paddingHorizontal: SIDE, paddingTop: 16, paddingBottom: 6 },
+  sectionTitle: { fontSize: 18, fontFamily: "Inter_700Bold" },
+  sectionSub: { fontSize: 12, fontFamily: "Inter_400Regular", marginTop: 2 },
+
+  // Grid
+  colWrap: { paddingHorizontal: SIDE, gap: COL_GAP },
+
+  emptyWrap: { alignItems: "center", justifyContent: "center", paddingVertical: 60, gap: 10 },
+  emptyTxt: { fontSize: 14, fontFamily: "Inter_500Medium" },
+
+  // Cart bar
   cartBar: {
     position: "absolute", bottom: 0, left: 0, right: 0,
-    paddingHorizontal: 16, paddingTop: 6,
-    alignItems: "center",
+    paddingHorizontal: 16, paddingTop: 6, alignItems: "center",
   },
   cartBtn: {
     flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8,
     height: 44, borderRadius: 22,
-    paddingHorizontal: 18,
-    minWidth: 200,
-    maxWidth: 360,
-    alignSelf: "center",
+    paddingHorizontal: 18, minWidth: 200, maxWidth: 360, alignSelf: "center",
     shadowColor: "#E2006A", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.28, shadowRadius: 12, elevation: 8,
   },
-  cartQty: { minWidth: 22, height: 22, paddingHorizontal: 6, borderRadius: 11, alignItems: "center", justifyContent: "center" },
-  cartQtyText: { color: "#fff", fontSize: 12, fontFamily: "Inter_700Bold" },
   cartBtnText: { color: "#fff", fontSize: 14, fontFamily: "Inter_700Bold", textAlign: "center" },
-  warning: { color: "#F59E0B" },
-  // Light pill cart button — matches the "+" minimal style, no chunky shadow
+
   pillCartBtn: {
     flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10,
     height: 46, borderRadius: 23,
@@ -400,23 +472,8 @@ const styles = StyleSheet.create({
   },
   pillCartQty: {
     minWidth: 30, height: 30, paddingHorizontal: 9, borderRadius: 15,
-    backgroundColor: "#fff",
-    alignItems: "center", justifyContent: "center",
+    backgroundColor: "#fff", alignItems: "center", justifyContent: "center",
   },
   pillCartQtyText: { fontSize: 13, fontFamily: "Inter_700Bold" },
-  pillCartLabel: {
-    color: "#fff", fontSize: 14, fontFamily: "Inter_700Bold",
-    textAlign: "center", letterSpacing: 0.2,
-  },
-  // Floating bottom-left back button on restaurant screen
-  bottomBackWrap: {
-    position: "absolute",
-    left: 16,
-  },
-  bottomBackBtn: {
-    width: 44, height: 44, borderRadius: 22,
-    alignItems: "center", justifyContent: "center",
-    borderWidth: 1,
-    shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.12, shadowRadius: 6, elevation: 4,
-  },
+  pillCartLabel: { color: "#fff", fontSize: 14, fontFamily: "Inter_700Bold", textAlign: "center", letterSpacing: 0.2 },
 });
