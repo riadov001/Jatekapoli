@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { db, restaurantsTable, ordersTable, reviewsTable } from "@workspace/db";
-import { eq, ilike, and, avg, count, sum } from "drizzle-orm";
+import { eq, ilike, and, avg, count, sum, sql } from "drizzle-orm";
 import {
   CreateRestaurantBody,
   UpdateRestaurantBody,
@@ -27,6 +27,24 @@ function withDeliveryDefaults<T extends { deliveryFee?: number | null }>(r: T) {
     freeDeliveryThreshold: DEFAULT_FREE_DELIVERY_THRESHOLD,
   };
 }
+
+router.post("/restaurants/:id/track-click", async (req, res): Promise<void> => {
+  const id = Number(req.params.id);
+  if (!Number.isFinite(id) || id <= 0) {
+    res.status(400).json({ error: "Invalid restaurant id" });
+    return;
+  }
+  const [row] = await db
+    .update(restaurantsTable)
+    .set({ clickCount: sql`${restaurantsTable.clickCount} + 1` })
+    .where(eq(restaurantsTable.id, id))
+    .returning({ clickCount: restaurantsTable.clickCount });
+  if (!row) {
+    res.status(404).json({ error: "Restaurant not found" });
+    return;
+  }
+  res.json({ id, clickCount: row.clickCount });
+});
 
 router.get("/restaurants/featured", async (_req, res): Promise<void> => {
   const restaurants = await db

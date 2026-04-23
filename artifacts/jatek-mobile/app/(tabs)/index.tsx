@@ -24,9 +24,21 @@ import {
 
 import { useAuth } from "@/contexts/AuthContext";
 import { useCart } from "@/contexts/CartContext";
+import { getApiBaseSafe } from "@/lib/apiBase";
 import { WaveEdge } from "@/components/WaveEdge";
 import { ShortPlayerModal } from "@/components/ShortPlayerModal";
 import { AddressQuickPicker } from "@/components/AddressQuickPicker";
+
+function trackBannerClick(restaurantId: number) {
+  try {
+    fetch(`${getApiBaseSafe()}/api/restaurants/${restaurantId}/track-click`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+    }).catch(() => {});
+  } catch {
+    // Fire-and-forget — never block navigation on analytics
+  }
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Brand palette — Jatek (matches Figma prototype)
@@ -388,7 +400,10 @@ export default function HomeScreen() {
               bgColor={i % 2 === 0 ? PINK : "#0A1B3D"}
               badge={i % 2 === 0 ? "VIP" : "PROMO"}
               imageUrl={r.imageUrl ?? r.coverImageUrl}
-              onPress={() => goRestaurant(r.id)}
+              onPress={() => {
+                trackBannerClick(r.id);
+                goRestaurant(r.id);
+              }}
             />
           ))}
           {(featuredPartners ?? []).length === 0 && (

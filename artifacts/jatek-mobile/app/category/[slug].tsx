@@ -16,6 +16,18 @@ import { useLocalSearchParams, router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useListRestaurants, useGetFeaturedRestaurants, type Restaurant } from "@workspace/api-client-react";
+import { getApiBaseSafe } from "@/lib/apiBase";
+
+function trackBannerClick(restaurantId: number) {
+  try {
+    fetch(`${getApiBaseSafe()}/api/restaurants/${restaurantId}/track-click`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+    }).catch(() => {});
+  } catch {
+    // Fire-and-forget
+  }
+}
 
 // ─── Brand palette ────────────────────────────────────────────────────────────
 const PINK = "#E91E63";
@@ -386,7 +398,10 @@ export default function CategoryScreen() {
                       subtitle={i % 2 === 0 ? "-20% sur votre première commande" : "Livraison gratuite aujourd'hui"}
                       bgColor={i % 2 === 0 ? config.color : "#0A1B3D"}
                       badge={i % 2 === 0 ? "VIP" : "PROMO"}
-                      onPress={() => goRestaurant(p.id)}
+                      onPress={() => {
+                        trackBannerClick(p.id);
+                        goRestaurant(p.id);
+                      }}
                     />
                   ))}
                 </ScrollView>

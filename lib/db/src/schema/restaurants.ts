@@ -22,6 +22,8 @@ export const restaurantsTable = pgTable("restaurants", {
   rating: real("rating"),
   reviewCount: integer("review_count").notNull().default(0),
   isVerified: boolean("is_verified").notNull().default(false),
+  /** Number of times the restaurant's VIP/Promo banner has been clicked from the mobile app. */
+  clickCount: integer("click_count").notNull().default(0),
   /** Legal/registered business name (may differ from display name). */
   legalName: text("legal_name"),
   /** Moroccan Identifiant Commun de l'Entreprise (15 digits). */
