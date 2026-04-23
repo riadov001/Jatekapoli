@@ -42,12 +42,12 @@ const CARD_BORDER = "#F0F0F0";
 
 // Shop categories (3×2 grid below the header)
 const SHOP_CATEGORIES = [
-  { slug: "restauration", label: "Restauration", image: require("../../assets/images/cat-restauration-nb.png") },
-  { slug: "epicerie",     label: "Épicerie",      image: require("../../assets/images/cat-epicerie-nb.png") },
-  { slug: "sante",        label: "Santé",         image: require("../../assets/images/cat-sante-nb.png") },
-  { slug: "supermarche",  label: "Supermarché",   image: require("../../assets/images/cat-supermarche-nb.png") },
-  { slug: "boutiques",    label: "Boutiques",     image: require("../../assets/images/cat-boutiques-nb.png") },
-  { slug: "coursier",     label: "Coursier",      image: require("../../assets/images/cat-coursier-nb.png") },
+  { slug: "restauration", label: "Restauration", image: require("../../assets/images/cat-restauration-nb.png"), tint: "#FFE9F2", accent: "#E91E63" },
+  { slug: "epicerie",     label: "Épicerie",      image: require("../../assets/images/cat-epicerie-nb.png"),     tint: "#FFF3E8", accent: "#F97316" },
+  { slug: "sante",        label: "Santé",         image: require("../../assets/images/cat-sante-nb.png"),        tint: "#F0EAFF", accent: "#8B5CF6" },
+  { slug: "supermarche",  label: "Supermarché",   image: require("../../assets/images/cat-supermarche-nb.png"), tint: "#E5F7FA", accent: "#0AA5C0" },
+  { slug: "boutiques",    label: "Boutiques",     image: require("../../assets/images/cat-boutiques-nb.png"),    tint: "#FFE5EE", accent: "#C2185B" },
+  { slug: "coursier",     label: "Coursier",      image: require("../../assets/images/cat-coursier-nb.png"),     tint: "#E8F6E0", accent: "#3A7D1B" },
 ];
 
 // Service squares (Service Coursier / Boutiques / Offers / Parapharm)
@@ -308,23 +308,29 @@ export default function HomeScreen() {
           <WaveEdge color={PINK} height={28} />
         </View>
 
-        {/* ─── Shop categories grid (3×2) ─── */}
-        <View style={s.shopCatsGrid}>
+        {/* ─── Shop categories horizontal slider ─── */}
+        <Text style={s.sliderSectionTitle}>Explorer</Text>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={s.shopCatsScroll}
+          contentContainerStyle={s.shopCatsContent}
+        >
           {SHOP_CATEGORIES.map((c) => (
             <Pressable
               key={c.slug}
               onPress={() => router.push({ pathname: "/category/[slug]", params: { slug: c.slug } })}
-              style={({ pressed }) => [s.shopCatItem, pressed && { opacity: 0.85, transform: [{ scale: 0.97 }] }]}
+              style={({ pressed }) => [s.shopCatItem, pressed && { opacity: 0.85, transform: [{ scale: 0.96 }] }]}
             >
-              <View style={s.shopCatTile}>
+              <View style={[s.shopCatTile, { backgroundColor: c.tint }]}>
                 <Image source={c.image} style={s.shopCatImg} resizeMode="contain" />
               </View>
-              <Text style={s.shopCatLabel} numberOfLines={1}>
+              <Text style={[s.shopCatLabel, { color: c.accent }]} numberOfLines={1}>
                 {c.label}
               </Text>
             </Pressable>
           ))}
-        </View>
+        </ScrollView>
 
         {/* ─── 4 service squares ─── */}
         <View style={s.servicesRow}>
@@ -508,38 +514,49 @@ const s = StyleSheet.create({
     height: 44,
     padding: 0,
   },
-  // ── Shop categories grid ──
-  shopCatsGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    paddingHorizontal: 12,
-    marginTop: 12,
-    rowGap: 14,
+  // ── Shop categories horizontal slider ──
+  sliderSectionTitle: {
+    fontSize: 16,
+    fontFamily: "Inter_700Bold",
+    color: TEXT_DARK,
+    marginTop: 20,
+    marginBottom: 2,
+    paddingHorizontal: 16,
+  },
+  shopCatsScroll: {
+    marginTop: 6,
+  },
+  shopCatsContent: {
+    paddingHorizontal: 16,
+    gap: 12,
+    paddingBottom: 4,
   },
   shopCatItem: {
-    width: "33.333%",
     alignItems: "center",
-    paddingHorizontal: 4,
+    gap: 7,
+    width: 78,
   },
   shopCatTile: {
-    width: 72,
-    height: 72,
-    borderRadius: 18,
-    backgroundColor: "#FFF0F5",
+    width: 64,
+    height: 64,
+    borderRadius: 20,
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 6,
-    overflow: "hidden",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.07,
+    shadowRadius: 6,
+    elevation: 2,
   },
   shopCatImg: {
-    width: 54,
-    height: 54,
+    width: 42,
+    height: 42,
   },
   shopCatLabel: {
-    fontSize: 12,
+    fontSize: 11,
     fontFamily: "Inter_600SemiBold",
-    color: TEXT_DARK,
     textAlign: "center",
+    lineHeight: 14,
   },
   // ── Services row ──
   servicesRow: {
