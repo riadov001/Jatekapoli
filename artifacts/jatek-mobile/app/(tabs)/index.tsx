@@ -45,12 +45,12 @@ const CARD_BORDER = "#F0F0F0";
 const CAT_TINT = "#F2EDD0"; // light yellow-olive — shared tile background
 
 const SHOP_CATEGORIES = [
-  { slug: "restauration", label: "Restauration", image: require("../../assets/images/icon-restauration.jpg"),  accent: "#B85C00" },
-  { slug: "epicerie",     label: "Épicerie",      image: require("../../assets/images/icon-epicerie.jpg"),      accent: "#2E7D32" },
-  { slug: "sante",        label: "Santé",         image: require("../../assets/images/icon-sante.jpg"),         accent: "#C62828" },
-  { slug: "supermarche",  label: "Supermarché",   image: require("../../assets/images/icon-supermarche.jpg"),  accent: "#E65100" },
-  { slug: "boutiques",    label: "Boutiques",     image: require("../../assets/images/icon-boutiques.jpg"),     accent: "#880E4F" },
-  { slug: "coursier",     label: "Coursier",      image: require("../../assets/images/icon-coursier.jpg"),      accent: "#1A237E" },
+  { slug: "restauration", label: "Restauration", icon: "restaurant"  as const, accent: "#B85C00" },
+  { slug: "epicerie",     label: "Épicerie",     icon: "basket"      as const, accent: "#2E7D32" },
+  { slug: "sante",        label: "Santé",        icon: "medkit"      as const, accent: "#C62828" },
+  { slug: "supermarche",  label: "Supermarché",  icon: "cart"        as const, accent: "#E65100" },
+  { slug: "boutiques",    label: "Boutiques",    icon: "storefront"  as const, accent: "#880E4F" },
+  { slug: "coursier",     label: "Coursier",     icon: "bicycle"     as const, accent: "#1A237E" },
 ];
 
 // Service squares (Service Coursier / Boutiques / Offers / Parapharm)
@@ -359,8 +359,8 @@ export default function HomeScreen() {
               onPress={() => router.push({ pathname: "/category/[slug]", params: { slug: c.slug } })}
               style={({ pressed }) => [s.shopCatItem, pressed && { opacity: 0.85, transform: [{ scale: 0.96 }] }]}
             >
-              <View style={s.shopCatTile}>
-                <Image source={c.image} style={s.shopCatImg} resizeMode="contain" />
+              <View style={[s.shopCatTile, { backgroundColor: c.accent + "1A" }]}>
+                <Ionicons name={c.icon} size={34} color={c.accent} />
               </View>
               <Text style={[s.shopCatLabel, { color: c.accent }]} numberOfLines={1}>
                 {c.label}
@@ -601,14 +601,11 @@ const s = StyleSheet.create({
     width: 90,
   },
   shopCatTile: {
-    width: 80,
-    height: 80,
+    width: 70,
+    height: 70,
+    borderRadius: 22,
     alignItems: "center",
     justifyContent: "center",
-  },
-  shopCatImg: {
-    width: 72,
-    height: 72,
   },
   shopCatLabel: {
     fontSize: 11,
