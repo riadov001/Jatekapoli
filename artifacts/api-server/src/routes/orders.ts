@@ -78,10 +78,9 @@ router.get("/orders", requireAuth, async (req: AuthedRequest, res): Promise<void
 
   // Customers may only see their own orders unless filtering as restaurant owner/driver.
   const role = req.userRole;
-  const filtersRestaurantOrDriver = conditions.some(() => false) ||
-    (queryParams.success && (queryParams.data.restaurantId || queryParams.data.driverId));
+  const filtersRestaurantOrDriver =
+    queryParams.success && (queryParams.data.restaurantId || queryParams.data.driverId);
   if (role === "customer" || (!filtersRestaurantOrDriver && role !== "admin")) {
-    conditions = conditions.filter((_, i) => true);
     conditions.push(eq(ordersTable.userId, req.userId!));
   }
 
