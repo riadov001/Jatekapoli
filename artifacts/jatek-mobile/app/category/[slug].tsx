@@ -15,7 +15,7 @@ import {
 import { useLocalSearchParams, router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
-import { useListRestaurants, type Restaurant } from "@workspace/api-client-react";
+import { useListRestaurants, useGetFeaturedRestaurants, type Restaurant } from "@workspace/api-client-react";
 
 // ─── Brand palette ────────────────────────────────────────────────────────────
 const PINK = "#E91E63";
@@ -290,13 +290,13 @@ export default function CategoryScreen() {
     );
   }, [restaurants, search]);
 
-  // VIP / promo partners — top-rated open ones
+  // VIP / promo partners — featured restaurants matching current category's businessType
+  const { data: featuredAll } = useGetFeaturedRestaurants();
   const vipPartners = useMemo(() => {
-    return (restaurants ?? [])
-      .filter((r) => r.isOpen !== false)
-      .sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0))
-      .slice(0, 5);
-  }, [restaurants]);
+    const all = featuredAll ?? [];
+    const matching = all.filter((r) => r.businessType === config.businessType);
+    return (matching.length > 0 ? matching : all).slice(0, 5);
+  }, [featuredAll, config.businessType]);
 
   const goRestaurant = (id: number) =>
     router.push({ pathname: "/restaurant/[id]", params: { id: String(id) } });

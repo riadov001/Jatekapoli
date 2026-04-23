@@ -17,6 +17,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   useListRestaurants,
+  useGetFeaturedRestaurants,
   type Restaurant,
   type ListRestaurantsParams,
 } from "@workspace/api-client-react";
@@ -246,6 +247,7 @@ export default function HomeScreen() {
   }, [activeBusinessType, activeCat, onlyOpen, search]);
 
   const { data: restaurants, isLoading } = useListRestaurants(params);
+  const { data: featuredPartners } = useGetFeaturedRestaurants();
   const shorts = useMemo(
     () => (restaurants ?? []).filter((r) => r.imageUrl || r.coverImageUrl).slice(0, 8),
     [restaurants],
@@ -401,22 +403,18 @@ export default function HomeScreen() {
           decelerationRate="fast"
           snapToInterval={SCREEN_W * 0.78 + 12}
         >
-          {(restaurants ?? [])
-            .filter((r) => r.isOpen !== false)
-            .sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0))
-            .slice(0, 5)
-            .map((r, i) => (
-              <VipBannerCard
-                key={`vip-${r.id}`}
-                title={r.name}
-                subtitle={i % 2 === 0 ? "-20% sur votre première commande" : "Livraison gratuite aujourd'hui"}
-                bgColor={i % 2 === 0 ? PINK : "#0A1B3D"}
-                badge={i % 2 === 0 ? "VIP" : "PROMO"}
-                imageUrl={r.imageUrl ?? r.coverImageUrl}
-                onPress={() => goRestaurant(r.id)}
-              />
-            ))}
-          {(restaurants ?? []).length === 0 && !isLoading && (
+          {(featuredPartners ?? []).slice(0, 6).map((r, i) => (
+            <VipBannerCard
+              key={`vip-${r.id}`}
+              title={r.name}
+              subtitle={i % 2 === 0 ? "-20% sur votre première commande" : "Livraison gratuite aujourd'hui"}
+              bgColor={i % 2 === 0 ? PINK : "#0A1B3D"}
+              badge={i % 2 === 0 ? "VIP" : "PROMO"}
+              imageUrl={r.imageUrl ?? r.coverImageUrl}
+              onPress={() => goRestaurant(r.id)}
+            />
+          ))}
+          {(featuredPartners ?? []).length === 0 && (
             <Text style={s.emptyTxt}>Aucune offre disponible pour le moment</Text>
           )}
         </ScrollView>
