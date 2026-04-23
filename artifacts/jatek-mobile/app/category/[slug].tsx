@@ -15,8 +15,7 @@ import {
 import { useLocalSearchParams, router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
-import { useQuery } from "@tanstack/react-query";
-import { getApiBaseSafe } from "@/lib/apiBase";
+import { useListRestaurants, type Restaurant } from "@workspace/api-client-react";
 
 // ─── Brand palette ────────────────────────────────────────────────────────────
 const PINK = "#E91E63";
@@ -30,68 +29,109 @@ const FALLBACK_IMG =
 const { width: SCREEN_W } = Dimensions.get("window");
 const CARD_W = SCREEN_W * 0.56;
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-type Shop = {
-  id: number;
-  name: string;
-  imageUrl?: string | null;
-  logoUrl?: string | null;
-  rating?: number | null;
-  deliveryTime?: number | null;
-  deliveryFee?: number | null;
-  isOpen?: boolean | null;
-  category?: string | null;
-  subcategoryId?: number | null;
+// ─── Sub-category config per slug ─────────────────────────────────────────────
+type SubcatConfig = {
+  id: string;
+  label: string;
+  apiCategory?: string;
+  icon: string;
 };
 
-type Subcategory = {
-  id: number;
-  name: string;
-  slug: string;
-  shopCount?: number;
-  shops: Shop[];
+type SlugConfig = {
+  label: string;
+  color: string;
+  image: any;
+  subcategories: SubcatConfig[];
 };
 
-type CategoryDetail = {
-  id: number;
-  name: string;
-  slug: string;
-  icon?: string;
-  color?: string;
-  subcategories: Subcategory[];
+const SLUG_CONFIG: Record<string, SlugConfig> = {
+  restauration: {
+    label: "Restauration",
+    color: "#E91E63",
+    image: require("../../assets/images/cat-restauration-nb.png"),
+    subcategories: [
+      { id: "all",        label: "Tout",       icon: "grid-outline" },
+      { id: "Pizza",      label: "Pizza",       icon: "pizza",           apiCategory: "Pizza" },
+      { id: "Burgers",    label: "Burgers",     icon: "fast-food",       apiCategory: "Burgers" },
+      { id: "Sandwiches", label: "Sandwichs",   icon: "nutrition",       apiCategory: "Sandwiches" },
+      { id: "Moroccan",   label: "Marocain",    icon: "leaf",            apiCategory: "Moroccan" },
+      { id: "Chicken",    label: "Poulet",      icon: "restaurant",      apiCategory: "Chicken" },
+      { id: "Sushi",      label: "Sushi",       icon: "fish",            apiCategory: "Sushi" },
+    ],
+  },
+  epicerie: {
+    label: "Épicerie",
+    color: "#F97316",
+    image: require("../../assets/images/cat-epicerie-nb.png"),
+    subcategories: [
+      { id: "all",      label: "Tout",                icon: "grid-outline" },
+      { id: "fruits",   label: "Fruits & Légumes",    icon: "leaf" },
+      { id: "bakery",   label: "Boulangerie",          icon: "cafe" },
+      { id: "drinks",   label: "Boissons",             icon: "wine" },
+      { id: "dairy",    label: "Produits Laitiers",    icon: "nutrition" },
+      { id: "spices",   label: "Épices & Condiments",  icon: "flask" },
+    ],
+  },
+  sante: {
+    label: "Santé",
+    color: "#8B5CF6",
+    image: require("../../assets/images/cat-sante-nb.png"),
+    subcategories: [
+      { id: "all",         label: "Tout",               icon: "grid-outline" },
+      { id: "pharmacy",    label: "Pharmacie",           icon: "medkit" },
+      { id: "parapharma",  label: "Parapharmacie",       icon: "heart" },
+      { id: "wellness",    label: "Bien-être",           icon: "fitness" },
+      { id: "optics",      label: "Optique",             icon: "eye" },
+      { id: "supplements", label: "Compléments",         icon: "flask" },
+    ],
+  },
+  supermarche: {
+    label: "Supermarché",
+    color: "#0AA5C0",
+    image: require("../../assets/images/cat-supermarche-nb.png"),
+    subcategories: [
+      { id: "all",       label: "Tout",            icon: "grid-outline" },
+      { id: "food",      label: "Alimentation",    icon: "basket" },
+      { id: "frozen",    label: "Surgelés",        icon: "snow" },
+      { id: "hygiene",   label: "Hygiène & Beauté", icon: "rose" },
+      { id: "cleaning",  label: "Produits Ménagers", icon: "sparkles" },
+      { id: "beverages", label: "Boissons",        icon: "wine" },
+    ],
+  },
+  boutiques: {
+    label: "Boutiques",
+    color: "#C2185B",
+    image: require("../../assets/images/cat-boutiques-nb.png"),
+    subcategories: [
+      { id: "all",         label: "Tout",          icon: "grid-outline" },
+      { id: "fashion",     label: "Mode",          icon: "shirt" },
+      { id: "cosmetics",   label: "Cosmétiques",   icon: "sparkles" },
+      { id: "home",        label: "Maison & Déco", icon: "home" },
+      { id: "gifts",       label: "Cadeaux",       icon: "gift" },
+      { id: "electronics", label: "Électronique",  icon: "hardware-chip" },
+    ],
+  },
+  coursier: {
+    label: "Coursier",
+    color: "#3A7D1B",
+    image: require("../../assets/images/cat-coursier-nb.png"),
+    subcategories: [
+      { id: "all",      label: "Tout",               icon: "grid-outline" },
+      { id: "express",  label: "Livraison Express",  icon: "flash" },
+      { id: "errands",  label: "Courses à faire",    icon: "list" },
+      { id: "parcel",   label: "Envoi de Colis",     icon: "cube" },
+    ],
+  },
 };
-
-// ─── Meta per slug (icon + color when backend isn't ready) ───────────────────
-const SLUG_META: Record<string, { label: string; icon: string; color: string }> = {
-  restauration: { label: "Restauration", icon: "restaurant",   color: "#E91E63" },
-  epicerie:     { label: "Épicerie",      icon: "basket",       color: "#F97316" },
-  sante:        { label: "Santé",         icon: "medkit",       color: "#8B5CF6" },
-  supermarche:  { label: "Supermarché",   icon: "cart",         color: "#0AA5C0" },
-  boutiques:    { label: "Boutiques",     icon: "storefront",   color: "#C2185B" },
-  coursier:     { label: "Coursier",      icon: "bicycle",      color: "#0AA5C0" },
-};
-
-// ─── Fetch helpers ────────────────────────────────────────────────────────────
-async function fetchCategory(slug: string): Promise<CategoryDetail> {
-  const base = getApiBaseSafe();
-  const res = await fetch(`${base}/shop-categories/${slug}`);
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  return res.json();
-}
-
-async function fetchSubcategoryShops(subcategoryId: number, search: string): Promise<Shop[]> {
-  const base = getApiBaseSafe();
-  const params = new URLSearchParams();
-  if (search) params.set("search", search);
-  const res = await fetch(`${base}/shop-subcategories/${subcategoryId}/shops?${params}`);
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  return res.json();
-}
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
-function ShopCard({ shop, onPress, width }: { shop: Shop; onPress: () => void; width?: number }) {
-  const img = shop.imageUrl || FALLBACK_IMG;
+function RestaurantCard({ restaurant, onPress, width }: { restaurant: Restaurant; onPress: () => void; width?: number }) {
+  const img = restaurant.imageUrl || FALLBACK_IMG;
+  const rating = restaurant.rating ?? 4.5;
+  const time = restaurant.deliveryTime ?? 25;
+  const fee = restaurant.deliveryFee ?? 10;
+
   return (
     <Pressable
       onPress={onPress}
@@ -103,48 +143,45 @@ function ShopCard({ shop, onPress, width }: { shop: Shop; onPress: () => void; w
     >
       <View style={styles.cardImgWrap}>
         <Image source={{ uri: img }} style={styles.cardImg} resizeMode="cover" />
-        {shop.isOpen === false && (
+        {restaurant.isOpen === false && (
           <View style={styles.closedBadge}>
             <Text style={styles.closedText}>Fermé</Text>
           </View>
         )}
-        {shop.logoUrl ? (
-          <Image source={{ uri: shop.logoUrl }} style={styles.cardLogo} resizeMode="contain" />
+        {restaurant.logoUrl ? (
+          <Image source={{ uri: restaurant.logoUrl }} style={styles.cardLogo} resizeMode="contain" />
         ) : (
           <View style={[styles.cardLogo, styles.cardLogoFallback]}>
-            <Text style={styles.cardLogoLetter}>{shop.name.charAt(0).toUpperCase()}</Text>
+            <Text style={styles.cardLogoLetter}>{restaurant.name.charAt(0).toUpperCase()}</Text>
           </View>
         )}
       </View>
       <View style={styles.cardBody}>
-        <Text style={styles.cardName} numberOfLines={1}>{shop.name}</Text>
+        <Text style={styles.cardName} numberOfLines={1}>{restaurant.name}</Text>
         <View style={styles.cardMeta}>
-          {shop.rating != null && (
-            <View style={styles.metaChip}>
-              <Ionicons name="star" size={10} color={PINK} />
-              <Text style={styles.metaTxt}>{shop.rating.toFixed(1)}</Text>
-            </View>
-          )}
-          {shop.deliveryTime != null && (
-            <View style={styles.metaChip}>
-              <Ionicons name="time-outline" size={10} color={TEXT_MUTED} />
-              <Text style={styles.metaTxt}>{shop.deliveryTime} min</Text>
-            </View>
-          )}
-          {shop.deliveryFee != null && (
-            <View style={styles.metaChip}>
-              <Ionicons name="bicycle-outline" size={10} color={TEXT_MUTED} />
-              <Text style={styles.metaTxt}>{shop.deliveryFee} MAD</Text>
-            </View>
-          )}
+          <View style={styles.metaChip}>
+            <Ionicons name="star" size={10} color={PINK} />
+            <Text style={styles.metaTxt}>{rating.toFixed(1)}</Text>
+          </View>
+          <View style={styles.metaChip}>
+            <Ionicons name="time-outline" size={10} color={TEXT_MUTED} />
+            <Text style={styles.metaTxt}>{time}-{time + 10} min</Text>
+          </View>
+          <View style={styles.metaChip}>
+            <Ionicons name="bicycle-outline" size={10} color={TEXT_MUTED} />
+            <Text style={styles.metaTxt}>{fee === 0 ? "Gratuit" : `${fee} MAD`}</Text>
+          </View>
         </View>
       </View>
     </Pressable>
   );
 }
 
-function ShopCardGrid({ shop, onPress }: { shop: Shop; onPress: () => void }) {
-  const img = shop.imageUrl || FALLBACK_IMG;
+function RestaurantCardGrid({ restaurant, onPress }: { restaurant: Restaurant; onPress: () => void }) {
+  const img = restaurant.imageUrl || FALLBACK_IMG;
+  const rating = restaurant.rating ?? 4.5;
+  const time = restaurant.deliveryTime ?? 25;
+
   return (
     <Pressable
       onPress={onPress}
@@ -154,78 +191,40 @@ function ShopCardGrid({ shop, onPress }: { shop: Shop; onPress: () => void }) {
       ]}
     >
       <Image source={{ uri: img }} style={styles.gridCardImg} resizeMode="cover" />
-      {shop.isOpen === false && (
+      {restaurant.isOpen === false && (
         <View style={styles.closedBadge}>
           <Text style={styles.closedText}>Fermé</Text>
         </View>
       )}
-      {shop.logoUrl ? (
-        <Image source={{ uri: shop.logoUrl }} style={styles.gridCardLogo} resizeMode="contain" />
+      {restaurant.logoUrl ? (
+        <Image source={{ uri: restaurant.logoUrl }} style={styles.gridCardLogo} resizeMode="contain" />
       ) : (
         <View style={[styles.gridCardLogo, styles.cardLogoFallback]}>
-          <Text style={styles.cardLogoLetter}>{shop.name.charAt(0).toUpperCase()}</Text>
+          <Text style={styles.cardLogoLetter}>{restaurant.name.charAt(0).toUpperCase()}</Text>
         </View>
       )}
       <View style={styles.gridCardBody}>
-        <Text style={styles.cardName} numberOfLines={1}>{shop.name}</Text>
+        <Text style={styles.cardName} numberOfLines={1}>{restaurant.name}</Text>
         <View style={styles.cardMeta}>
-          {shop.rating != null && (
-            <View style={styles.metaChip}>
-              <Ionicons name="star" size={10} color={PINK} />
-              <Text style={styles.metaTxt}>{shop.rating.toFixed(1)}</Text>
-            </View>
-          )}
-          {shop.deliveryTime != null && (
-            <Text style={styles.metaTxt}>{shop.deliveryTime} min</Text>
-          )}
+          <View style={styles.metaChip}>
+            <Ionicons name="star" size={10} color={PINK} />
+            <Text style={styles.metaTxt}>{rating.toFixed(1)}</Text>
+          </View>
+          <Text style={styles.metaTxt}>{time} min</Text>
         </View>
       </View>
     </Pressable>
   );
 }
 
-function SubcategorySection({
-  sub,
-  onShopPress,
-  onViewMore,
-}: {
-  sub: Subcategory;
-  onShopPress: (id: number) => void;
-  onViewMore: (sub: Subcategory) => void;
-}) {
-  if (!sub.shops || sub.shops.length === 0) return null;
+function ComingSoonSection({ sub, color }: { sub: SubcatConfig; color: string }) {
   return (
-    <View style={styles.section}>
-      <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>{sub.name}</Text>
-        {sub.shops.length > 3 && (
-          <TouchableOpacity onPress={() => onViewMore(sub)} activeOpacity={0.8}>
-            <Text style={styles.voirPlus}>Voir plus →</Text>
-          </TouchableOpacity>
-        )}
+    <View style={styles.comingSoonBox}>
+      <View style={[styles.comingSoonIcon, { backgroundColor: color + "22" }]}>
+        <Ionicons name={sub.icon as any} size={36} color={color} />
       </View>
-      <FlatList
-        data={sub.shops.slice(0, 8)}
-        keyExtractor={(s) => String(s.id)}
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={{ paddingHorizontal: 16, gap: 12 }}
-        renderItem={({ item }) => (
-          <ShopCard shop={item} onPress={() => onShopPress(item.id)} width={CARD_W} />
-        )}
-      />
-    </View>
-  );
-}
-
-function EmptyState({ label }: { label: string }) {
-  return (
-    <View style={styles.emptyWrap}>
-      <Ionicons name="storefront-outline" size={56} color="#E0E0E0" />
-      <Text style={styles.emptyTitle}>Bientôt disponible</Text>
-      <Text style={styles.emptySub}>
-        La section {label} sera disponible dès que le backend aura été mis en place.
-      </Text>
+      <Text style={styles.comingSoonTitle}>{sub.label}</Text>
+      <Text style={styles.comingSoonSub}>Bientôt disponible</Text>
     </View>
   );
 }
@@ -235,55 +234,52 @@ export default function CategoryScreen() {
   const { slug } = useLocalSearchParams<{ slug: string }>();
   const insets = useSafeAreaInsets();
   const [search, setSearch] = useState("");
-  const [selectedSub, setSelectedSub] = useState<Subcategory | null>(null);
+  const [activeSubId, setActiveSubId] = useState("all");
 
-  const meta = SLUG_META[slug ?? ""] ?? { label: slug ?? "Catégorie", icon: "grid", color: PINK };
+  const config = SLUG_CONFIG[slug ?? ""] ?? {
+    label: slug ?? "Catégorie",
+    color: PINK,
+    image: null,
+    subcategories: [{ id: "all", label: "Tout", icon: "grid-outline" }],
+  };
 
-  const { data: category, isLoading, isError } = useQuery<CategoryDetail>({
-    queryKey: ["shop-category", slug],
-    queryFn: () => fetchCategory(slug ?? ""),
-    retry: false,
-    staleTime: 60_000,
-  });
+  const activeSub = config.subcategories.find((s) => s.id === activeSubId) ?? config.subcategories[0];
 
-  const goShop = (id: number) =>
+  const apiCategory = activeSub.id === "all" ? undefined : activeSub.apiCategory;
+  const hasApiCategory = slug === "restauration";
+
+  const { data: restaurants, isLoading } = useListRestaurants(
+    hasApiCategory
+      ? { category: apiCategory, search: search.trim() || undefined }
+      : undefined,
+    { query: { enabled: hasApiCategory } }
+  );
+
+  const filtered = useMemo(() => {
+    if (!restaurants) return [];
+    if (!search.trim()) return restaurants;
+    const q = search.toLowerCase();
+    return restaurants.filter((r) => r.name.toLowerCase().includes(q) || (r.category ?? "").toLowerCase().includes(q));
+  }, [restaurants, search]);
+
+  const goRestaurant = (id: number) =>
     router.push({ pathname: "/restaurant/[id]", params: { id: String(id) } });
 
-  const allShopsFlat: Shop[] = useMemo(() => {
-    if (!category) return [];
-    return category.subcategories.flatMap((s) => s.shops ?? []);
-  }, [category]);
-
-  const filteredSubs = useMemo(() => {
-    if (!category) return [];
-    const subs = selectedSub
-      ? category.subcategories.filter((s) => s.id === selectedSub.id)
-      : category.subcategories;
-
-    if (!search.trim()) return subs;
-    const q = search.toLowerCase();
-    return subs.map((s) => ({
-      ...s,
-      shops: (s.shops ?? []).filter((sh) => sh.name.toLowerCase().includes(q)),
-    }));
-  }, [category, selectedSub, search]);
-
-  const gridShops = useMemo(() => {
-    if (!selectedSub) return [];
-    const sub = filteredSubs[0];
-    return sub?.shops ?? [];
-  }, [filteredSubs, selectedSub]);
+  const showComingSoon = !hasApiCategory && activeSub.id !== "all";
+  const showAllComingSoon = !hasApiCategory && activeSub.id === "all";
 
   return (
     <View style={[styles.root, { paddingTop: insets.top }]}>
       {/* ─── Pink Header ─── */}
-      <View style={[styles.header, { backgroundColor: meta.color }]}>
+      <View style={[styles.header, { backgroundColor: config.color }]}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} activeOpacity={0.8}>
           <Ionicons name="arrow-back" size={22} color="#fff" />
         </TouchableOpacity>
         <View style={styles.headerCenter}>
-          <Ionicons name={meta.icon as any} size={22} color="#fff" style={{ marginRight: 8 }} />
-          <Text style={styles.headerTitle}>{category?.name ?? meta.label}</Text>
+          {config.image && (
+            <Image source={config.image} style={styles.headerImg} resizeMode="contain" />
+          )}
+          <Text style={styles.headerTitle}>{config.label}</Text>
         </View>
         <View style={{ width: 40 }} />
       </View>
@@ -293,7 +289,7 @@ export default function CategoryScreen() {
         <Ionicons name="search" size={16} color={TEXT_MUTED} />
         <TextInput
           style={styles.searchInput}
-          placeholder={`Rechercher dans ${category?.name ?? meta.label}…`}
+          placeholder={`Rechercher dans ${config.label}…`}
           placeholderTextColor={TEXT_MUTED}
           value={search}
           onChangeText={setSearch}
@@ -306,90 +302,84 @@ export default function CategoryScreen() {
         )}
       </View>
 
-      {/* ─── Subcategory filter chips ─── */}
-      {category && category.subcategories.length > 0 && (
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={styles.chipsScroll}
-          contentContainerStyle={styles.chipsContent}
-        >
-          <TouchableOpacity
-            onPress={() => setSelectedSub(null)}
-            style={[styles.chip, !selectedSub && styles.chipActive]}
-            activeOpacity={0.8}
-          >
-            <Text style={[styles.chipTxt, !selectedSub && styles.chipTxtActive]}>Tout</Text>
-          </TouchableOpacity>
-          {category.subcategories.map((sub) => (
+      {/* ─── Sub-category filter chips ─── */}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={styles.chipsScroll}
+        contentContainerStyle={styles.chipsContent}
+      >
+        {config.subcategories.map((sub) => {
+          const active = sub.id === activeSubId;
+          return (
             <TouchableOpacity
               key={sub.id}
-              onPress={() => setSelectedSub(sub.id === selectedSub?.id ? null : sub)}
-              style={[styles.chip, selectedSub?.id === sub.id && styles.chipActive]}
+              onPress={() => setActiveSubId(sub.id)}
+              style={[styles.chip, active && { backgroundColor: config.color, borderColor: config.color }]}
               activeOpacity={0.8}
             >
-              <Text style={[styles.chipTxt, selectedSub?.id === sub.id && styles.chipTxtActive]}>
-                {sub.name}
-              </Text>
-              {sub.shopCount != null && (
-                <Text style={[styles.chipCount, selectedSub?.id === sub.id && styles.chipTxtActive]}>
-                  {" "}·{" "}{sub.shopCount}
-                </Text>
-              )}
+              <Ionicons name={sub.icon as any} size={13} color={active ? "#fff" : TEXT_MUTED} style={{ marginRight: 4 }} />
+              <Text style={[styles.chipTxt, active && styles.chipTxtActive]}>{sub.label}</Text>
             </TouchableOpacity>
-          ))}
-        </ScrollView>
-      )}
+          );
+        })}
+      </ScrollView>
 
       {/* ─── Content ─── */}
-      {isLoading ? (
+      {isLoading && hasApiCategory ? (
         <View style={styles.loaderWrap}>
-          <ActivityIndicator size="large" color={meta.color} />
+          <ActivityIndicator size="large" color={config.color} />
           <Text style={styles.loaderTxt}>Chargement…</Text>
         </View>
-      ) : isError || !category ? (
-        <EmptyState label={meta.label} />
-      ) : selectedSub ? (
-        /* Grid view for a specific subcategory */
+      ) : showComingSoon ? (
+        <View style={{ flex: 1 }}>
+          <ComingSoonSection sub={activeSub} color={config.color} />
+        </View>
+      ) : showAllComingSoon ? (
+        /* All sub-categories grid for non-restauration categories */
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.subCatGrid}
+        >
+          {config.subcategories.filter((s) => s.id !== "all").map((sub) => (
+            <Pressable
+              key={sub.id}
+              onPress={() => setActiveSubId(sub.id)}
+              style={({ pressed }) => [styles.subCatBox, pressed && { opacity: 0.85 }]}
+            >
+              <View style={[styles.subCatIcon, { backgroundColor: config.color + "22" }]}>
+                <Ionicons name={sub.icon as any} size={30} color={config.color} />
+              </View>
+              <Text style={styles.subCatLabel}>{sub.label}</Text>
+              <Text style={styles.subCatSoon}>Bientôt</Text>
+            </Pressable>
+          ))}
+        </ScrollView>
+      ) : filtered.length === 0 && !isLoading ? (
+        <View style={styles.emptyWrap}>
+          <Ionicons name="storefront-outline" size={56} color="#E0E0E0" />
+          <Text style={styles.emptyTitle}>Aucun établissement trouvé</Text>
+          <Text style={styles.emptySub}>
+            Essayez une autre sous-catégorie ou modifiez votre recherche.
+          </Text>
+        </View>
+      ) : (
         <FlatList
-          data={gridShops}
-          keyExtractor={(s) => String(s.id)}
+          data={filtered}
+          keyExtractor={(r) => String(r.id)}
           numColumns={2}
           contentContainerStyle={styles.grid}
           columnWrapperStyle={{ gap: 12 }}
           showsVerticalScrollIndicator={false}
-          ListEmptyComponent={
-            <View style={styles.emptyWrap}>
-              <Ionicons name="storefront-outline" size={48} color="#E0E0E0" />
-              <Text style={styles.emptyTitle}>Aucun commerce trouvé</Text>
-            </View>
+          ListHeaderComponent={
+            filtered.length > 0 ? (
+              <Text style={styles.resultsCount}>{filtered.length} établissement{filtered.length > 1 ? "s" : ""}</Text>
+            ) : null
           }
           renderItem={({ item }) => (
-            <ShopCardGrid shop={item} onPress={() => goShop(item.id)} />
+            <RestaurantCardGrid restaurant={item} onPress={() => goRestaurant(item.id)} />
           )}
         />
-      ) : (
-        /* Sections view — all subcategories */
-        <ScrollView
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}
-        >
-          {filteredSubs.length === 0 ? (
-            <View style={styles.emptyWrap}>
-              <Ionicons name="storefront-outline" size={48} color="#E0E0E0" />
-              <Text style={styles.emptyTitle}>Aucun commerce trouvé</Text>
-            </View>
-          ) : (
-            filteredSubs.map((sub) => (
-              <SubcategorySection
-                key={sub.id}
-                sub={sub}
-                onShopPress={goShop}
-                onViewMore={(s) => setSelectedSub(s)}
-              />
-            ))
-          )}
-        </ScrollView>
       )}
     </View>
   );
@@ -416,7 +406,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  headerCenter: { flexDirection: "row", alignItems: "center" },
+  headerCenter: { flexDirection: "row", alignItems: "center", gap: 8 },
+  headerImg: { width: 32, height: 32 },
   headerTitle: {
     fontSize: 20,
     fontFamily: "Inter_700Bold",
@@ -453,17 +444,15 @@ const styles = StyleSheet.create({
   chip: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 14,
+    paddingHorizontal: 12,
     paddingVertical: 7,
     borderRadius: 999,
     backgroundColor: CARD_BG,
     borderWidth: 1.5,
     borderColor: "#E5E7EB",
   },
-  chipActive: { backgroundColor: PINK, borderColor: PINK },
   chipTxt: { fontSize: 13, fontFamily: "Inter_500Medium", color: TEXT_DARK },
   chipTxtActive: { color: "#fff" },
-  chipCount: { fontSize: 12, fontFamily: "Inter_400Regular", color: TEXT_MUTED },
 
   loaderWrap: { flex: 1, alignItems: "center", justifyContent: "center", gap: 12 },
   loaderTxt: { fontSize: 14, fontFamily: "Inter_400Regular", color: TEXT_MUTED },
@@ -473,22 +462,42 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 40,
-    paddingTop: 80,
+    paddingTop: 60,
     gap: 12,
   },
   emptyTitle: { fontSize: 17, fontFamily: "Inter_600SemiBold", color: TEXT_DARK, textAlign: "center" },
   emptySub: { fontSize: 13, fontFamily: "Inter_400Regular", color: TEXT_MUTED, textAlign: "center", lineHeight: 20 },
 
-  section: { marginTop: 20 },
-  sectionHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: SIDE,
-    marginBottom: 10,
+  resultsCount: {
+    fontSize: 13,
+    fontFamily: "Inter_500Medium",
+    color: TEXT_MUTED,
+    marginBottom: 8,
   },
-  sectionTitle: { fontSize: 16, fontFamily: "Inter_700Bold", color: TEXT_DARK },
-  voirPlus: { fontSize: 13, fontFamily: "Inter_500Medium", color: PINK },
+
+  grid: { padding: SIDE, paddingTop: 12, gap: 12 },
+  gridCard: {
+    flex: 1,
+    backgroundColor: CARD_BG,
+    borderRadius: 14,
+    overflow: "hidden",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.07,
+    shadowRadius: 8,
+    elevation: 2,
+    position: "relative",
+  },
+  gridCardImg: { width: "100%", height: 110 },
+  gridCardLogo: {
+    position: "absolute",
+    top: 6,
+    right: 6,
+    width: 30,
+    height: 30,
+    borderRadius: 7,
+  },
+  gridCardBody: { padding: 8, gap: 3 },
 
   card: {
     backgroundColor: CARD_BG,
@@ -529,27 +538,69 @@ const styles = StyleSheet.create({
   metaChip: { flexDirection: "row", alignItems: "center", gap: 3 },
   metaTxt: { fontSize: 11, fontFamily: "Inter_400Regular", color: TEXT_MUTED },
 
-  grid: { padding: SIDE, paddingTop: 12, gap: 12 },
-  gridCard: {
-    flex: 1,
+  subCatGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    padding: SIDE,
+    gap: 12,
+    paddingTop: 20,
+  },
+  subCatBox: {
+    width: (SCREEN_W - SIDE * 2 - 12 * 2) / 3,
+    alignItems: "center",
+    gap: 8,
     backgroundColor: CARD_BG,
-    borderRadius: 14,
-    overflow: "hidden",
+    borderRadius: 16,
+    paddingVertical: 18,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.07,
-    shadowRadius: 8,
-    elevation: 2,
-    position: "relative",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    elevation: 1,
   },
-  gridCardImg: { width: "100%", height: 110 },
-  gridCardLogo: {
-    position: "absolute",
-    top: 6,
-    right: 6,
-    width: 30,
-    height: 30,
-    borderRadius: 7,
+  subCatIcon: {
+    width: 60,
+    height: 60,
+    borderRadius: 16,
+    alignItems: "center",
+    justifyContent: "center",
   },
-  gridCardBody: { padding: 8, gap: 3 },
+  subCatLabel: {
+    fontSize: 12,
+    fontFamily: "Inter_600SemiBold",
+    color: TEXT_DARK,
+    textAlign: "center",
+  },
+  subCatSoon: {
+    fontSize: 10,
+    fontFamily: "Inter_400Regular",
+    color: TEXT_MUTED,
+  },
+
+  comingSoonBox: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 16,
+    paddingHorizontal: 40,
+  },
+  comingSoonIcon: {
+    width: 100,
+    height: 100,
+    borderRadius: 28,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  comingSoonTitle: {
+    fontSize: 20,
+    fontFamily: "Inter_700Bold",
+    color: TEXT_DARK,
+    textAlign: "center",
+  },
+  comingSoonSub: {
+    fontSize: 14,
+    fontFamily: "Inter_400Regular",
+    color: TEXT_MUTED,
+    textAlign: "center",
+  },
 });

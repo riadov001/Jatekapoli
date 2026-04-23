@@ -42,12 +42,12 @@ const CARD_BORDER = "#F0F0F0";
 
 // Shop categories (3×2 grid below the header)
 const SHOP_CATEGORIES = [
-  { slug: "restauration", label: "Restauration", image: require("../../assets/images/cat-restauration.jpg") },
-  { slug: "epicerie",     label: "Épicerie",      image: require("../../assets/images/cat-epicerie.jpg") },
-  { slug: "sante",        label: "Santé",         image: require("../../assets/images/cat-sante.jpg") },
-  { slug: "supermarche",  label: "Supermarché",   image: require("../../assets/images/cat-supermarche.jpg") },
-  { slug: "boutiques",    label: "Boutiques",     image: require("../../assets/images/cat-boutiques.jpg") },
-  { slug: "coursier",     label: "Coursier",      image: require("../../assets/images/cat-coursier.jpg") },
+  { slug: "restauration", label: "Restauration", image: require("../../assets/images/cat-restauration-nb.png") },
+  { slug: "epicerie",     label: "Épicerie",      image: require("../../assets/images/cat-epicerie-nb.png") },
+  { slug: "sante",        label: "Santé",         image: require("../../assets/images/cat-sante-nb.png") },
+  { slug: "supermarche",  label: "Supermarché",   image: require("../../assets/images/cat-supermarche-nb.png") },
+  { slug: "boutiques",    label: "Boutiques",     image: require("../../assets/images/cat-boutiques-nb.png") },
+  { slug: "coursier",     label: "Coursier",      image: require("../../assets/images/cat-coursier-nb.png") },
 ];
 
 // Service squares (Service Coursier / Boutiques / Offers / Parapharm)
@@ -58,15 +58,6 @@ const SERVICES = [
   { key: "pharm",    label: "Parapharm",        bg: "#E5A3F0", icon: "medkit"    as const, color: "#7A2A8C", businessType: "parapharmacy",  categorySlug: "sante" },
 ];
 
-// Pink pill categories (version B)
-const CATEGORIES = [
-  { id: "Burgers",    label: "Burger",   image: require("../../assets/images/cat-burgers.jpg") },
-  { id: "Tacos",      label: "Tacos",    image: require("../../assets/images/cat-restauration.jpg") },
-  { id: "Pizza",      label: "Pizza",    image: require("../../assets/images/cat-restauration.jpg") },
-  { id: "Sandwiches", label: "Shawarma", image: require("../../assets/images/cat-epicerie.jpg") },
-  { id: "Moroccan",   label: "Couscous", image: require("../../assets/images/cat-fruits.jpg") },
-  { id: "Drinks",     label: "Boissons", image: require("../../assets/images/cat-boissons.jpg") },
-];
 
 // Default fallback image used when a restaurant has no imageUrl.
 // Picsum food-style placeholder (always reachable, no auth needed).
@@ -82,12 +73,14 @@ const GRID_CARD_W = (SCREEN_W - GRID_SIDE * 2 - GRID_GAP) / 2;
 // Sub-components
 // ─────────────────────────────────────────────────────────────────────────────
 
-const BANNER_IMG = require("../../assets/images/banner-jatek.jpg");
-
 function PromoBanner({ onPress }: { onPress: () => void }) {
   return (
-    <Pressable onPress={onPress} style={({ pressed }) => [s.promoBanner, pressed && { opacity: 0.92 }]}>
-      <Image source={BANNER_IMG} style={s.promoBannerImg} resizeMode="cover" />
+    <Pressable onPress={onPress} style={({ pressed }) => [s.promoBanner, pressed && { opacity: 0.9 }]}>
+      <View style={{ flex: 1 }}>
+        <Text style={s.promoMinus}>-10%</Text>
+        <Text style={s.promoCode}>WELCOME10</Text>
+      </View>
+      <Text style={s.promoBrand}>Jatek</Text>
     </Pressable>
   );
 }
@@ -351,36 +344,6 @@ export default function HomeScreen() {
           ))}
         </View>
 
-        {/* ─── Pink pill categories (Burger · Tacos · Pizza · shawarma · Couscous) ─── */}
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={s.pillsRow}
-        >
-          {CATEGORIES.map((c) => {
-            const active = activeCat === c.id;
-            return (
-              <Pressable
-                key={c.id}
-                onPress={() => {
-                  setActiveBusinessType("restaurant");
-                  setOnlyOpen(undefined);
-                  setActiveCat(active ? null : c.id);
-                  setActiveLabel(active ? "Tous les Restaurants" : c.label);
-                }}
-                style={({ pressed }) => [pressed && { opacity: 0.85 }]}
-              >
-                <View style={s.pillStack}>
-                  <View style={[s.pillCircle, active && s.pillCircleActive]}>
-                    <Image source={c.image} style={s.pillImg} resizeMode="contain" />
-                  </View>
-                  <Text style={s.pillLabel}>{c.label}</Text>
-                </View>
-              </Pressable>
-            );
-          })}
-        </ScrollView>
-
         {/* ─── Promo banner -10% Jatek WELCOME10 ─── */}
         <View style={{ paddingHorizontal: 16, marginTop: 18 }}>
           <PromoBanner onPress={() => router.push("/profile/coupons?code=WELCOME10" as any)} />
@@ -561,13 +524,16 @@ const s = StyleSheet.create({
   shopCatTile: {
     width: 72,
     height: 72,
-    borderRadius: 20,
-    overflow: "hidden",
+    borderRadius: 18,
+    backgroundColor: "#FFF0F5",
+    alignItems: "center",
+    justifyContent: "center",
     marginBottom: 6,
+    overflow: "hidden",
   },
   shopCatImg: {
-    width: "100%",
-    height: "100%",
+    width: 54,
+    height: 54,
   },
   shopCatLabel: {
     fontSize: 12,
@@ -639,13 +605,34 @@ const s = StyleSheet.create({
   // ── Promo banner ──
   promoBanner: {
     width: "100%",
-    height: 200,
-    borderRadius: 20,
+    height: 110,
+    backgroundColor: PINK,
+    borderRadius: 16,
+    paddingHorizontal: 18,
+    flexDirection: "row",
+    alignItems: "center",
     overflow: "hidden",
   },
-  promoBannerImg: {
-    width: "100%",
-    height: "100%",
+  promoMinus: {
+    fontSize: 44,
+    fontFamily: "Inter_900Black",
+    color: "#fff",
+    letterSpacing: -1.5,
+    lineHeight: 48,
+  },
+  promoCode: {
+    fontSize: 16,
+    fontFamily: "Inter_700Bold",
+    color: NEW_GREEN,
+    letterSpacing: 1,
+    marginTop: 2,
+  },
+  promoBrand: {
+    fontSize: 38,
+    fontFamily: "Inter_900Black",
+    color: "#fff",
+    fontStyle: "italic",
+    letterSpacing: -1,
   },
 
   // ── Section headers ──
