@@ -42,12 +42,12 @@ const CARD_BORDER = "#F0F0F0";
 
 // Shop categories (3×2 grid below the header)
 const SHOP_CATEGORIES = [
-  { slug: "restauration", label: "Restauration", icon: "restaurant" as const, bg: "#FFE3EC", color: "#E91E63" },
-  { slug: "epicerie",     label: "Épicerie",      icon: "basket"     as const, bg: "#FFEFD6", color: "#F97316" },
-  { slug: "sante",        label: "Santé",         icon: "medkit"     as const, bg: "#EDE3FF", color: "#8B5CF6" },
-  { slug: "supermarche",  label: "Supermarché",   icon: "cart"       as const, bg: "#D7F6FA", color: "#0AA5C0" },
-  { slug: "boutiques",    label: "Boutiques",     icon: "storefront" as const, bg: "#FFC9D8", color: "#C2185B" },
-  { slug: "coursier",     label: "Coursier",      icon: "bicycle"    as const, bg: "#DFF7D6", color: "#3A7D1B" },
+  { slug: "restauration", label: "Restauration", image: require("../../assets/images/cat-restauration.jpg") },
+  { slug: "epicerie",     label: "Épicerie",      image: require("../../assets/images/cat-epicerie.jpg") },
+  { slug: "sante",        label: "Santé",         image: require("../../assets/images/cat-sante.jpg") },
+  { slug: "supermarche",  label: "Supermarché",   image: require("../../assets/images/cat-supermarche.jpg") },
+  { slug: "boutiques",    label: "Boutiques",     image: require("../../assets/images/cat-boutiques.jpg") },
+  { slug: "coursier",     label: "Coursier",      image: require("../../assets/images/cat-coursier.jpg") },
 ];
 
 // Service squares (Service Coursier / Boutiques / Offers / Parapharm)
@@ -60,11 +60,12 @@ const SERVICES = [
 
 // Pink pill categories (version B)
 const CATEGORIES = [
-  { id: "Burgers",   label: "Burger", icon: "fast-food" as const, color: "#F97316" },
-  { id: "Tacos",    label: "Tacos", icon: "restaurant" as const, color: "#22C55E" },
-  { id: "Pizza",    label: "Pizza", icon: "pizza" as const, color: "#EF4444" },
-  { id: "Sandwiches", label: "shawarma", icon: "nutrition" as const, color: "#A855F7" },
-  { id: "Moroccan", label: "Couscous", icon: "leaf" as const, color: "#0AA5C0" },
+  { id: "Burgers",    label: "Burger",   image: require("../../assets/images/cat-burgers.jpg") },
+  { id: "Tacos",      label: "Tacos",    image: require("../../assets/images/cat-restauration.jpg") },
+  { id: "Pizza",      label: "Pizza",    image: require("../../assets/images/cat-restauration.jpg") },
+  { id: "Sandwiches", label: "Shawarma", image: require("../../assets/images/cat-epicerie.jpg") },
+  { id: "Moroccan",   label: "Couscous", image: require("../../assets/images/cat-fruits.jpg") },
+  { id: "Drinks",     label: "Boissons", image: require("../../assets/images/cat-boissons.jpg") },
 ];
 
 // Default fallback image used when a restaurant has no imageUrl.
@@ -81,14 +82,12 @@ const GRID_CARD_W = (SCREEN_W - GRID_SIDE * 2 - GRID_GAP) / 2;
 // Sub-components
 // ─────────────────────────────────────────────────────────────────────────────
 
+const BANNER_IMG = require("../../assets/images/banner-jatek.jpg");
+
 function PromoBanner({ onPress }: { onPress: () => void }) {
   return (
-    <Pressable onPress={onPress} style={({ pressed }) => [s.promoBanner, pressed && { opacity: 0.9 }]}>
-      <View style={{ flex: 1 }}>
-        <Text style={s.promoMinus}>-10%</Text>
-        <Text style={s.promoCode}>WELCOME10</Text>
-      </View>
-      <Text style={s.promoBrand}>Jatek</Text>
+    <Pressable onPress={onPress} style={({ pressed }) => [s.promoBanner, pressed && { opacity: 0.92 }]}>
+      <Image source={BANNER_IMG} style={s.promoBannerImg} resizeMode="cover" />
     </Pressable>
   );
 }
@@ -324,8 +323,8 @@ export default function HomeScreen() {
               onPress={() => router.push({ pathname: "/category/[slug]", params: { slug: c.slug } })}
               style={({ pressed }) => [s.shopCatItem, pressed && { opacity: 0.85, transform: [{ scale: 0.97 }] }]}
             >
-              <View style={[s.shopCatTile, { backgroundColor: c.bg }]}>
-                <Ionicons name={c.icon} size={28} color={c.color} />
+              <View style={s.shopCatTile}>
+                <Image source={c.image} style={s.shopCatImg} resizeMode="contain" />
               </View>
               <Text style={s.shopCatLabel} numberOfLines={1}>
                 {c.label}
@@ -373,7 +372,7 @@ export default function HomeScreen() {
               >
                 <View style={s.pillStack}>
                   <View style={[s.pillCircle, active && s.pillCircleActive]}>
-                    <Ionicons name={c.icon} size={26} color={active ? "#fff" : c.color} />
+                    <Image source={c.image} style={s.pillImg} resizeMode="contain" />
                   </View>
                   <Text style={s.pillLabel}>{c.label}</Text>
                 </View>
@@ -560,12 +559,15 @@ const s = StyleSheet.create({
     paddingHorizontal: 4,
   },
   shopCatTile: {
-    width: 64,
-    height: 64,
-    borderRadius: 18,
-    alignItems: "center",
-    justifyContent: "center",
+    width: 72,
+    height: 72,
+    borderRadius: 20,
+    overflow: "hidden",
     marginBottom: 6,
+  },
+  shopCatImg: {
+    width: "100%",
+    height: "100%",
   },
   shopCatLabel: {
     fontSize: 12,
@@ -610,6 +612,7 @@ const s = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: 22,
+    overflow: "hidden",
     backgroundColor: PINK_SOFT,
     alignItems: "center",
     justifyContent: "center",
@@ -620,7 +623,12 @@ const s = StyleSheet.create({
     elevation: 2,
   },
   pillCircleActive: {
-    backgroundColor: PINK,
+    borderWidth: 2.5,
+    borderColor: PINK,
+  },
+  pillImg: {
+    width: "100%",
+    height: "100%",
   },
   pillLabel: {
     fontSize: 12,
@@ -631,34 +639,13 @@ const s = StyleSheet.create({
   // ── Promo banner ──
   promoBanner: {
     width: "100%",
-    height: 110,
-    backgroundColor: PINK,
-    borderRadius: 16,
-    paddingHorizontal: 18,
-    flexDirection: "row",
-    alignItems: "center",
+    height: 200,
+    borderRadius: 20,
     overflow: "hidden",
   },
-  promoMinus: {
-    fontSize: 44,
-    fontFamily: "Inter_900Black",
-    color: "#fff",
-    letterSpacing: -1.5,
-    lineHeight: 48,
-  },
-  promoCode: {
-    fontSize: 16,
-    fontFamily: "Inter_700Bold",
-    color: NEW_GREEN,
-    letterSpacing: 1,
-    marginTop: 2,
-  },
-  promoBrand: {
-    fontSize: 38,
-    fontFamily: "Inter_900Black",
-    color: "#fff",
-    fontStyle: "italic",
-    letterSpacing: -1,
+  promoBannerImg: {
+    width: "100%",
+    height: "100%",
   },
 
   // ── Section headers ──
