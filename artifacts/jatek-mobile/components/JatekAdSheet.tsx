@@ -74,11 +74,37 @@ export function JatekAdSheet({ visible, onClose }: Props) {
     }))
   ).current;
 
+  // Per-card "puzzle" entry: each card flies in from a different corner with
+  // rotation + scale, like puzzle pieces snapping into place.
+  const PUZZLE_FROM = [
+    { dx: -SCREEN_W * 0.6, dy: -120, rot: -25 }, // top-left
+    { dx:  SCREEN_W * 0.6, dy: -100, rot:  20 }, // top-right
+    { dx: -SCREEN_W * 0.6, dy:  140, rot:  18 }, // bottom-left
+    { dx:  SCREEN_W * 0.6, dy:  120, rot: -22 }, // bottom-right
+  ];
+  const cardAnims = useRef(
+    ADS.map((_, i) => ({
+      opacity: new Animated.Value(0),
+      translateX: new Animated.Value(PUZZLE_FROM[i % PUZZLE_FROM.length].dx),
+      translateY: new Animated.Value(PUZZLE_FROM[i % PUZZLE_FROM.length].dy),
+      rotate: new Animated.Value(PUZZLE_FROM[i % PUZZLE_FROM.length].rot),
+      scale: new Animated.Value(0.5),
+    }))
+  ).current;
+
   const runOpen = () => {
     // Reset content
     contentAnims.forEach(({ opacity, translateY }) => {
       opacity.setValue(0);
       translateY.setValue(18);
+    });
+    cardAnims.forEach((a, i) => {
+      const from = PUZZLE_FROM[i % PUZZLE_FROM.length];
+      a.opacity.setValue(0);
+      a.translateX.setValue(from.dx);
+      a.translateY.setValue(from.dy);
+      a.rotate.setValue(from.rot);
+      a.scale.setValue(0.5);
     });
     slideY.setValue(SCREEN_H);
     overlayOpacity.setValue(0);
@@ -97,7 +123,7 @@ export function JatekAdSheet({ visible, onClose }: Props) {
         tension: 75,
         useNativeDriver: true,
       }),
-      // Staggered content fade + slide
+      // Staggered content fade + slide (header, sub, cards row, dots)
       Animated.stagger(
         70,
         contentAnims.map(({ opacity, translateY }) =>
@@ -110,6 +136,43 @@ export function JatekAdSheet({ visible, onClose }: Props) {
             Animated.spring(translateY, {
               toValue: 0,
               friction: 9,
+              tension: 80,
+              useNativeDriver: true,
+            }),
+          ])
+        )
+      ),
+      // Puzzle pieces snap in — staggered, after the cards row container appears
+      Animated.stagger(
+        110,
+        cardAnims.map((a) =>
+          Animated.parallel([
+            Animated.timing(a.opacity, {
+              toValue: 1,
+              duration: 280,
+              useNativeDriver: true,
+            }),
+            Animated.spring(a.translateX, {
+              toValue: 0,
+              friction: 7,
+              tension: 70,
+              useNativeDriver: true,
+            }),
+            Animated.spring(a.translateY, {
+              toValue: 0,
+              friction: 7,
+              tension: 70,
+              useNativeDriver: true,
+            }),
+            Animated.spring(a.rotate, {
+              toValue: 0,
+              friction: 7,
+              tension: 70,
+              useNativeDriver: true,
+            }),
+            Animated.spring(a.scale, {
+              toValue: 1,
+              friction: 6,
               tension: 80,
               useNativeDriver: true,
             }),
@@ -194,31 +257,50 @@ export function JatekAdSheet({ visible, onClose }: Props) {
             snapToInterval={SCREEN_W * 0.8 + 12}
             pagingEnabled={false}
           >
-            {ADS.map((ad) => (
-              <TouchableOpacity
-                key={ad.key}
-                activeOpacity={0.88}
-                style={[styles.adCard, { backgroundColor: ad.accent }]}
-              >
-                {/* Decorative circle */}
-                <View style={styles.decorCircle} />
+            {ADS.map((ad, i) => {
+              const a = cardAnims[i];
+              const rotateInterpolated = a.rotate.interpolate({
+                inputRange: [-30, 30],
+                outputRange: ["-30deg", "30deg"],
+              });
+              return (
+                <Animated.View
+                  key={ad.key}
+                  style={{
+                    opacity: a.opacity,
+                    transform: [
+                      { translateX: a.translateX },
+                      { translateY: a.translateY },
+                      { rotate: rotateInterpolated },
+                      { scale: a.scale },
+                    ],
+                  }}
+                >
+                  <TouchableOpacity
+                    activeOpacity={0.88}
+                    style={[styles.adCard, { backgroundColor: ad.accent }]}
+                  >
+                    {/* Decorative circle */}
+                    <View style={styles.decorCircle} />
 
-                <View style={styles.adIconWrap}>
-                  <Ionicons name={ad.icon} size={28} color={GOLD} />
-                </View>
-                <View style={styles.adTag}>
-                  <Text style={styles.adTagTxt}>{ad.tag}</Text>
-                </View>
-                <Text style={styles.adTitle}>{ad.title}</Text>
-                <Text style={styles.adSub}>{ad.sub}</Text>
-                <View style={styles.adCtaRow}>
-                  <View style={styles.adCta}>
-                    <Text style={[styles.adCtaTxt, { color: ad.accent }]}>Découvrir</Text>
-                    <Ionicons name="arrow-forward" size={14} color={ad.accent} />
-                  </View>
-                </View>
-              </TouchableOpacity>
-            ))}
+                    <View style={styles.adIconWrap}>
+                      <Ionicons name={ad.icon} size={28} color={GOLD} />
+                    </View>
+                    <View style={styles.adTag}>
+                      <Text style={styles.adTagTxt}>{ad.tag}</Text>
+                    </View>
+                    <Text style={styles.adTitle}>{ad.title}</Text>
+                    <Text style={styles.adSub}>{ad.sub}</Text>
+                    <View style={styles.adCtaRow}>
+                      <View style={styles.adCta}>
+                        <Text style={[styles.adCtaTxt, { color: ad.accent }]}>Découvrir</Text>
+                        <Ionicons name="arrow-forward" size={14} color={ad.accent} />
+                      </View>
+                    </View>
+                  </TouchableOpacity>
+                </Animated.View>
+              );
+            })}
           </ScrollView>
         </Animated.View>
 

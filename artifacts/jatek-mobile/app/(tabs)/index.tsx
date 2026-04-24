@@ -524,7 +524,7 @@ export default function HomeScreen() {
       {/* ─── JATEK Ad floating trigger bar — glued to the top of the tab bar ─── */}
       <Animated.View
         entering={FadeInUp.delay(900).duration(500).springify()}
-        style={[s.adTriggerWrap, { bottom: tabBarPad - 4 }]}
+        style={[s.adTriggerWrap, { bottom: tabBarPad }]}
         pointerEvents="box-none"
       >
       <TouchableOpacity
@@ -1014,10 +1014,10 @@ const s = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
-    backgroundColor: "rgba(207, 250, 254, 0.95)",
+    backgroundColor: "rgba(207, 250, 254, 0.3)",
     paddingVertical: 8,
     borderTopWidth: 1,
-    borderTopColor: "rgba(34, 211, 238, 0.3)",
+    borderTopColor: "rgba(34, 211, 238, 0.25)",
   },
   adTriggerTxt: {
     color: "#0E7490",
