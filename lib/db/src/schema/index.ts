@@ -13,3 +13,6 @@ export * from "./notificationPrefs";
 export * from "./userConsents";
 export * from "./quotes";
 export * from "./dashboardTodos";
+export * from "./categories";
+export * from "./ads";
+export * from "./shorts";

@@ -18,6 +18,7 @@ import notificationPrefsRouter from "./notificationPrefs";
 import userConsentsRouter from "./userConsents";
 import quotesRouter from "./quotes";
 import backendRouter from "./backend";
+import contentRouter from "./content";
 import { subscribe } from "../lib/sse";
 import { requireAuth } from "../middlewares/auth";
 
@@ -42,6 +43,7 @@ router.use(notificationPrefsRouter);
 router.use(userConsentsRouter);
 router.use(quotesRouter);
 router.use(backendRouter);
+router.use(contentRouter);
 
 /**
  * SSE endpoint — clients subscribe to one or more channels:

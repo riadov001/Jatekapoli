@@ -40,7 +40,21 @@ See the `pnpm-workspace` skill for workspace structure, TypeScript setup, and pa
 - `lib/db` — Drizzle ORM schema + client
 
 ### DB Models
-users, restaurants, menuItems, orders, orderItems, drivers, reviews
+users, restaurants, menuItems, orders, orderItems, drivers, reviews, categories, ads, shorts
+
+### Content Management (new)
+- `categories` — shop/restaurant categories with icon, accentColor, parentId (sub-categories), businessType, sortOrder
+- `ads` — promotions: types = `jatek_offer`, `vip_banner`, `promo_banner`; fields: badge, bgColor, accentColor, icon, imageUrl
+- `shorts` — short-form video/image content with restaurantId, restaurantName
+- Public API: `GET /api/categories`, `GET /api/ads?type=X`, `GET /api/shorts`
+- Admin API: `GET|POST /api/backend/categories`, `PATCH|DELETE /api/backend/categories/:id`, same for `/backend/ads` and `/backend/shorts`
+
+### Test Data (seeded)
+- 18 restaurants (Dar Zitoun, Burger Station, Pizza Palace, Sushi Oujda, Tacos Nation, Green Bowl, Rôtisserie, KFC, McDonald's, etc.)
+- 72 menu items spread across all restaurants
+- 6 parent categories (Restauration, Épicerie, Santé, Supermarché, Boutiques, Coursier) with 14 sub-categories
+- 9 ads (4 jatek_offer, 3 vip_banner, 2 promo_banner)
+- 8 shorts with Unsplash food thumbnails
 
 ### Production hardening (API server)
 - Security: `helmet` (HSTS, X-Frame, nosniff, no x-powered-by), CORS allowlist with credentials, body size limit 1mb.

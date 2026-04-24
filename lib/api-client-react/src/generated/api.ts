@@ -18,13 +18,18 @@ import type {
 
 import type {
   AcceptDeliveryBody,
+  Ad,
+  AdBody,
   Address,
   AddressBody,
   AdminStats,
   AuthResponse,
   BackendDashboard,
   BackendMe,
+  Category,
+  CategoryBody,
   CategoryEntry,
+  CategoryWithSubs,
   CompleteDriverProfileBody,
   CompleteRestaurantProfileBody,
   ConfirmDeliveryBody,
@@ -52,6 +57,7 @@ import type {
   GetOrderReceiptParams,
   GetQuotePdfParams,
   HealthStatus,
+  ListAdsParams,
   ListBackendCustomersParams,
   ListBackendOrdersParams,
   ListBackendProductsParams,
@@ -81,6 +87,8 @@ import type {
   RoleDef,
   SendOtpBody,
   SendOtpResponse,
+  Short,
+  ShortBody,
   SubscribeEventsParams,
   SuccessResponse,
   SupportTicket,
@@ -1502,6 +1510,92 @@ export function useListBackendCategories<
 
   return { ...query, queryKey: queryOptions.queryKey };
 }
+
+/**
+ * @summary Create a category (admin)
+ */
+export const getCreateBackendCategoryUrl = () => {
+  return `/api/backend/categories`;
+};
+
+export const createBackendCategory = async (
+  categoryBody: CategoryBody,
+  options?: RequestInit,
+): Promise<Category> => {
+  return customFetch<Category>(getCreateBackendCategoryUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(categoryBody),
+  });
+};
+
+export const getCreateBackendCategoryMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createBackendCategory>>,
+    TError,
+    { data: BodyType<CategoryBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof createBackendCategory>>,
+  TError,
+  { data: BodyType<CategoryBody> },
+  TContext
+> => {
+  const mutationKey = ["createBackendCategory"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof createBackendCategory>>,
+    { data: BodyType<CategoryBody> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return createBackendCategory(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CreateBackendCategoryMutationResult = NonNullable<
+  Awaited<ReturnType<typeof createBackendCategory>>
+>;
+export type CreateBackendCategoryMutationBody = BodyType<CategoryBody>;
+export type CreateBackendCategoryMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Create a category (admin)
+ */
+export const useCreateBackendCategory = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createBackendCategory>>,
+    TError,
+    { data: BodyType<CategoryBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof createBackendCategory>>,
+  TError,
+  { data: BodyType<CategoryBody> },
+  TContext
+> => {
+  return useMutation(getCreateBackendCategoryMutationOptions(options));
+};
 
 /**
  * JWT required. Backend dashboard RBAC applies by staff role and scoped shop access.
@@ -8870,4 +8964,1147 @@ export const useDeleteUser = <
   TContext
 > => {
   return useMutation(getDeleteUserMutationOptions(options));
+};
+
+/**
+ * @summary List active categories with sub-categories
+ */
+export const getListCategoriesUrl = () => {
+  return `/api/categories`;
+};
+
+export const listCategories = async (
+  options?: RequestInit,
+): Promise<CategoryWithSubs[]> => {
+  return customFetch<CategoryWithSubs[]>(getListCategoriesUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListCategoriesQueryKey = () => {
+  return [`/api/categories`] as const;
+};
+
+export const getListCategoriesQueryOptions = <
+  TData = Awaited<ReturnType<typeof listCategories>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listCategories>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getListCategoriesQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof listCategories>>> = ({
+    signal,
+  }) => listCategories({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listCategories>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListCategoriesQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listCategories>>
+>;
+export type ListCategoriesQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List active categories with sub-categories
+ */
+
+export function useListCategories<
+  TData = Awaited<ReturnType<typeof listCategories>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listCategories>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListCategoriesQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary List active ads/promos
+ */
+export const getListAdsUrl = (params?: ListAdsParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/ads?${stringifiedParams}`
+    : `/api/ads`;
+};
+
+export const listAds = async (
+  params?: ListAdsParams,
+  options?: RequestInit,
+): Promise<Ad[]> => {
+  return customFetch<Ad[]>(getListAdsUrl(params), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListAdsQueryKey = (params?: ListAdsParams) => {
+  return [`/api/ads`, ...(params ? [params] : [])] as const;
+};
+
+export const getListAdsQueryOptions = <
+  TData = Awaited<ReturnType<typeof listAds>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: ListAdsParams,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof listAds>>, TError, TData>;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getListAdsQueryKey(params);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof listAds>>> = ({
+    signal,
+  }) => listAds(params, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listAds>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListAdsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listAds>>
+>;
+export type ListAdsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List active ads/promos
+ */
+
+export function useListAds<
+  TData = Awaited<ReturnType<typeof listAds>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: ListAdsParams,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof listAds>>, TError, TData>;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListAdsQueryOptions(params, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary List active shorts
+ */
+export const getListShortsUrl = () => {
+  return `/api/shorts`;
+};
+
+export const listShorts = async (options?: RequestInit): Promise<Short[]> => {
+  return customFetch<Short[]>(getListShortsUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListShortsQueryKey = () => {
+  return [`/api/shorts`] as const;
+};
+
+export const getListShortsQueryOptions = <
+  TData = Awaited<ReturnType<typeof listShorts>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listShorts>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getListShortsQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof listShorts>>> = ({
+    signal,
+  }) => listShorts({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listShorts>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListShortsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listShorts>>
+>;
+export type ListShortsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List active shorts
+ */
+
+export function useListShorts<
+  TData = Awaited<ReturnType<typeof listShorts>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listShorts>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListShortsQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary List all categories (admin)
+ */
+export const getListBackendCategoriesAllUrl = () => {
+  return `/api/backend/categories/all`;
+};
+
+export const listBackendCategoriesAll = async (
+  options?: RequestInit,
+): Promise<CategoryWithSubs[]> => {
+  return customFetch<CategoryWithSubs[]>(getListBackendCategoriesAllUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListBackendCategoriesAllQueryKey = () => {
+  return [`/api/backend/categories/all`] as const;
+};
+
+export const getListBackendCategoriesAllQueryOptions = <
+  TData = Awaited<ReturnType<typeof listBackendCategoriesAll>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listBackendCategoriesAll>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getListBackendCategoriesAllQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof listBackendCategoriesAll>>
+  > = ({ signal }) => listBackendCategoriesAll({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listBackendCategoriesAll>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListBackendCategoriesAllQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listBackendCategoriesAll>>
+>;
+export type ListBackendCategoriesAllQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List all categories (admin)
+ */
+
+export function useListBackendCategoriesAll<
+  TData = Awaited<ReturnType<typeof listBackendCategoriesAll>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listBackendCategoriesAll>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListBackendCategoriesAllQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Update a category (admin)
+ */
+export const getUpdateBackendCategoryUrl = (id: number) => {
+  return `/api/backend/categories/${id}`;
+};
+
+export const updateBackendCategory = async (
+  id: number,
+  categoryBody: CategoryBody,
+  options?: RequestInit,
+): Promise<Category> => {
+  return customFetch<Category>(getUpdateBackendCategoryUrl(id), {
+    ...options,
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(categoryBody),
+  });
+};
+
+export const getUpdateBackendCategoryMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateBackendCategory>>,
+    TError,
+    { id: number; data: BodyType<CategoryBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof updateBackendCategory>>,
+  TError,
+  { id: number; data: BodyType<CategoryBody> },
+  TContext
+> => {
+  const mutationKey = ["updateBackendCategory"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof updateBackendCategory>>,
+    { id: number; data: BodyType<CategoryBody> }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return updateBackendCategory(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UpdateBackendCategoryMutationResult = NonNullable<
+  Awaited<ReturnType<typeof updateBackendCategory>>
+>;
+export type UpdateBackendCategoryMutationBody = BodyType<CategoryBody>;
+export type UpdateBackendCategoryMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Update a category (admin)
+ */
+export const useUpdateBackendCategory = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateBackendCategory>>,
+    TError,
+    { id: number; data: BodyType<CategoryBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof updateBackendCategory>>,
+  TError,
+  { id: number; data: BodyType<CategoryBody> },
+  TContext
+> => {
+  return useMutation(getUpdateBackendCategoryMutationOptions(options));
+};
+
+/**
+ * @summary Delete a category (admin)
+ */
+export const getDeleteBackendCategoryUrl = (id: number) => {
+  return `/api/backend/categories/${id}`;
+};
+
+export const deleteBackendCategory = async (
+  id: number,
+  options?: RequestInit,
+): Promise<void> => {
+  return customFetch<void>(getDeleteBackendCategoryUrl(id), {
+    ...options,
+    method: "DELETE",
+  });
+};
+
+export const getDeleteBackendCategoryMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteBackendCategory>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof deleteBackendCategory>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  const mutationKey = ["deleteBackendCategory"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof deleteBackendCategory>>,
+    { id: number }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return deleteBackendCategory(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type DeleteBackendCategoryMutationResult = NonNullable<
+  Awaited<ReturnType<typeof deleteBackendCategory>>
+>;
+
+export type DeleteBackendCategoryMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Delete a category (admin)
+ */
+export const useDeleteBackendCategory = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteBackendCategory>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof deleteBackendCategory>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  return useMutation(getDeleteBackendCategoryMutationOptions(options));
+};
+
+/**
+ * @summary List all ads (admin)
+ */
+export const getListBackendAdsUrl = () => {
+  return `/api/backend/ads`;
+};
+
+export const listBackendAds = async (options?: RequestInit): Promise<Ad[]> => {
+  return customFetch<Ad[]>(getListBackendAdsUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListBackendAdsQueryKey = () => {
+  return [`/api/backend/ads`] as const;
+};
+
+export const getListBackendAdsQueryOptions = <
+  TData = Awaited<ReturnType<typeof listBackendAds>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listBackendAds>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getListBackendAdsQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof listBackendAds>>> = ({
+    signal,
+  }) => listBackendAds({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listBackendAds>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListBackendAdsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listBackendAds>>
+>;
+export type ListBackendAdsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List all ads (admin)
+ */
+
+export function useListBackendAds<
+  TData = Awaited<ReturnType<typeof listBackendAds>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listBackendAds>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListBackendAdsQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Create an ad (admin)
+ */
+export const getCreateBackendAdUrl = () => {
+  return `/api/backend/ads`;
+};
+
+export const createBackendAd = async (
+  adBody: AdBody,
+  options?: RequestInit,
+): Promise<Ad> => {
+  return customFetch<Ad>(getCreateBackendAdUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(adBody),
+  });
+};
+
+export const getCreateBackendAdMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createBackendAd>>,
+    TError,
+    { data: BodyType<AdBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof createBackendAd>>,
+  TError,
+  { data: BodyType<AdBody> },
+  TContext
+> => {
+  const mutationKey = ["createBackendAd"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof createBackendAd>>,
+    { data: BodyType<AdBody> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return createBackendAd(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CreateBackendAdMutationResult = NonNullable<
+  Awaited<ReturnType<typeof createBackendAd>>
+>;
+export type CreateBackendAdMutationBody = BodyType<AdBody>;
+export type CreateBackendAdMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Create an ad (admin)
+ */
+export const useCreateBackendAd = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createBackendAd>>,
+    TError,
+    { data: BodyType<AdBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof createBackendAd>>,
+  TError,
+  { data: BodyType<AdBody> },
+  TContext
+> => {
+  return useMutation(getCreateBackendAdMutationOptions(options));
+};
+
+/**
+ * @summary Update an ad (admin)
+ */
+export const getUpdateBackendAdUrl = (id: number) => {
+  return `/api/backend/ads/${id}`;
+};
+
+export const updateBackendAd = async (
+  id: number,
+  adBody: AdBody,
+  options?: RequestInit,
+): Promise<Ad> => {
+  return customFetch<Ad>(getUpdateBackendAdUrl(id), {
+    ...options,
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(adBody),
+  });
+};
+
+export const getUpdateBackendAdMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateBackendAd>>,
+    TError,
+    { id: number; data: BodyType<AdBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof updateBackendAd>>,
+  TError,
+  { id: number; data: BodyType<AdBody> },
+  TContext
+> => {
+  const mutationKey = ["updateBackendAd"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof updateBackendAd>>,
+    { id: number; data: BodyType<AdBody> }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return updateBackendAd(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UpdateBackendAdMutationResult = NonNullable<
+  Awaited<ReturnType<typeof updateBackendAd>>
+>;
+export type UpdateBackendAdMutationBody = BodyType<AdBody>;
+export type UpdateBackendAdMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Update an ad (admin)
+ */
+export const useUpdateBackendAd = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateBackendAd>>,
+    TError,
+    { id: number; data: BodyType<AdBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof updateBackendAd>>,
+  TError,
+  { id: number; data: BodyType<AdBody> },
+  TContext
+> => {
+  return useMutation(getUpdateBackendAdMutationOptions(options));
+};
+
+/**
+ * @summary Delete an ad (admin)
+ */
+export const getDeleteBackendAdUrl = (id: number) => {
+  return `/api/backend/ads/${id}`;
+};
+
+export const deleteBackendAd = async (
+  id: number,
+  options?: RequestInit,
+): Promise<void> => {
+  return customFetch<void>(getDeleteBackendAdUrl(id), {
+    ...options,
+    method: "DELETE",
+  });
+};
+
+export const getDeleteBackendAdMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteBackendAd>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof deleteBackendAd>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  const mutationKey = ["deleteBackendAd"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof deleteBackendAd>>,
+    { id: number }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return deleteBackendAd(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type DeleteBackendAdMutationResult = NonNullable<
+  Awaited<ReturnType<typeof deleteBackendAd>>
+>;
+
+export type DeleteBackendAdMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Delete an ad (admin)
+ */
+export const useDeleteBackendAd = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteBackendAd>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof deleteBackendAd>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  return useMutation(getDeleteBackendAdMutationOptions(options));
+};
+
+/**
+ * @summary List all shorts (admin)
+ */
+export const getListBackendShortsUrl = () => {
+  return `/api/backend/shorts`;
+};
+
+export const listBackendShorts = async (
+  options?: RequestInit,
+): Promise<Short[]> => {
+  return customFetch<Short[]>(getListBackendShortsUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListBackendShortsQueryKey = () => {
+  return [`/api/backend/shorts`] as const;
+};
+
+export const getListBackendShortsQueryOptions = <
+  TData = Awaited<ReturnType<typeof listBackendShorts>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listBackendShorts>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getListBackendShortsQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof listBackendShorts>>
+  > = ({ signal }) => listBackendShorts({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listBackendShorts>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListBackendShortsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listBackendShorts>>
+>;
+export type ListBackendShortsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List all shorts (admin)
+ */
+
+export function useListBackendShorts<
+  TData = Awaited<ReturnType<typeof listBackendShorts>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listBackendShorts>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListBackendShortsQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Create a short (admin)
+ */
+export const getCreateBackendShortUrl = () => {
+  return `/api/backend/shorts`;
+};
+
+export const createBackendShort = async (
+  shortBody: ShortBody,
+  options?: RequestInit,
+): Promise<Short> => {
+  return customFetch<Short>(getCreateBackendShortUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(shortBody),
+  });
+};
+
+export const getCreateBackendShortMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createBackendShort>>,
+    TError,
+    { data: BodyType<ShortBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof createBackendShort>>,
+  TError,
+  { data: BodyType<ShortBody> },
+  TContext
+> => {
+  const mutationKey = ["createBackendShort"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof createBackendShort>>,
+    { data: BodyType<ShortBody> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return createBackendShort(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CreateBackendShortMutationResult = NonNullable<
+  Awaited<ReturnType<typeof createBackendShort>>
+>;
+export type CreateBackendShortMutationBody = BodyType<ShortBody>;
+export type CreateBackendShortMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Create a short (admin)
+ */
+export const useCreateBackendShort = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createBackendShort>>,
+    TError,
+    { data: BodyType<ShortBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof createBackendShort>>,
+  TError,
+  { data: BodyType<ShortBody> },
+  TContext
+> => {
+  return useMutation(getCreateBackendShortMutationOptions(options));
+};
+
+/**
+ * @summary Update a short (admin)
+ */
+export const getUpdateBackendShortUrl = (id: number) => {
+  return `/api/backend/shorts/${id}`;
+};
+
+export const updateBackendShort = async (
+  id: number,
+  shortBody: ShortBody,
+  options?: RequestInit,
+): Promise<Short> => {
+  return customFetch<Short>(getUpdateBackendShortUrl(id), {
+    ...options,
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(shortBody),
+  });
+};
+
+export const getUpdateBackendShortMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateBackendShort>>,
+    TError,
+    { id: number; data: BodyType<ShortBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof updateBackendShort>>,
+  TError,
+  { id: number; data: BodyType<ShortBody> },
+  TContext
+> => {
+  const mutationKey = ["updateBackendShort"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof updateBackendShort>>,
+    { id: number; data: BodyType<ShortBody> }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return updateBackendShort(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UpdateBackendShortMutationResult = NonNullable<
+  Awaited<ReturnType<typeof updateBackendShort>>
+>;
+export type UpdateBackendShortMutationBody = BodyType<ShortBody>;
+export type UpdateBackendShortMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Update a short (admin)
+ */
+export const useUpdateBackendShort = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateBackendShort>>,
+    TError,
+    { id: number; data: BodyType<ShortBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof updateBackendShort>>,
+  TError,
+  { id: number; data: BodyType<ShortBody> },
+  TContext
+> => {
+  return useMutation(getUpdateBackendShortMutationOptions(options));
+};
+
+/**
+ * @summary Delete a short (admin)
+ */
+export const getDeleteBackendShortUrl = (id: number) => {
+  return `/api/backend/shorts/${id}`;
+};
+
+export const deleteBackendShort = async (
+  id: number,
+  options?: RequestInit,
+): Promise<void> => {
+  return customFetch<void>(getDeleteBackendShortUrl(id), {
+    ...options,
+    method: "DELETE",
+  });
+};
+
+export const getDeleteBackendShortMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteBackendShort>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof deleteBackendShort>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  const mutationKey = ["deleteBackendShort"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof deleteBackendShort>>,
+    { id: number }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return deleteBackendShort(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type DeleteBackendShortMutationResult = NonNullable<
+  Awaited<ReturnType<typeof deleteBackendShort>>
+>;
+
+export type DeleteBackendShortMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Delete a short (admin)
+ */
+export const useDeleteBackendShort = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteBackendShort>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof deleteBackendShort>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  return useMutation(getDeleteBackendShortMutationOptions(options));
 };

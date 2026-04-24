@@ -893,6 +893,112 @@ export interface UpdateQuoteBody {
   merchantNotes?: string;
 }
 
+export interface Category {
+  id: number;
+  name: string;
+  slug: string;
+  icon: string;
+  accentColor: string;
+  /** @nullable */
+  parentId?: number | null;
+  businessType: string;
+  isActive: boolean;
+  sortOrder: number;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface CategoryWithSubs {
+  id: number;
+  name: string;
+  slug: string;
+  icon: string;
+  accentColor: string;
+  /** @nullable */
+  parentId?: number | null;
+  businessType: string;
+  isActive: boolean;
+  sortOrder: number;
+  subCategories?: Category[];
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface CategoryBody {
+  name: string;
+  slug: string;
+  icon?: string;
+  accentColor?: string;
+  /** @nullable */
+  parentId?: number | null;
+  businessType?: string;
+  isActive?: boolean;
+  sortOrder?: number;
+}
+
+export interface Ad {
+  id: number;
+  type: string;
+  title: string;
+  /** @nullable */
+  subtitle?: string | null;
+  /** @nullable */
+  badge?: string | null;
+  bgColor: string;
+  /** @nullable */
+  accentColor?: string | null;
+  icon: string;
+  /** @nullable */
+  imageUrl?: string | null;
+  /** @nullable */
+  linkUrl?: string | null;
+  isActive: boolean;
+  sortOrder: number;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface AdBody {
+  type?: string;
+  title: string;
+  subtitle?: string;
+  badge?: string;
+  bgColor?: string;
+  accentColor?: string;
+  icon?: string;
+  imageUrl?: string;
+  linkUrl?: string;
+  isActive?: boolean;
+  sortOrder?: number;
+}
+
+export interface Short {
+  id: number;
+  title: string;
+  /** @nullable */
+  imageUrl?: string | null;
+  /** @nullable */
+  videoUrl?: string | null;
+  /** @nullable */
+  restaurantId?: number | null;
+  /** @nullable */
+  restaurantName?: string | null;
+  isActive: boolean;
+  sortOrder: number;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface ShortBody {
+  title: string;
+  imageUrl?: string;
+  videoUrl?: string;
+  restaurantId?: number;
+  restaurantName?: string;
+  isActive?: boolean;
+  sortOrder?: number;
+}
+
 export type ListBackendCustomersParams = {
   search?: string;
 };
@@ -999,4 +1105,8 @@ export type ListReviewsParams = {
 export type ListUsersParams = {
   role?: string;
   search?: string;
+};
+
+export type ListAdsParams = {
+  type?: string;
 };

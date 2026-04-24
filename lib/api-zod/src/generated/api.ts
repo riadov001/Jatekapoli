@@ -312,6 +312,20 @@ export const ListBackendCategoriesResponse = zod.array(
 );
 
 /**
+ * @summary Create a category (admin)
+ */
+export const CreateBackendCategoryBody = zod.object({
+  name: zod.string(),
+  slug: zod.string(),
+  icon: zod.string().optional(),
+  accentColor: zod.string().optional(),
+  parentId: zod.number().nullish(),
+  businessType: zod.string().optional(),
+  isActive: zod.boolean().optional(),
+  sortOrder: zod.number().optional(),
+});
+
+/**
  * JWT required. Backend dashboard RBAC applies by staff role and scoped shop access.
  * @summary List customers
  */
@@ -2490,5 +2504,310 @@ export const UpdateUserResponse = zod.object({
  * @summary Delete a user (admin)
  */
 export const DeleteUserParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+/**
+ * @summary List active categories with sub-categories
+ */
+export const ListCategoriesResponseItem = zod.object({
+  id: zod.number(),
+  name: zod.string(),
+  slug: zod.string(),
+  icon: zod.string(),
+  accentColor: zod.string(),
+  parentId: zod.number().nullish(),
+  businessType: zod.string(),
+  isActive: zod.boolean(),
+  sortOrder: zod.number(),
+  subCategories: zod
+    .array(
+      zod.object({
+        id: zod.number(),
+        name: zod.string(),
+        slug: zod.string(),
+        icon: zod.string(),
+        accentColor: zod.string(),
+        parentId: zod.number().nullish(),
+        businessType: zod.string(),
+        isActive: zod.boolean(),
+        sortOrder: zod.number(),
+        createdAt: zod.coerce.date().optional(),
+        updatedAt: zod.coerce.date().optional(),
+      }),
+    )
+    .optional(),
+  createdAt: zod.coerce.date().optional(),
+  updatedAt: zod.coerce.date().optional(),
+});
+export const ListCategoriesResponse = zod.array(ListCategoriesResponseItem);
+
+/**
+ * @summary List active ads/promos
+ */
+export const ListAdsQueryParams = zod.object({
+  type: zod.coerce.string().optional(),
+});
+
+export const ListAdsResponseItem = zod.object({
+  id: zod.number(),
+  type: zod.string(),
+  title: zod.string(),
+  subtitle: zod.string().nullish(),
+  badge: zod.string().nullish(),
+  bgColor: zod.string(),
+  accentColor: zod.string().nullish(),
+  icon: zod.string(),
+  imageUrl: zod.string().nullish(),
+  linkUrl: zod.string().nullish(),
+  isActive: zod.boolean(),
+  sortOrder: zod.number(),
+  createdAt: zod.coerce.date().optional(),
+  updatedAt: zod.coerce.date().optional(),
+});
+export const ListAdsResponse = zod.array(ListAdsResponseItem);
+
+/**
+ * @summary List active shorts
+ */
+export const ListShortsResponseItem = zod.object({
+  id: zod.number(),
+  title: zod.string(),
+  imageUrl: zod.string().nullish(),
+  videoUrl: zod.string().nullish(),
+  restaurantId: zod.number().nullish(),
+  restaurantName: zod.string().nullish(),
+  isActive: zod.boolean(),
+  sortOrder: zod.number(),
+  createdAt: zod.coerce.date().optional(),
+  updatedAt: zod.coerce.date().optional(),
+});
+export const ListShortsResponse = zod.array(ListShortsResponseItem);
+
+/**
+ * @summary List all categories (admin)
+ */
+export const ListBackendCategoriesAllResponseItem = zod.object({
+  id: zod.number(),
+  name: zod.string(),
+  slug: zod.string(),
+  icon: zod.string(),
+  accentColor: zod.string(),
+  parentId: zod.number().nullish(),
+  businessType: zod.string(),
+  isActive: zod.boolean(),
+  sortOrder: zod.number(),
+  subCategories: zod
+    .array(
+      zod.object({
+        id: zod.number(),
+        name: zod.string(),
+        slug: zod.string(),
+        icon: zod.string(),
+        accentColor: zod.string(),
+        parentId: zod.number().nullish(),
+        businessType: zod.string(),
+        isActive: zod.boolean(),
+        sortOrder: zod.number(),
+        createdAt: zod.coerce.date().optional(),
+        updatedAt: zod.coerce.date().optional(),
+      }),
+    )
+    .optional(),
+  createdAt: zod.coerce.date().optional(),
+  updatedAt: zod.coerce.date().optional(),
+});
+export const ListBackendCategoriesAllResponse = zod.array(
+  ListBackendCategoriesAllResponseItem,
+);
+
+/**
+ * @summary Update a category (admin)
+ */
+export const UpdateBackendCategoryParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const UpdateBackendCategoryBody = zod.object({
+  name: zod.string(),
+  slug: zod.string(),
+  icon: zod.string().optional(),
+  accentColor: zod.string().optional(),
+  parentId: zod.number().nullish(),
+  businessType: zod.string().optional(),
+  isActive: zod.boolean().optional(),
+  sortOrder: zod.number().optional(),
+});
+
+export const UpdateBackendCategoryResponse = zod.object({
+  id: zod.number(),
+  name: zod.string(),
+  slug: zod.string(),
+  icon: zod.string(),
+  accentColor: zod.string(),
+  parentId: zod.number().nullish(),
+  businessType: zod.string(),
+  isActive: zod.boolean(),
+  sortOrder: zod.number(),
+  createdAt: zod.coerce.date().optional(),
+  updatedAt: zod.coerce.date().optional(),
+});
+
+/**
+ * @summary Delete a category (admin)
+ */
+export const DeleteBackendCategoryParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+/**
+ * @summary List all ads (admin)
+ */
+export const ListBackendAdsResponseItem = zod.object({
+  id: zod.number(),
+  type: zod.string(),
+  title: zod.string(),
+  subtitle: zod.string().nullish(),
+  badge: zod.string().nullish(),
+  bgColor: zod.string(),
+  accentColor: zod.string().nullish(),
+  icon: zod.string(),
+  imageUrl: zod.string().nullish(),
+  linkUrl: zod.string().nullish(),
+  isActive: zod.boolean(),
+  sortOrder: zod.number(),
+  createdAt: zod.coerce.date().optional(),
+  updatedAt: zod.coerce.date().optional(),
+});
+export const ListBackendAdsResponse = zod.array(ListBackendAdsResponseItem);
+
+/**
+ * @summary Create an ad (admin)
+ */
+export const CreateBackendAdBody = zod.object({
+  type: zod.string().optional(),
+  title: zod.string(),
+  subtitle: zod.string().optional(),
+  badge: zod.string().optional(),
+  bgColor: zod.string().optional(),
+  accentColor: zod.string().optional(),
+  icon: zod.string().optional(),
+  imageUrl: zod.string().optional(),
+  linkUrl: zod.string().optional(),
+  isActive: zod.boolean().optional(),
+  sortOrder: zod.number().optional(),
+});
+
+/**
+ * @summary Update an ad (admin)
+ */
+export const UpdateBackendAdParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const UpdateBackendAdBody = zod.object({
+  type: zod.string().optional(),
+  title: zod.string(),
+  subtitle: zod.string().optional(),
+  badge: zod.string().optional(),
+  bgColor: zod.string().optional(),
+  accentColor: zod.string().optional(),
+  icon: zod.string().optional(),
+  imageUrl: zod.string().optional(),
+  linkUrl: zod.string().optional(),
+  isActive: zod.boolean().optional(),
+  sortOrder: zod.number().optional(),
+});
+
+export const UpdateBackendAdResponse = zod.object({
+  id: zod.number(),
+  type: zod.string(),
+  title: zod.string(),
+  subtitle: zod.string().nullish(),
+  badge: zod.string().nullish(),
+  bgColor: zod.string(),
+  accentColor: zod.string().nullish(),
+  icon: zod.string(),
+  imageUrl: zod.string().nullish(),
+  linkUrl: zod.string().nullish(),
+  isActive: zod.boolean(),
+  sortOrder: zod.number(),
+  createdAt: zod.coerce.date().optional(),
+  updatedAt: zod.coerce.date().optional(),
+});
+
+/**
+ * @summary Delete an ad (admin)
+ */
+export const DeleteBackendAdParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+/**
+ * @summary List all shorts (admin)
+ */
+export const ListBackendShortsResponseItem = zod.object({
+  id: zod.number(),
+  title: zod.string(),
+  imageUrl: zod.string().nullish(),
+  videoUrl: zod.string().nullish(),
+  restaurantId: zod.number().nullish(),
+  restaurantName: zod.string().nullish(),
+  isActive: zod.boolean(),
+  sortOrder: zod.number(),
+  createdAt: zod.coerce.date().optional(),
+  updatedAt: zod.coerce.date().optional(),
+});
+export const ListBackendShortsResponse = zod.array(
+  ListBackendShortsResponseItem,
+);
+
+/**
+ * @summary Create a short (admin)
+ */
+export const CreateBackendShortBody = zod.object({
+  title: zod.string(),
+  imageUrl: zod.string().optional(),
+  videoUrl: zod.string().optional(),
+  restaurantId: zod.number().optional(),
+  restaurantName: zod.string().optional(),
+  isActive: zod.boolean().optional(),
+  sortOrder: zod.number().optional(),
+});
+
+/**
+ * @summary Update a short (admin)
+ */
+export const UpdateBackendShortParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const UpdateBackendShortBody = zod.object({
+  title: zod.string(),
+  imageUrl: zod.string().optional(),
+  videoUrl: zod.string().optional(),
+  restaurantId: zod.number().optional(),
+  restaurantName: zod.string().optional(),
+  isActive: zod.boolean().optional(),
+  sortOrder: zod.number().optional(),
+});
+
+export const UpdateBackendShortResponse = zod.object({
+  id: zod.number(),
+  title: zod.string(),
+  imageUrl: zod.string().nullish(),
+  videoUrl: zod.string().nullish(),
+  restaurantId: zod.number().nullish(),
+  restaurantName: zod.string().nullish(),
+  isActive: zod.boolean(),
+  sortOrder: zod.number(),
+  createdAt: zod.coerce.date().optional(),
+  updatedAt: zod.coerce.date().optional(),
+});
+
+/**
+ * @summary Delete a short (admin)
+ */
+export const DeleteBackendShortParams = zod.object({
   id: zod.coerce.number(),
 });

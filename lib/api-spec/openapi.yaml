@@ -47,6 +47,8 @@ tags:
     description: Quote and invoice operations
   - name: events
     description: Server-sent event subscriptions
+  - name: content
+    description: Categories, ads/promos, and shorts content operations
 paths:
   /addresses:
     get:
@@ -475,6 +477,26 @@ paths:
       security:
         - bearerAuth: []
       description: JWT required. Backend dashboard RBAC applies by staff role and scoped shop access.
+    post:
+      operationId: createBackendCategory
+      tags:
+        - backend
+      summary: Create a category (admin)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CategoryBody"
+      responses:
+        "201":
+          description: created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Category"
   /backend/customers:
     get:
       operationId: listBackendCustomers
@@ -3000,6 +3022,277 @@ paths:
       security:
         - bearerAuth: []
       description: JWT required. Users can delete themselves; admins can delete any user.
+  /categories:
+    get:
+      operationId: listCategories
+      tags:
+        - content
+      summary: List active categories with sub-categories
+      responses:
+        "200":
+          description: categories
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CategoryWithSubs"
+  /ads:
+    get:
+      operationId: listAds
+      tags:
+        - content
+      summary: List active ads/promos
+      parameters:
+        - name: type
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: ads
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Ad"
+  /shorts:
+    get:
+      operationId: listShorts
+      tags:
+        - content
+      summary: List active shorts
+      responses:
+        "200":
+          description: shorts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Short"
+  /backend/categories/all:
+    get:
+      operationId: listBackendCategoriesAll
+      tags:
+        - backend
+      summary: List all categories (admin)
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: categories
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CategoryWithSubs"
+  /backend/categories/{id}:
+    patch:
+      operationId: updateBackendCategory
+      tags:
+        - backend
+      summary: Update a category (admin)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CategoryBody"
+      responses:
+        "200":
+          description: updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Category"
+    delete:
+      operationId: deleteBackendCategory
+      tags:
+        - backend
+      summary: Delete a category (admin)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: deleted
+  /backend/ads:
+    get:
+      operationId: listBackendAds
+      tags:
+        - backend
+      summary: List all ads (admin)
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: ads
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Ad"
+    post:
+      operationId: createBackendAd
+      tags:
+        - backend
+      summary: Create an ad (admin)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdBody"
+      responses:
+        "201":
+          description: created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Ad"
+  /backend/ads/{id}:
+    patch:
+      operationId: updateBackendAd
+      tags:
+        - backend
+      summary: Update an ad (admin)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdBody"
+      responses:
+        "200":
+          description: updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Ad"
+    delete:
+      operationId: deleteBackendAd
+      tags:
+        - backend
+      summary: Delete an ad (admin)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: deleted
+  /backend/shorts:
+    get:
+      operationId: listBackendShorts
+      tags:
+        - backend
+      summary: List all shorts (admin)
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: shorts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Short"
+    post:
+      operationId: createBackendShort
+      tags:
+        - backend
+      summary: Create a short (admin)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ShortBody"
+      responses:
+        "201":
+          description: created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Short"
+  /backend/shorts/{id}:
+    patch:
+      operationId: updateBackendShort
+      tags:
+        - backend
+      summary: Update a short (admin)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ShortBody"
+      responses:
+        "200":
+          description: updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Short"
+    delete:
+      operationId: deleteBackendShort
+      tags:
+        - backend
+      summary: Delete a short (admin)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: deleted
 components:
   schemas:
     HealthStatus:
@@ -4706,6 +4999,245 @@ components:
         merchantNotes:
           type: string
           maxLength: 2000
+    Category:
+      type: object
+      required:
+        - id
+        - name
+        - slug
+        - icon
+        - accentColor
+        - businessType
+        - isActive
+        - sortOrder
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        slug:
+          type: string
+        icon:
+          type: string
+        accentColor:
+          type: string
+        parentId:
+          type:
+            - integer
+            - "null"
+        businessType:
+          type: string
+        isActive:
+          type: boolean
+        sortOrder:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    CategoryWithSubs:
+      type: object
+      required:
+        - id
+        - name
+        - slug
+        - icon
+        - accentColor
+        - businessType
+        - isActive
+        - sortOrder
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        slug:
+          type: string
+        icon:
+          type: string
+        accentColor:
+          type: string
+        parentId:
+          type:
+            - integer
+            - "null"
+        businessType:
+          type: string
+        isActive:
+          type: boolean
+        sortOrder:
+          type: integer
+        subCategories:
+          type: array
+          items:
+            $ref: "#/components/schemas/Category"
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    CategoryBody:
+      type: object
+      required:
+        - name
+        - slug
+      properties:
+        name:
+          type: string
+        slug:
+          type: string
+        icon:
+          type: string
+        accentColor:
+          type: string
+        parentId:
+          type:
+            - integer
+            - "null"
+        businessType:
+          type: string
+        isActive:
+          type: boolean
+        sortOrder:
+          type: integer
+    Ad:
+      type: object
+      required:
+        - id
+        - type
+        - title
+        - bgColor
+        - icon
+        - isActive
+        - sortOrder
+      properties:
+        id:
+          type: integer
+        type:
+          type: string
+        title:
+          type: string
+        subtitle:
+          type:
+            - string
+            - "null"
+        badge:
+          type:
+            - string
+            - "null"
+        bgColor:
+          type: string
+        accentColor:
+          type:
+            - string
+            - "null"
+        icon:
+          type: string
+        imageUrl:
+          type:
+            - string
+            - "null"
+        linkUrl:
+          type:
+            - string
+            - "null"
+        isActive:
+          type: boolean
+        sortOrder:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    AdBody:
+      type: object
+      required:
+        - title
+      properties:
+        type:
+          type: string
+        title:
+          type: string
+        subtitle:
+          type: string
+        badge:
+          type: string
+        bgColor:
+          type: string
+        accentColor:
+          type: string
+        icon:
+          type: string
+        imageUrl:
+          type: string
+        linkUrl:
+          type: string
+        isActive:
+          type: boolean
+        sortOrder:
+          type: integer
+    Short:
+      type: object
+      required:
+        - id
+        - title
+        - isActive
+        - sortOrder
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        imageUrl:
+          type:
+            - string
+            - "null"
+        videoUrl:
+          type:
+            - string
+            - "null"
+        restaurantId:
+          type:
+            - integer
+            - "null"
+        restaurantName:
+          type:
+            - string
+            - "null"
+        isActive:
+          type: boolean
+        sortOrder:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    ShortBody:
+      type: object
+      required:
+        - title
+      properties:
+        title:
+          type: string
+        imageUrl:
+          type: string
+        videoUrl:
+          type: string
+        restaurantId:
+          type: integer
+        restaurantName:
+          type: string
+        isActive:
+          type: boolean
+        sortOrder:
+          type: integer
   securitySchemes:
     bearerAuth:
       type: http
