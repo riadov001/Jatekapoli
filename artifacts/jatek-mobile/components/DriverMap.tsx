@@ -63,6 +63,13 @@ function buildHtml(driverLat: number, driverLng: number, destLat?: number, destL
     driverMarker.setLatLng([lat, lng]);
     map.panTo([lat, lng], {animate: true, duration: 0.8});
   };
+  function handleMsg(raw){
+    try{var d=JSON.parse(raw);if(d&&typeof d.lat==='number'&&typeof d.lng==='number'){window.updateDriverPosition(d.lat,d.lng);}}catch(e){}
+  }
+  window.addEventListener('message',function(ev){handleMsg(ev.data);});
+  document.addEventListener('message',function(ev){handleMsg(ev.data);});
+  setTimeout(function(){map.invalidateSize();},150);
+  setTimeout(function(){map.invalidateSize();},600);
 </script>
 </body>
 </html>`;
@@ -70,24 +77,57 @@ function buildHtml(driverLat: number, driverLng: number, destLat?: number, destL
 
 export function DriverMap({ driverLat, driverLng, destLat, destLng, height = 220 }: Props) {
   const webViewRef = useRef<WebView>(null);
+  const iframeRef = useRef<HTMLIFrameElement | null>(null);
 
-  // On position change after initial mount, update marker smoothly via JS injection
+  // Build initial HTML once; subsequent driver-position updates flow through
+  // updateDriverPosition() so the map doesn't re-mount on every GPS tick.
+  const initialHtml = React.useMemo(
+    () => buildHtml(driverLat, driverLng, destLat, destLng),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [destLat, destLng],
+  );
+
+  // Native: inject JS into the WebView when driver position changes
   useEffect(() => {
+    if (Platform.OS === "web") return;
     if (!webViewRef.current) return;
     webViewRef.current.injectJavaScript(
-      `window.updateDriverPosition(${driverLat}, ${driverLng}); true;`
+      `window.updateDriverPosition && window.updateDriverPosition(${driverLat}, ${driverLng}); true;`
     );
   }, [driverLat, driverLng]);
 
+  // Web: postMessage into the iframe when driver position changes
+  useEffect(() => {
+    if (Platform.OS !== "web") return;
+    const w = iframeRef.current?.contentWindow;
+    if (!w) return;
+    try {
+      w.postMessage(JSON.stringify({ lat: driverLat, lng: driverLng }), "*");
+    } catch {
+      /* ignore */
+    }
+  }, [driverLat, driverLng]);
+
   if (Platform.OS === "web") {
-    return null; // Web already has its own map
+    return (
+      <View style={[styles.container, { height }]}>
+        {/* @ts-expect-error iframe is web-only */}
+        <iframe
+          ref={iframeRef as any}
+          srcDoc={initialHtml}
+          style={{ border: 0, width: "100%", height: "100%", display: "block", background: "#eef" }}
+          title="Live driver location"
+          sandbox="allow-scripts allow-same-origin allow-popups"
+        />
+      </View>
+    );
   }
 
   return (
     <View style={[styles.container, { height }]}>
       <WebView
         ref={webViewRef}
-        source={{ html: buildHtml(driverLat, driverLng, destLat, destLng) }}
+        source={{ html: initialHtml }}
         style={styles.map}
         scrollEnabled={false}
         originWhitelist={["*"]}
