@@ -15,6 +15,7 @@ import {
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import Animated, { FadeInDown, FadeInUp, FadeIn } from "react-native-reanimated";
 import {
   useListRestaurants,
@@ -305,7 +306,10 @@ export default function HomeScreen() {
   };
 
   // Tab bar leaves ~84pt of empty space at the bottom — pad accordingly.
-  const tabBarPad = (Platform.OS === "web" ? 84 : 72) + insets.bottom;
+  // Real rendered tab bar height — keeps the floating bar glued to its top edge
+  // on every device (handles bottom safe-area / home indicator automatically).
+  const tabBarHeight = useBottomTabBarHeight();
+  const tabBarPad = tabBarHeight;
 
   return (
     <View style={s.root}>
