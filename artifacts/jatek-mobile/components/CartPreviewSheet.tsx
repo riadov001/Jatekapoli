@@ -17,8 +17,44 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
+import { useListMenuItems } from "@workspace/api-client-react";
 import { useCart } from "@/contexts/CartContext";
 import { useAuth } from "@/contexts/AuthContext";
+
+const ADDON_KEYWORDS = [
+  "boisson",
+  "drink",
+  "soda",
+  "jus",
+  "juice",
+  "eau",
+  "water",
+  "dessert",
+  "sweet",
+  "patisserie",
+  "pâtisserie",
+  "gateau",
+  "gâteau",
+  "ice",
+  "glace",
+  "side",
+  "accompagnement",
+  "accompagnements",
+  "entree",
+  "entrée",
+  "snack",
+  "frites",
+  "sauce",
+  "extra",
+  "supplement",
+  "supplément",
+];
+
+function isAddonCategory(category?: string | null): boolean {
+  if (!category) return false;
+  const lc = category.toLowerCase();
+  return ADDON_KEYWORDS.some((kw) => lc.includes(kw));
+}
 
 const PINK = "#E2006A";
 const PINK_SOFT = "#FFE0EE";
@@ -39,6 +75,7 @@ export function CartPreviewSheet({ visible, onClose }: Props) {
   const insets = useSafeAreaInsets();
   const {
     items,
+    restaurantId,
     restaurantName,
     subtotal,
     itemCount,
@@ -46,6 +83,7 @@ export function CartPreviewSheet({ visible, onClose }: Props) {
     freeDeliveryThreshold,
     updateQuantity,
     clearCart,
+    addItem,
     appliedCoupon,
     itemsDiscount,
     freeDeliveryCoupon,
@@ -53,6 +91,26 @@ export function CartPreviewSheet({ visible, onClose }: Props) {
     removeCoupon,
   } = useCart();
   const { user } = useAuth();
+
+  const { data: menuItems } = useListMenuItems(
+    restaurantId ?? 0,
+    undefined,
+    { query: { enabled: !!restaurantId && visible && items.length > 0 } as any },
+  );
+
+  const suggestions = React.useMemo(() => {
+    if (!menuItems || !Array.isArray(menuItems) || items.length === 0) return [];
+    const inCart = new Set(items.map((it) => it.menuItemId));
+    const all = (menuItems as any[]).filter((m) => {
+      if (!m || typeof m.id !== "number") return false;
+      if (inCart.has(m.id)) return false;
+      if (m.isAvailable === false) return false;
+      return true;
+    });
+    const addons = all.filter((m) => isAddonCategory(m.category));
+    const pool = addons.length >= 3 ? addons : [...addons, ...all.filter((m) => !addons.includes(m))];
+    return pool.slice(0, 6);
+  }, [menuItems, items]);
 
   const slideY = useRef(new Animated.Value(SHEET_MAX_H)).current;
   const overlayOpacity = useRef(new Animated.Value(0)).current;
@@ -131,6 +189,21 @@ export function CartPreviewSheet({ visible, onClose }: Props) {
   const handleRemovePromo = () => {
     removeCoupon();
     setPromoError(null);
+  };
+
+  const handleAddSuggestion = (m: any) => {
+    if (!restaurantId) return;
+    addItem(
+      restaurantId,
+      restaurantName || "",
+      {
+        cartLineId: String(m.id),
+        menuItemId: m.id,
+        name: m.name,
+        price: Number(m.price) || 0,
+        imageUrl: m.imageUrl,
+      },
+    );
   };
 
   const goToCart = () => {
