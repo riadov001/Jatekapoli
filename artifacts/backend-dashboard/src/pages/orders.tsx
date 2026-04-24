@@ -1,6 +1,14 @@
 import { useState } from "react";
 import { useListBackendOrders, useUpdateOrderStatus, getListBackendOrdersQueryKey, Order, UpdateOrderStatusBodyStatus } from "@workspace/api-client-react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQueryClient, useQuery } from "@tanstack/react-query";
+
+type OrderWithItems = Order & { items: Array<{ id: number; quantity: number; menuItemName: string; totalPrice: number }> };
+
+async function fetchOrderDetail(id: number): Promise<OrderWithItems> {
+  const res = await fetch(`/api/backend/orders/${id}`, { credentials: "include" });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
+}
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
@@ -40,6 +48,12 @@ export default function Orders() {
   const qc = useQueryClient();
   const { toast } = useToast();
   const [newStatus, setNewStatus] = useState<string>("");
+
+  const { data: orderDetail, isLoading: detailLoading } = useQuery({
+    queryKey: ["backend-order-detail", selectedOrder?.id],
+    queryFn: () => fetchOrderDetail(selectedOrder!.id),
+    enabled: !!selectedOrder,
+  });
 
   const handleStatusUpdate = () => {
     if (!selectedOrder || !newStatus) return;
@@ -214,15 +228,23 @@ export default function Orders() {
                 <div>
                   <h3 className="font-semibold mb-3">Items</h3>
                   <div className="space-y-3">
-                    {selectedOrder.items.map((item) => (
-                      <div key={item.id} className="flex justify-between items-center text-sm p-3 border rounded-md">
-                        <div className="flex items-center space-x-3">
-                          <Badge variant="secondary">{item.quantity}x</Badge>
-                          <span>{item.menuItemName}</span>
-                        </div>
-                        <span className="font-medium">{item.totalPrice} DH</span>
+                    {detailLoading && !orderDetail ? (
+                      <div className="flex items-center justify-center py-6 text-muted-foreground">
+                        <Loader2 className="h-4 w-4 animate-spin mr-2" /> Chargement…
                       </div>
-                    ))}
+                    ) : (orderDetail?.items?.length ?? 0) === 0 ? (
+                      <p className="text-sm text-muted-foreground">Aucun article.</p>
+                    ) : (
+                      orderDetail!.items.map((item) => (
+                        <div key={item.id} className="flex justify-between items-center text-sm p-3 border rounded-md">
+                          <div className="flex items-center space-x-3">
+                            <Badge variant="secondary">{item.quantity}x</Badge>
+                            <span>{item.menuItemName}</span>
+                          </div>
+                          <span className="font-medium">{item.totalPrice} DH</span>
+                        </div>
+                      ))
+                    )}
                   </div>
                 </div>
 

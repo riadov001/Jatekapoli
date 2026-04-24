@@ -6,6 +6,7 @@ import {
   usersTable,
   restaurantsTable,
   ordersTable,
+  orderItemsTable,
   menuItemsTable,
   driversTable,
   reviewsTable,
@@ -317,6 +318,21 @@ router.get("/backend/orders", requireAuth, async (req: AuthedRequest, res): Prom
   const where = conds.length ? and(...conds) : undefined;
   const rows = await db.select().from(ordersTable).where(where).orderBy(desc(ordersTable.createdAt)).limit(limit);
   res.json(rows);
+});
+
+router.get("/backend/orders/:id", requireAuth, async (req: AuthedRequest, res): Promise<void> => {
+  const ctx = await requireBackendUser(req, res);
+  if (!ctx) return;
+  const id = Number(req.params.id);
+  if (!Number.isFinite(id)) { res.status(400).json({ error: "Invalid id" }); return; }
+  const [order] = await db.select().from(ordersTable).where(eq(ordersTable.id, id)).limit(1);
+  if (!order) { res.status(404).json({ error: "Order not found" }); return; }
+  const scoped = await getScopedShopIds(ctx.id, ctx.role, ctx.assignedShopId);
+  if (scoped !== null && (order.restaurantId == null || !scoped.includes(order.restaurantId))) {
+    res.status(403).json({ error: "Forbidden" }); return;
+  }
+  const items = await db.select().from(orderItemsTable).where(eq(orderItemsTable.orderId, id));
+  res.json({ ...order, items });
 });
 
 // ---------- Products ----------
