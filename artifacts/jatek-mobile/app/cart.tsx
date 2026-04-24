@@ -352,6 +352,25 @@ export default function CartScreen() {
             <Text style={[styles.summaryLabel, { color: colors.mutedForeground }]}>{t("cart_subtotal")}</Text>
             <Text style={[styles.summaryValue, { color: colors.foreground }]}>{subtotal.toFixed(0)} MAD</Text>
           </View>
+          {appliedCoupon && (
+            <View style={styles.summaryRow}>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 6, flex: 1 }}>
+                <Ionicons name="pricetag" size={13} color="#16A34A" />
+                <Text
+                  style={[styles.summaryLabel, { color: "#16A34A", fontFamily: "Inter_700Bold" }]}
+                  numberOfLines={1}
+                >
+                  Code {appliedCoupon.code}
+                </Text>
+                <TouchableOpacity onPress={removeCoupon} hitSlop={8}>
+                  <Ionicons name="close-circle" size={14} color={colors.mutedForeground} />
+                </TouchableOpacity>
+              </View>
+              <Text style={[styles.summaryValue, { color: "#16A34A", fontFamily: "Inter_700Bold" }]}>
+                {itemsDiscount > 0 ? `−${itemsDiscount.toFixed(0)} MAD` : "Livraison offerte"}
+              </Text>
+            </View>
+          )}
           <View style={styles.summaryRow}>
             <Text style={[styles.summaryLabel, { color: colors.mutedForeground }]}>{t("cart_delivery_fee")}</Text>
             <Text style={[styles.summaryValue, { color: colors.turquoise, fontFamily: "Inter_700Bold" }]}>
@@ -361,7 +380,7 @@ export default function CartScreen() {
           <View style={[styles.divider, { backgroundColor: colors.border }]} />
           <View style={styles.summaryRow}>
             <Text style={[styles.totalLabel, { color: colors.foreground }]}>{t("cart_total")}</Text>
-            <Text style={[styles.totalValue, { color: colors.primary }]}>{(subtotal + effectiveDeliveryFee).toFixed(0)} MAD</Text>
+            <Text style={[styles.totalValue, { color: colors.primary }]}>{orderTotal.toFixed(0)} MAD</Text>
           </View>
         </View>
       </KeyboardAwareScrollView>
@@ -378,7 +397,7 @@ export default function CartScreen() {
           disabled={orderDisabled}
           loading={createOrder.isPending}
           label={!!address && !selectedAddressInZone ? t("cart_address_out_zone_btn") : t("cart_place_order")}
-          price={`${(subtotal + effectiveDeliveryFee).toFixed(0)} MAD`}
+          price={`${orderTotal.toFixed(0)} MAD`}
           color={PINK}
           mutedColor={colors.muted}
           mutedFg={colors.mutedForeground}
