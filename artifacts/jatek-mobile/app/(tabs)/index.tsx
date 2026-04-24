@@ -15,6 +15,7 @@ import {
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import Animated, { FadeInDown, FadeInUp, FadeIn } from "react-native-reanimated";
 import {
   useListRestaurants,
   useGetFeaturedRestaurants,
@@ -367,8 +368,9 @@ export default function HomeScreen() {
         </View>
 
         {/* ─── Shop categories horizontal slider ─── */}
-        <Text style={s.sliderSectionTitle}>Explorer</Text>
-        <ScrollView
+        <Animated.Text entering={FadeInDown.delay(80).duration(450).springify()} style={s.sliderSectionTitle}>Explorer</Animated.Text>
+        <Animated.ScrollView
+          entering={FadeInDown.delay(140).duration(500).springify()}
           horizontal
           showsHorizontalScrollIndicator={false}
           style={s.shopCatsScroll}
@@ -388,16 +390,19 @@ export default function HomeScreen() {
               </Text>
             </Pressable>
           ))}
-        </ScrollView>
+        </Animated.ScrollView>
 
         {/* ─── JATEK brand scrolling banner ─── */}
-        <JatekScrollingBanner />
+        <Animated.View entering={FadeIn.delay(200).duration(500)}>
+          <JatekScrollingBanner />
+        </Animated.View>
 
         {/* ─── Partenaires VIP & promotions (Talabat-style horizontal slider) ─── */}
-        <View style={s.vipHeaderWrap}>
+        <Animated.View entering={FadeInDown.delay(260).duration(500).springify()} style={s.vipHeaderWrap}>
           <Text style={s.vipSectionTitle}>Partenaires VIP & Promos</Text>
-        </View>
-        <ScrollView
+        </Animated.View>
+        <Animated.ScrollView
+          entering={FadeInDown.delay(320).duration(550).springify()}
           horizontal
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={s.vipScrollRow}
@@ -421,16 +426,19 @@ export default function HomeScreen() {
           {(featuredPartners ?? []).length === 0 && (
             <Text style={s.emptyTxt}>Aucune offre disponible pour le moment</Text>
           )}
-        </ScrollView>
+        </Animated.ScrollView>
 
         {/* ─── Promo banner -10% Jatek WELCOME10 ─── */}
-        <View style={{ paddingHorizontal: 16, marginTop: 18 }}>
+        <Animated.View entering={FadeInDown.delay(380).duration(500).springify()} style={{ paddingHorizontal: 16, marginTop: 18 }}>
           <PromoBanner onPress={() => router.push("/profile/coupons?code=WELCOME10" as any)} />
-        </View>
+        </Animated.View>
 
         {/* ─── Découvrir en vidéo ─── */}
-        <SectionHeader title="Decouvrir en video" />
-        <ScrollView
+        <Animated.View entering={FadeInDown.delay(440).duration(500).springify()}>
+          <SectionHeader title="Decouvrir en video" />
+        </Animated.View>
+        <Animated.ScrollView
+          entering={FadeInDown.delay(500).duration(550).springify()}
           horizontal
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={s.videosRow}
@@ -452,14 +460,17 @@ export default function HomeScreen() {
           {shorts.length === 0 && !isLoading && (
             <Text style={s.emptyTxt}>Aucune vidéo disponible pour le moment</Text>
           )}
-        </ScrollView>
+        </Animated.ScrollView>
 
         {/* ─── Pres de chez vous (horizontal scroll) ─── */}
-        <SectionHeader title="Pres de chez vous" />
+        <Animated.View entering={FadeInDown.delay(560).duration(500).springify()}>
+          <SectionHeader title="Pres de chez vous" />
+        </Animated.View>
         {isLoading ? (
           <ActivityIndicator color={PINK} style={{ marginVertical: 18 }} />
         ) : (
-          <ScrollView
+          <Animated.ScrollView
+            entering={FadeInDown.delay(620).duration(550).springify()}
             horizontal
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={s.horizontalRow}
@@ -477,44 +488,55 @@ export default function HomeScreen() {
             {(restaurants ?? []).length === 0 && !isLoading && (
               <Text style={s.emptyTxt}>Aucun restaurant à proximité</Text>
             )}
-          </ScrollView>
+          </Animated.ScrollView>
         )}
 
         {/* ─── Big promotional banner (lower position) ─── */}
-        <View style={{ paddingHorizontal: 16, marginTop: 18 }}>
+        <Animated.View entering={FadeInDown.delay(680).duration(500).springify()} style={{ paddingHorizontal: 16, marginTop: 18 }}>
           <PromoBanner onPress={() => router.push("/profile/coupons?code=WELCOME10" as any)} />
-        </View>
+        </Animated.View>
 
         {/* ─── Tous les Restaurants (2-column grid) ─── */}
-        <View style={s.gridSection}>
+        <Animated.View entering={FadeInDown.delay(740).duration(550).springify()} style={s.gridSection}>
           <Text style={s.gridSectionTitle}>{currentLabel}</Text>
           {isLoading ? (
             <ActivityIndicator color={PINK} style={{ marginVertical: 24 }} />
           ) : (
             <View style={s.grid}>
               {(restaurants ?? []).map((r, i) => (
-                <RestaurantTile
+                <Animated.View
                   key={r.id}
-                  restaurant={r}
-                  badge={i % 2 === 0 ? "nouveau" : "promo"}
-                  width={GRID_CARD_W}
-                  onPress={() => goRestaurant(r.id)}
-                />
+                  entering={FadeInDown.delay(800 + i * 60).duration(420).springify()}
+                  style={{ width: GRID_CARD_W }}
+                >
+                  <RestaurantTile
+                    restaurant={r}
+                    badge={i % 2 === 0 ? "nouveau" : "promo"}
+                    width={GRID_CARD_W}
+                    onPress={() => goRestaurant(r.id)}
+                  />
+                </Animated.View>
               ))}
             </View>
           )}
-        </View>
+        </Animated.View>
       </ScrollView>
-      {/* ─── JATEK Ad floating trigger bar (full-width, aligned with tab bar) ─── */}
+      {/* ─── JATEK Ad floating trigger bar — glued to the top of the tab bar ─── */}
+      <Animated.View
+        entering={FadeInUp.delay(900).duration(500).springify()}
+        style={[s.adTriggerWrap, { bottom: tabBarPad - 4 }]}
+        pointerEvents="box-none"
+      >
       <TouchableOpacity
         onPress={() => setAdSheetVisible(true)}
         activeOpacity={0.75}
-        style={[s.adTriggerBtn, { bottom: tabBarPad - 24 }]}
+        style={s.adTriggerBtn}
       >
         <Ionicons name="chevron-up" size={15} color="#0E7490" />
         <Text style={s.adTriggerTxt}>Offres & Avantages Jatek</Text>
         <Ionicons name="chevron-up" size={15} color="#0E7490" />
       </TouchableOpacity>
+      </Animated.View>
 
       <AddressQuickPicker visible={addressPickerOpen} onClose={() => setAddressPickerOpen(false)} />
       <JatekAdSheet visible={adSheetVisible} onClose={() => setAdSheetVisible(false)} />
@@ -981,16 +1003,18 @@ const s = StyleSheet.create({
     gap: GRID_GAP,
   },
 
-  // ── Jatek Ad trigger bar (full-width, aligned with tab bar) ──
-  adTriggerBtn: {
+  // ── Jatek Ad trigger bar (full-width, glued to top of tab bar) ──
+  adTriggerWrap: {
     position: "absolute",
     left: 0,
     right: 0,
+  },
+  adTriggerBtn: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
-    backgroundColor: "rgba(207, 250, 254, 0.5)",
+    backgroundColor: "rgba(207, 250, 254, 0.95)",
     paddingVertical: 8,
     borderTopWidth: 1,
     borderTopColor: "rgba(34, 211, 238, 0.3)",
