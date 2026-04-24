@@ -275,7 +275,7 @@ export default function RestaurantScreen() {
             onPressCard={() => setSelectedItem(item)}
             onAdd={() => {
               const pricing = restaurant as { deliveryFee?: number | null; freeDeliveryThreshold?: number | null };
-              addItem(restaurantId, restaurant.name, { menuItemId: item.id, name: item.name, price: item.price, imageUrl: item.imageUrl }, { deliveryFee: pricing.deliveryFee, freeDeliveryThreshold: pricing.freeDeliveryThreshold });
+              addItem(restaurantId, restaurant.name, { cartLineId: String(item.id), menuItemId: item.id, name: item.name, price: item.price, imageUrl: item.imageUrl }, { deliveryFee: pricing.deliveryFee, freeDeliveryThreshold: pricing.freeDeliveryThreshold });
             }}
           />
         )}
@@ -322,12 +322,13 @@ export default function RestaurantScreen() {
         item={selectedItem}
         initialQty={selectedItem ? getQty(selectedItem.id) : 0}
         onClose={() => setSelectedItem(null)}
-        onAdd={({ qty, unitPrice, displayName, variantId }) => {
+        onAdd={({ qty, unitPrice, displayName, cartLineId }) => {
           if (!selectedItem) return;
           const pricing = restaurant as { deliveryFee?: number | null; freeDeliveryThreshold?: number | null };
           for (let i = 0; i < qty; i++) {
             addItem(restaurantId, restaurant.name, {
-              menuItemId: variantId,
+              cartLineId,
+              menuItemId: selectedItem.id, // REAL DB id — required by API
               name: displayName,
               price: unitPrice,
               imageUrl: selectedItem.imageUrl,

@@ -27,7 +27,8 @@ interface Props {
     extras: string[];
     unitPrice: number;
     displayName: string;
-    variantId: number;
+    /** Synthetic per-line id (real menuItemId stays = item.id, this is for cart de-dup). */
+    cartLineId: string;
   }) => void;
 }
 
@@ -97,11 +98,11 @@ export function MenuItemDetailModal({ visible, item, initialQty = 0, onClose, on
     const sizeIdx = size === "S" ? 1 : size === "L" ? 3 : 2;
     const extrasMask = EXTRA_KEYS.reduce((m, k, i) => m + (extras[k] ? 1 << i : 0), 0);
     const extrasArr = EXTRA_KEYS.filter((k) => extras[k]).map((k) => EXTRA_LABELS[k]);
-    const variantId = item.id * 100000 + sizeIdx * 100 + extrasMask;
+    const cartLineId = `${item.id}:${sizeIdx}:${extrasMask}`;
     const sizeLabel = size === "M" ? "" : ` (${size})`;
     const extrasLabel = extrasArr.length ? ` + ${extrasArr.join(", ")}` : "";
     const displayName = `${item.name}${sizeLabel}${extrasLabel}`;
-    onAdd({ qty, size, extras: extrasArr, unitPrice, displayName, variantId });
+    onAdd({ qty, size, extras: extrasArr, unitPrice, displayName, cartLineId });
     onClose();
   };
 

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Image, StyleSheet, View, Dimensions, Platform } from "react-native";
+import { Image, StyleSheet, Dimensions, Platform } from "react-native";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -23,29 +23,24 @@ export default function SplashOverlay({ duration = 1800, onFinish }: Props) {
   const [mounted, setMounted] = useState(true);
 
   const containerOpacity = useSharedValue(1);
-  const logoScale = useSharedValue(0.85);
-  const logoOpacity = useSharedValue(0);
+  const bgScale = useSharedValue(1.04);
 
   useEffect(() => {
-    // Logo: fade-in + scale-in then continuous gentle pulse
-    logoOpacity.value = withTiming(1, { duration: 400, easing: Easing.out(Easing.quad) });
-    logoScale.value = withSequence(
-      withTiming(1, { duration: 500, easing: Easing.out(Easing.back(1.4)) }),
-      withRepeat(
-        withSequence(
-          withTiming(1.06, { duration: 700, easing: Easing.inOut(Easing.quad) }),
-          withTiming(1.0, { duration: 700, easing: Easing.inOut(Easing.quad) }),
-        ),
-        -1,
-        true,
+    // Subtle, continuous "breathing" zoom on the splash background.
+    bgScale.value = withRepeat(
+      withSequence(
+        withTiming(1.0, { duration: 1100, easing: Easing.inOut(Easing.quad) }),
+        withTiming(1.04, { duration: 1100, easing: Easing.inOut(Easing.quad) }),
       ),
+      -1,
+      true,
     );
 
     // Schedule fade-out
     const t = setTimeout(() => {
       containerOpacity.value = withTiming(
         0,
-        { duration: 450, easing: Easing.out(Easing.quad) },
+        { duration: 500, easing: Easing.out(Easing.quad) },
         (finished) => {
           if (finished) {
             runOnJS(setMounted)(false);
@@ -56,30 +51,20 @@ export default function SplashOverlay({ duration = 1800, onFinish }: Props) {
     }, duration);
 
     return () => clearTimeout(t);
-  }, [duration, onFinish, containerOpacity, logoOpacity, logoScale]);
+  }, [duration, onFinish, containerOpacity, bgScale]);
 
   const containerStyle = useAnimatedStyle(() => ({ opacity: containerOpacity.value }));
-  const logoStyle = useAnimatedStyle(() => ({
-    opacity: logoOpacity.value,
-    transform: [{ scale: logoScale.value }],
-  }));
+  const bgStyle = useAnimatedStyle(() => ({ transform: [{ scale: bgScale.value }] }));
 
   if (!mounted) return null;
 
   return (
     <Animated.View style={[styles.root, containerStyle]} pointerEvents="none">
-      <Image
+      <Animated.Image
         source={require("../assets/images/jatek-splash.png")}
-        style={styles.bg}
+        style={[styles.bg, bgStyle]}
         resizeMode="cover"
       />
-      <View style={styles.center}>
-        <Animated.Image
-          source={require("../assets/images/jatek-logo.png")}
-          style={[styles.logo, logoStyle]}
-          resizeMode="contain"
-        />
-      </View>
     </Animated.View>
   );
 }
@@ -94,6 +79,7 @@ const styles = StyleSheet.create({
     zIndex: 9999,
     elevation: 9999,
     backgroundColor: "#E91E63",
+    overflow: "hidden",
     ...(Platform.OS === "web"
       ? { width: "100%" as any, height: "100%" as any }
       : { width: SCREEN_W, height: SCREEN_H }),
@@ -102,14 +88,5 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     width: "100%",
     height: "100%",
-  },
-  center: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  logo: {
-    width: 180,
-    height: 180,
   },
 });

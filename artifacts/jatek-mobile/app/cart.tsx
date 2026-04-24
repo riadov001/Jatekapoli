@@ -11,6 +11,7 @@ import { useColors } from "@/hooks/useColors";
 import { useCart } from "@/contexts/CartContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useT } from "@/contexts/LanguageContext";
+import { useFriendlyAlert } from "@/components/FriendlyAlert";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { WaveEdge } from "@/components/WaveEdge";
@@ -36,40 +37,54 @@ export default function CartScreen() {
   const effectiveDeliveryFee = subtotal >= freeDeliveryThreshold ? 0 : deliveryFee;
   const { token } = useAuth();
   const createOrder = useCreateOrder();
+  const friendly = useFriendlyAlert();
   const address = selectedAddress;
   const [notes, setNotes] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<"cash" | "card" | null>(null);
 
   const handlePlaceOrder = () => {
     if (!token) {
-      Alert.alert(t("cart_signin_required"), t("cart_signin_required_text"), [
-        { text: t("cancel"), style: "cancel" },
-        { text: t("cart_signin"), onPress: () => router.push("/(auth)/login") },
-      ]);
+      friendly.show({
+        tone: "info",
+        icon: "log-in-outline",
+        title: "Vous y êtes presque !",
+        message: "Connectez-vous pour valider votre commande et profiter de vos points fidélité.",
+        primary: { label: "Se connecter", href: "/(auth)/login" },
+        secondary: { label: "Plus tard" },
+      });
       return;
     }
     if (!paymentMethod) {
-      Alert.alert(
-        "Méthode de paiement requise",
-        "Veuillez choisir une méthode de paiement avant de valider votre commande.",
-        [{ text: "OK" }],
-      );
-      if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+      friendly.show({
+        tone: "warning",
+        icon: "card-outline",
+        title: "Comment souhaitez-vous payer ?",
+        message: "Choisissez « Espèces » ou « Carte » juste au-dessus du bouton, puis revalidez.",
+        primary: { label: "Compris" },
+        hideSecondary: true,
+      });
       return;
     }
     if (!address.trim()) {
-      Alert.alert(t("cart_address_required"), t("cart_address_required_text"), [
-        { text: t("cancel"), style: "cancel" },
-        { text: t("choose"), onPress: () => router.push("/profile/addresses?select=1") },
-      ]);
+      friendly.show({
+        tone: "warning",
+        icon: "location-outline",
+        title: "Où vous livrons-nous ?",
+        message: "Ajoutez une adresse pour qu'on puisse vous apporter votre commande à Oujda.",
+        primary: { label: "Choisir une adresse", href: "/profile/addresses?select=1" },
+        secondary: { label: "Plus tard" },
+      });
       return;
     }
     if (!selectedAddressInZone) {
-      Alert.alert(t("cart_address_out_of_zone"), t("cart_address_out_of_zone_text"), [
-        { text: t("cancel"), style: "cancel" },
-        { text: t("change"), onPress: () => router.push("/profile/addresses?select=1") },
-      ]);
-      if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      friendly.show({
+        tone: "error",
+        icon: "alert-circle-outline",
+        title: "Adresse hors zone de livraison",
+        message: "Cette adresse est trop loin pour le moment. Sélectionnez-en une à Oujda et on s'occupe du reste.",
+        primary: { label: "Changer d'adresse", href: "/profile/addresses?select=1" },
+        secondary: { label: "Annuler" },
+      });
       return;
     }
     createOrder.mutate({
@@ -85,9 +100,66 @@ export default function CartScreen() {
         clearCart();
         router.replace({ pathname: "/order/[id]", params: { id: String(order.id) } });
       },
-      onError: () => {
-        if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-        Alert.alert(t("cart_order_failed"), t("cart_order_failed_text"));
+      onError: (err: any) => {
+        const status = err?.status ?? err?.response?.status;
+        const apiMsg = err?.data?.error || err?.message || "";
+        // Restaurant unavailable / closed
+        if (status === 404 && /restaurant/i.test(apiMsg)) {
+          friendly.show({
+            tone: "warning",
+            icon: "restaurant-outline",
+            title: "Restaurant indisponible",
+            message: "Ce restaurant n'est plus disponible. Découvrez d'autres bonnes adresses près de chez vous.",
+            primary: { label: "Voir les restaurants", href: "/(tabs)" },
+            secondary: { label: "Retour" },
+          });
+          return;
+        }
+        // Menu item missing — usually a stale cart from before a menu change
+        if (status === 404 && /menu/i.test(apiMsg)) {
+          friendly.show({
+            tone: "warning",
+            icon: "fast-food-outline",
+            title: "Plat momentanément indisponible",
+            message: "Un article de votre panier n'est plus au menu. Videz le panier et recommandez en quelques secondes.",
+            primary: { label: "Vider le panier", onPress: () => clearCart() },
+            secondary: { label: "Plus tard" },
+          });
+          return;
+        }
+        // Auth expired
+        if (status === 401 || status === 403) {
+          friendly.show({
+            tone: "info",
+            icon: "key-outline",
+            title: "Session expirée",
+            message: "Pour votre sécurité, reconnectez-vous afin de finaliser votre commande.",
+            primary: { label: "Se reconnecter", href: "/(auth)/login" },
+            secondary: { label: "Plus tard" },
+          });
+          return;
+        }
+        // Validation error
+        if (status === 400) {
+          friendly.show({
+            tone: "warning",
+            icon: "document-text-outline",
+            title: "Vérifions un détail",
+            message: "Une information est incomplète ou incorrecte. Vérifiez votre panier puis réessayez.",
+            primary: { label: "OK" },
+            hideSecondary: true,
+          });
+          return;
+        }
+        // Generic
+        friendly.show({
+          tone: "error",
+          icon: "cloud-offline-outline",
+          title: "Oups, on n'a pas pu envoyer la commande",
+          message: "Vérifiez votre connexion et réessayez. Si le problème persiste, contactez-nous.",
+          primary: { label: "Réessayer", onPress: handlePlaceOrder },
+          secondary: { label: "Plus tard" },
+        });
       },
     });
   };
@@ -149,7 +221,7 @@ export default function CartScreen() {
         {/* Items */}
         <View style={[styles.section, { backgroundColor: colors.card, borderColor: colors.border }]}>
           {items.map((item, idx) => (
-            <View key={item.menuItemId}>
+            <View key={item.cartLineId}>
               <View style={styles.cartItem}>
                 <View style={styles.cartItemInfo}>
                   <Text style={[styles.cartItemName, { color: colors.foreground }]}>{item.name}</Text>
@@ -157,7 +229,7 @@ export default function CartScreen() {
                 </View>
                 <View style={styles.qtyRow}>
                   <TouchableOpacity
-                    onPress={() => updateQuantity(item.menuItemId, item.quantity - 1)}
+                    onPress={() => updateQuantity(item.cartLineId, item.quantity - 1)}
                     style={[styles.qtyBtn, styles.qtyBtnSoft]}
                   >
                     <Ionicons
@@ -168,7 +240,7 @@ export default function CartScreen() {
                   </TouchableOpacity>
                   <Text style={[styles.qty, { color: colors.foreground }]}>{item.quantity}</Text>
                   <TouchableOpacity
-                    onPress={() => updateQuantity(item.menuItemId, item.quantity + 1)}
+                    onPress={() => updateQuantity(item.cartLineId, item.quantity + 1)}
                     style={[styles.qtyBtn, { backgroundColor: PINK }]}
                   >
                     <Ionicons name="add" size={16} color="#fff" />
