@@ -1,0 +1,504 @@
+import React, { useEffect, useRef } from "react";
+import {
+  Animated,
+  Dimensions,
+  Easing,
+  Image,
+  Modal,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { router } from "expo-router";
+import { useCart } from "@/contexts/CartContext";
+
+const PINK = "#E2006A";
+const PINK_SOFT = "#FFE0EE";
+const NAVY = "#0A1B3D";
+const YELLOW = "#FFD400";
+const MUTED = "#6B7280";
+const BORDER = "#EBEBEB";
+
+const { height: SCREEN_H } = Dimensions.get("window");
+const SHEET_MAX_H = Math.min(SCREEN_H * 0.78, 640);
+
+interface Props {
+  visible: boolean;
+  onClose: () => void;
+}
+
+export function CartPreviewSheet({ visible, onClose }: Props) {
+  const insets = useSafeAreaInsets();
+  const {
+    items,
+    restaurantName,
+    subtotal,
+    itemCount,
+    deliveryFee,
+    freeDeliveryThreshold,
+    updateQuantity,
+    clearCart,
+  } = useCart();
+
+  const slideY = useRef(new Animated.Value(SHEET_MAX_H)).current;
+  const overlayOpacity = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    if (visible) {
+      Animated.parallel([
+        Animated.timing(overlayOpacity, {
+          toValue: 1,
+          duration: 220,
+          useNativeDriver: true,
+        }),
+        Animated.timing(slideY, {
+          toValue: 0,
+          duration: 320,
+          easing: Easing.out(Easing.cubic),
+          useNativeDriver: true,
+        }),
+      ]).start();
+    } else {
+      Animated.parallel([
+        Animated.timing(overlayOpacity, {
+          toValue: 0,
+          duration: 180,
+          useNativeDriver: true,
+        }),
+        Animated.timing(slideY, {
+          toValue: SHEET_MAX_H,
+          duration: 220,
+          easing: Easing.in(Easing.cubic),
+          useNativeDriver: true,
+        }),
+      ]).start();
+    }
+  }, [visible, overlayOpacity, slideY]);
+
+  const effectiveDeliveryFee =
+    subtotal > 0 && subtotal >= freeDeliveryThreshold ? 0 : deliveryFee;
+  const total = subtotal + (subtotal > 0 ? effectiveDeliveryFee : 0);
+  const remainingForFree = Math.max(0, freeDeliveryThreshold - subtotal);
+  const progressPct =
+    subtotal <= 0
+      ? 0
+      : Math.min(100, Math.round((subtotal / freeDeliveryThreshold) * 100));
+
+  const goToCart = () => {
+    onClose();
+    setTimeout(() => router.push("/cart"), 150);
+  };
+
+  const handleClear = () => {
+    clearCart();
+    onClose();
+  };
+
+  return (
+    <Modal
+      visible={visible}
+      transparent
+      animationType="none"
+      onRequestClose={onClose}
+      statusBarTranslucent
+    >
+      <View style={styles.root}>
+        <Animated.View style={[styles.overlay, { opacity: overlayOpacity }]}>
+          <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
+        </Animated.View>
+
+        <Animated.View
+          style={[
+            styles.sheet,
+            {
+              maxHeight: SHEET_MAX_H,
+              paddingBottom: insets.bottom + 16,
+              transform: [{ translateY: slideY }],
+            },
+          ]}
+        >
+          <View style={styles.handleBar} />
+
+          <View style={styles.header}>
+            <View style={styles.headerIconWrap}>
+              <Ionicons name="bag-handle" size={20} color={PINK} />
+              {itemCount > 0 && (
+                <View style={styles.headerBadge}>
+                  <Text style={styles.headerBadgeTxt}>
+                    {itemCount > 9 ? "9+" : itemCount}
+                  </Text>
+                </View>
+              )}
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.title}>Mon panier</Text>
+              {restaurantName ? (
+                <Text style={styles.subtitle} numberOfLines={1}>
+                  {restaurantName}
+                </Text>
+              ) : (
+                <Text style={styles.subtitle}>
+                  {items.length === 0 ? "Vide pour le moment" : "Aperçu rapide"}
+                </Text>
+              )}
+            </View>
+            <TouchableOpacity
+              onPress={onClose}
+              hitSlop={10}
+              style={styles.closeBtn}
+              accessibilityRole="button"
+              accessibilityLabel="Fermer"
+            >
+              <Ionicons name="close" size={22} color={NAVY} />
+            </TouchableOpacity>
+          </View>
+
+          {items.length === 0 ? (
+            <View style={styles.emptyWrap}>
+              <View style={styles.emptyIcon}>
+                <Ionicons name="bag-handle-outline" size={42} color={PINK} />
+              </View>
+              <Text style={styles.emptyTitle}>Votre panier est vide</Text>
+              <Text style={styles.emptyTxt}>
+                Parcourez les restaurants et ajoutez vos plats préférés.
+              </Text>
+              <TouchableOpacity
+                style={styles.browseBtn}
+                onPress={onClose}
+                activeOpacity={0.9}
+              >
+                <Text style={styles.browseBtnTxt}>Découvrir les offres</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <>
+              {freeDeliveryThreshold > 0 && (
+                <View style={styles.freeWrap}>
+                  <View style={styles.freeRow}>
+                    <Ionicons
+                      name={remainingForFree === 0 ? "checkmark-circle" : "bicycle"}
+                      size={16}
+                      color={remainingForFree === 0 ? "#16A34A" : PINK}
+                    />
+                    <Text style={styles.freeTxt}>
+                      {remainingForFree === 0
+                        ? "Livraison offerte !"
+                        : `Plus que ${remainingForFree.toFixed(2)} MAD pour la livraison gratuite`}
+                    </Text>
+                  </View>
+                  <View style={styles.progressTrack}>
+                    <View
+                      style={[styles.progressFill, { width: `${progressPct}%` }]}
+                    />
+                  </View>
+                </View>
+              )}
+
+              <ScrollView
+                style={styles.list}
+                contentContainerStyle={{ paddingVertical: 4 }}
+                showsVerticalScrollIndicator={false}
+              >
+                {items.map((it) => (
+                  <View key={it.cartLineId} style={styles.row}>
+                    {it.imageUrl ? (
+                      <Image source={{ uri: it.imageUrl }} style={styles.thumb} />
+                    ) : (
+                      <View style={[styles.thumb, styles.thumbFallback]}>
+                        <Ionicons name="restaurant" size={20} color={PINK} />
+                      </View>
+                    )}
+
+                    <View style={styles.rowInfo}>
+                      <Text style={styles.rowName} numberOfLines={2}>
+                        {it.name}
+                      </Text>
+                      <Text style={styles.rowPrice}>
+                        {(it.price * it.quantity).toFixed(2)} MAD
+                      </Text>
+                    </View>
+
+                    <View style={styles.qtyWrap}>
+                      <TouchableOpacity
+                        onPress={() =>
+                          updateQuantity(it.cartLineId, it.quantity - 1)
+                        }
+                        style={styles.qtyBtn}
+                        hitSlop={6}
+                        accessibilityLabel="Diminuer la quantité"
+                      >
+                        <Ionicons
+                          name={it.quantity === 1 ? "trash-outline" : "remove"}
+                          size={16}
+                          color={PINK}
+                        />
+                      </TouchableOpacity>
+                      <Text style={styles.qtyTxt}>{it.quantity}</Text>
+                      <TouchableOpacity
+                        onPress={() =>
+                          updateQuantity(it.cartLineId, it.quantity + 1)
+                        }
+                        style={styles.qtyBtn}
+                        hitSlop={6}
+                        accessibilityLabel="Augmenter la quantité"
+                      >
+                        <Ionicons name="add" size={16} color={PINK} />
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                ))}
+              </ScrollView>
+
+              <View style={styles.summary}>
+                <View style={styles.sumRow}>
+                  <Text style={styles.sumLabel}>Sous-total</Text>
+                  <Text style={styles.sumVal}>{subtotal.toFixed(2)} MAD</Text>
+                </View>
+                <View style={styles.sumRow}>
+                  <Text style={styles.sumLabel}>Livraison</Text>
+                  <Text
+                    style={[
+                      styles.sumVal,
+                      effectiveDeliveryFee === 0 && { color: "#16A34A" },
+                    ]}
+                  >
+                    {effectiveDeliveryFee === 0
+                      ? "Offerte"
+                      : `${effectiveDeliveryFee.toFixed(2)} MAD`}
+                  </Text>
+                </View>
+                <View style={[styles.sumRow, styles.totalRow]}>
+                  <Text style={styles.totalLabel}>Total</Text>
+                  <Text style={styles.totalVal}>{total.toFixed(2)} MAD</Text>
+                </View>
+              </View>
+
+              <View style={styles.actions}>
+                <TouchableOpacity
+                  onPress={handleClear}
+                  style={styles.clearBtn}
+                  activeOpacity={0.85}
+                  accessibilityRole="button"
+                  accessibilityLabel="Vider le panier"
+                >
+                  <Ionicons name="trash-outline" size={18} color={PINK} />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={goToCart}
+                  style={styles.checkoutBtn}
+                  activeOpacity={0.9}
+                  accessibilityRole="button"
+                  accessibilityLabel="Aller au panier"
+                >
+                  <Text style={styles.checkoutTxt}>Voir le panier</Text>
+                  <Ionicons name="arrow-forward" size={18} color="#fff" />
+                </TouchableOpacity>
+              </View>
+            </>
+          )}
+        </Animated.View>
+      </View>
+    </Modal>
+  );
+}
+
+const styles = StyleSheet.create({
+  root: { flex: 1 },
+  overlay: { ...StyleSheet.absoluteFillObject, backgroundColor: "rgba(10,27,61,0.45)" },
+  sheet: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "#fff",
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    shadowColor: "#000",
+    shadowOpacity: 0.18,
+    shadowRadius: 20,
+    shadowOffset: { width: 0, height: -6 },
+    elevation: 24,
+  },
+  handleBar: {
+    alignSelf: "center",
+    width: 44,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: "#E5E7EB",
+    marginBottom: 10,
+  },
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    paddingBottom: 12,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: BORDER,
+  },
+  headerIconWrap: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: PINK_SOFT,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  headerBadge: {
+    position: "absolute",
+    top: -4,
+    right: -4,
+    minWidth: 18,
+    height: 18,
+    paddingHorizontal: 4,
+    borderRadius: 9,
+    backgroundColor: YELLOW,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1.5,
+    borderColor: "#fff",
+  },
+  headerBadgeTxt: {
+    color: NAVY,
+    fontSize: 10,
+    fontFamily: Platform.select({ default: "Inter_700Bold" }),
+    fontWeight: "700",
+    lineHeight: 12,
+  },
+  title: {
+    color: NAVY,
+    fontSize: 16,
+    fontFamily: Platform.select({ default: "Inter_700Bold" }),
+    fontWeight: "700",
+  },
+  subtitle: { color: MUTED, fontSize: 12, marginTop: 2 },
+  closeBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#F5F5F5",
+  },
+
+  emptyWrap: { alignItems: "center", paddingVertical: 36, gap: 10 },
+  emptyIcon: {
+    width: 84,
+    height: 84,
+    borderRadius: 42,
+    backgroundColor: PINK_SOFT,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 4,
+  },
+  emptyTitle: {
+    color: NAVY,
+    fontSize: 16,
+    fontFamily: Platform.select({ default: "Inter_700Bold" }),
+    fontWeight: "700",
+  },
+  emptyTxt: {
+    color: MUTED,
+    fontSize: 13,
+    textAlign: "center",
+    paddingHorizontal: 24,
+  },
+  browseBtn: {
+    marginTop: 8,
+    backgroundColor: PINK,
+    paddingHorizontal: 22,
+    paddingVertical: 12,
+    borderRadius: 24,
+  },
+  browseBtnTxt: { color: "#fff", fontSize: 14, fontWeight: "700" },
+
+  freeWrap: { paddingVertical: 12, gap: 6 },
+  freeRow: { flexDirection: "row", alignItems: "center", gap: 6 },
+  freeTxt: { color: NAVY, fontSize: 12, fontWeight: "600", flex: 1 },
+  progressTrack: {
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: "#F3F4F6",
+    overflow: "hidden",
+  },
+  progressFill: { height: "100%", backgroundColor: PINK, borderRadius: 3 },
+
+  list: { flexGrow: 0 },
+  row: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    paddingVertical: 10,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: BORDER,
+  },
+  thumb: { width: 52, height: 52, borderRadius: 12, backgroundColor: "#F5F5F5" },
+  thumbFallback: { alignItems: "center", justifyContent: "center" },
+  rowInfo: { flex: 1, gap: 2 },
+  rowName: { color: NAVY, fontSize: 14, fontWeight: "600" },
+  rowPrice: { color: PINK, fontSize: 13, fontWeight: "700" },
+  qtyWrap: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: PINK_SOFT,
+    borderRadius: 18,
+    paddingHorizontal: 4,
+    paddingVertical: 3,
+    gap: 4,
+  },
+  qtyBtn: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: "#fff",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  qtyTxt: { color: NAVY, fontSize: 13, fontWeight: "700", minWidth: 16, textAlign: "center" },
+
+  summary: {
+    paddingVertical: 12,
+    gap: 6,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: BORDER,
+  },
+  sumRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+  sumLabel: { color: MUTED, fontSize: 13 },
+  sumVal: { color: NAVY, fontSize: 13, fontWeight: "600" },
+  totalRow: { marginTop: 4 },
+  totalLabel: { color: NAVY, fontSize: 15, fontWeight: "700" },
+  totalVal: { color: PINK, fontSize: 18, fontWeight: "800" },
+
+  actions: { flexDirection: "row", gap: 10, marginTop: 8 },
+  clearBtn: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: PINK_SOFT,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  checkoutBtn: {
+    flex: 1,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: PINK,
+    alignItems: "center",
+    justifyContent: "center",
+    flexDirection: "row",
+    gap: 8,
+    shadowColor: PINK,
+    shadowOpacity: 0.35,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 6,
+  },
+  checkoutTxt: { color: "#fff", fontSize: 15, fontWeight: "700" },
+});

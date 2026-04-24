@@ -31,6 +31,7 @@ import { WaveEdge } from "@/components/WaveEdge";
 import { ShortPlayerModal } from "@/components/ShortPlayerModal";
 import { AddressQuickPicker } from "@/components/AddressQuickPicker";
 import { JatekAdSheet } from "@/components/JatekAdSheet";
+import { CartPreviewSheet } from "@/components/CartPreviewSheet";
 import { JatekScrollingBanner } from "@/components/JatekScrollingBanner";
 
 function trackBannerClick(restaurantId: number) {
@@ -260,6 +261,7 @@ export default function HomeScreen() {
   const [shortsVisible, setShortsVisible] = useState(false);
   const [initialShort, setInitialShort] = useState(0);
   const [adSheetVisible, setAdSheetVisible] = useState(false);
+  const [cartSheetVisible, setCartSheetVisible] = useState(false);
 
   const params = useMemo<ListRestaurantsParams>(() => {
     const p: ListRestaurantsParams = { businessType: activeBusinessType };
@@ -343,7 +345,7 @@ export default function HomeScreen() {
               <TouchableOpacity
                 activeOpacity={0.85}
                 style={s.cartBtn}
-                onPress={() => router.push("/cart")}
+                onPress={() => setCartSheetVisible(true)}
                 accessibilityRole="button"
                 accessibilityLabel="Voir le panier"
               >
@@ -559,6 +561,7 @@ export default function HomeScreen() {
 
       <AddressQuickPicker visible={addressPickerOpen} onClose={() => setAddressPickerOpen(false)} />
       <JatekAdSheet visible={adSheetVisible} onClose={() => setAdSheetVisible(false)} />
+      <CartPreviewSheet visible={cartSheetVisible} onClose={() => setCartSheetVisible(false)} />
       <ShortPlayerModal
         visible={shortsVisible}
         shorts={shorts}
