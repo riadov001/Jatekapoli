@@ -89,6 +89,8 @@ export function CartPreviewSheet({ visible, onClose }: Props) {
     freeDeliveryCoupon,
     applyCoupon,
     removeCoupon,
+    notes,
+    setNotes,
   } = useCart();
   const { user } = useAuth();
 
@@ -117,14 +119,20 @@ export function CartPreviewSheet({ visible, onClose }: Props) {
   const [promoInput, setPromoInput] = useState("");
   const [promoError, setPromoError] = useState<string | null>(null);
   const [promoOpen, setPromoOpen] = useState(false);
+  const [notesOpen, setNotesOpen] = useState(false);
 
   useEffect(() => {
     if (!visible) {
       setPromoInput("");
       setPromoError(null);
       setPromoOpen(false);
+      setNotesOpen(false);
     }
   }, [visible]);
+
+  useEffect(() => {
+    if (visible && notes.trim().length > 0) setNotesOpen(true);
+  }, [visible, notes]);
 
   useEffect(() => {
     if (visible) {
@@ -409,6 +417,49 @@ export function CartPreviewSheet({ visible, onClose }: Props) {
                   </ScrollView>
                 </View>
               )}
+
+              <View style={styles.notesBlock}>
+                {notesOpen ? (
+                  <View style={styles.notesInputWrap}>
+                    <View style={styles.notesHead}>
+                      <Ionicons name="chatbubble-ellipses-outline" size={16} color={PINK} />
+                      <Text style={styles.notesLabel}>Note pour le restaurant</Text>
+                      {notes.length > 0 && (
+                        <TouchableOpacity
+                          onPress={() => setNotes("")}
+                          hitSlop={8}
+                          accessibilityLabel="Effacer la note"
+                        >
+                          <Ionicons name="close-circle" size={16} color="#9CA3AF" />
+                        </TouchableOpacity>
+                      )}
+                    </View>
+                    <TextInput
+                      value={notes}
+                      onChangeText={setNotes}
+                      placeholder="Ex. sans oignon, bien cuit, sonnez à l'interphone…"
+                      placeholderTextColor="#9CA3AF"
+                      multiline
+                      maxLength={240}
+                      style={styles.notesInput}
+                      textAlignVertical="top"
+                    />
+                    <Text style={styles.notesCounter}>{notes.length}/240</Text>
+                  </View>
+                ) : (
+                  <TouchableOpacity
+                    onPress={() => setNotesOpen(true)}
+                    activeOpacity={0.8}
+                    style={styles.notesTriggerRow}
+                  >
+                    <Ionicons name="chatbubble-ellipses-outline" size={16} color={PINK} />
+                    <Text style={styles.notesTriggerTxt}>
+                      Ajouter une note (allergies, cuisson…)
+                    </Text>
+                    <Ionicons name="chevron-forward" size={16} color="#9CA3AF" />
+                  </TouchableOpacity>
+                )}
+              </View>
 
               <View style={styles.promoBlock}>
                 {appliedCoupon ? (
@@ -762,6 +813,58 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     shadowOffset: { width: 0, height: 2 },
     elevation: 3,
+  },
+
+  notesBlock: {
+    paddingTop: 10,
+    paddingBottom: 4,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: BORDER,
+  },
+  notesTriggerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    paddingVertical: 10,
+  },
+  notesTriggerTxt: {
+    flex: 1,
+    color: NAVY,
+    fontSize: 13,
+    fontWeight: "600",
+  },
+  notesInputWrap: {
+    backgroundColor: "#F9FAFB",
+    borderRadius: 14,
+    paddingHorizontal: 12,
+    paddingTop: 8,
+    paddingBottom: 6,
+    borderWidth: 1,
+    borderColor: "#EDEDED",
+  },
+  notesHead: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingBottom: 4,
+  },
+  notesLabel: {
+    flex: 1,
+    color: NAVY,
+    fontSize: 12,
+    fontWeight: "700",
+  },
+  notesInput: {
+    color: NAVY,
+    fontSize: 13,
+    minHeight: 48,
+    paddingTop: Platform.OS === "ios" ? 4 : 0,
+    paddingBottom: 4,
+  },
+  notesCounter: {
+    color: "#9CA3AF",
+    fontSize: 10,
+    textAlign: "right",
   },
 
   promoBlock: {

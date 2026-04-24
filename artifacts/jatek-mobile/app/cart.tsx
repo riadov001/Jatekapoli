@@ -33,7 +33,7 @@ export default function CartScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const t = useT();
-  const { items, restaurantId, restaurantName, updateQuantity, clearCart, subtotal, itemCount, selectedAddress, selectedAddressInZone, deliveryFee, freeDeliveryThreshold, appliedCoupon, itemsDiscount, freeDeliveryCoupon, removeCoupon } = useCart();
+  const { items, restaurantId, restaurantName, updateQuantity, clearCart, subtotal, itemCount, selectedAddress, selectedAddressInZone, deliveryFee, freeDeliveryThreshold, appliedCoupon, itemsDiscount, freeDeliveryCoupon, removeCoupon, notes, setNotes } = useCart();
   const baseDeliveryFee = subtotal >= freeDeliveryThreshold ? 0 : deliveryFee;
   const effectiveDeliveryFee = freeDeliveryCoupon ? 0 : baseDeliveryFee;
   const discountedSubtotal = Math.max(0, subtotal - itemsDiscount);
@@ -42,7 +42,6 @@ export default function CartScreen() {
   const createOrder = useCreateOrder();
   const friendly = useFriendlyAlert();
   const address = selectedAddress;
-  const [notes, setNotes] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<"cash" | "card" | null>(null);
 
   const handlePlaceOrder = () => {
