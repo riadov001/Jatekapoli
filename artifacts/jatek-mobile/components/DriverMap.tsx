@@ -48,7 +48,7 @@ function buildHtml(driverLat: number, driverLng: number, destLat?: number, destL
 <div id="map"></div>
 <script>
   var map = L.map('map', { zoomControl: false, attributionControl: false });
-  L.tileLayer('https://mt{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}',{maxZoom:20,subdomains:['0','1','2','3']}).addTo(map);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,subdomains:['a','b','c']}).addTo(map);
 
   var driverIcon = L.divIcon({
     html: '<div style="background:#22C55E;width:36px;height:36px;border-radius:50%;border:3px solid #fff;box-shadow:0 3px 10px rgba(0,0,0,0.35);display:flex;align-items:center;justify-content:center;font-size:18px;">🏍</div>',
