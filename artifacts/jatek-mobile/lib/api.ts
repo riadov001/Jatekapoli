@@ -21,27 +21,54 @@ async function authHeaders(): Promise<Record<string, string>> {
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
-async function jsonFetch<T = any>(path: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(`${API_BASE}${path}`, {
-    ...init,
-    headers: {
-      ...(init?.body ? { "Content-Type": "application/json" } : {}),
-      ...(await authHeaders()),
-      ...(init?.headers as Record<string, string> | undefined),
-    },
-  });
-  if (!res.ok) {
-    let msg = `HTTP ${res.status}`;
-    try {
-      const err = await res.json();
-      msg = err?.error || msg;
-    } catch (parseErr) {
-      console.warn(`[api] could not parse error body for ${res.status}:`, parseErr);
-    }
-    throw new Error(msg);
+// Default per-request timeout. Network calls that hang forever are the
+// single biggest source of "stuck loading spinner" complaints on cellular.
+const DEFAULT_TIMEOUT_MS = 15_000;
+
+async function jsonFetch<T = any>(path: string, init?: RequestInit & { timeoutMs?: number }): Promise<T> {
+  const { timeoutMs = DEFAULT_TIMEOUT_MS, signal: externalSignal, ...rest } = init ?? {};
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  // Bridge an externally-supplied signal so callers (e.g. react-query) can
+  // still abort us on unmount.
+  if (externalSignal) {
+    if (externalSignal.aborted) controller.abort();
+    else externalSignal.addEventListener("abort", () => controller.abort(), { once: true });
   }
-  if (res.status === 204) return undefined as T;
-  return res.json();
+
+  try {
+    const res = await fetch(`${API_BASE}${path}`, {
+      ...rest,
+      signal: controller.signal,
+      headers: {
+        ...(rest.body ? { "Content-Type": "application/json" } : {}),
+        ...(await authHeaders()),
+        ...(rest.headers as Record<string, string> | undefined),
+      },
+    });
+    if (!res.ok) {
+      let msg = `HTTP ${res.status}`;
+      try {
+        const err = await res.json();
+        msg = err?.error || msg;
+      } catch (parseErr) {
+        console.warn(`[api] could not parse error body for ${res.status}:`, parseErr);
+      }
+      throw new Error(msg);
+    }
+    if (res.status === 204) return undefined as T;
+    return await res.json();
+  } catch (err: any) {
+    if (err?.name === "AbortError") {
+      // Don't leak an opaque AbortError to UI — replace with a useful message
+      // unless the caller explicitly aborted.
+      if (externalSignal?.aborted) throw err;
+      throw new Error("La requête a expiré, vérifiez votre connexion.");
+    }
+    throw err;
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 export const apiBase = API_BASE;
@@ -96,15 +123,36 @@ export async function getDriverLocation(driverId: number): Promise<{ latitude: n
   }
 }
 
-/** Geocode an address to lat/lng using OpenStreetMap Nominatim (free, no API key). */
+/**
+ * Geocode an address to lat/lng. Prefers Google Maps Geocoding API when a key
+ * is available (more accurate for Moroccan addresses), falls back to the free
+ * OpenStreetMap Nominatim service. Always uses HTTPS and a hard timeout so a
+ * slow third-party call can never freeze the UI.
+ */
 export async function geocodeAddress(address: string): Promise<{ lat: number; lng: number } | null> {
+  const googleKey = (process.env.EXPO_PUBLIC_GOOGLE_PLACES_KEY ?? process.env.EXPO_PUBLIC_GOOGLE_MAPS_KEY ?? "").trim();
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 8_000);
+
   try {
-    const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address + ", Oujda, Morocco")}&limit=1`;
-    const res = await fetch(url, { headers: { "Accept-Language": "en", "User-Agent": "Jatek/1.0" } });
+    if (googleKey) {
+      const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address + ", Oujda, Morocco")}&key=${googleKey}`;
+      const res = await fetch(url, { signal: controller.signal });
+      const data = await res.json();
+      const loc = data?.results?.[0]?.geometry?.location;
+      if (loc?.lat != null && loc?.lng != null) return { lat: loc.lat, lng: loc.lng };
+    }
+    const osmUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address + ", Oujda, Morocco")}&limit=1`;
+    const res = await fetch(osmUrl, {
+      signal: controller.signal,
+      headers: { "Accept-Language": "fr", "User-Agent": "Jatek/1.0 (contact@jatek.ma)" },
+    });
     const data = await res.json();
     if (data?.[0]) return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
   } catch (err) {
-    console.warn("[geocode] Nominatim lookup failed:", err);
+    console.warn("[geocode] lookup failed:", err);
+  } finally {
+    clearTimeout(timer);
   }
   return null;
 }

@@ -104,7 +104,11 @@ export default function OrderDetailScreen() {
     query: {
       queryKey: getGetOrderQueryKey(orderId),
       enabled: !!orderId,
-      refetchInterval: 20000,
+      // SSE pushes status / driver_location updates in real-time; polling is
+      // only a safety net for the rare case the stream is unavailable.
+      // 60s strikes a balance between freshness and battery / data usage.
+      refetchInterval: 60_000,
+      refetchOnWindowFocus: true,
     },
   });
 

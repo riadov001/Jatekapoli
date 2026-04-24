@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import React, { createContext, useContext, useState, useEffect, useMemo, useCallback, ReactNode } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { CouponDef, validateCoupon, computeDiscount } from "@/lib/coupons";
 
@@ -81,7 +81,6 @@ export function CartProvider({ children }: { children: ReactNode }) {
     // Always set ready=true — even if AsyncStorage is unavailable (rare on
     // older Android Expo Go builds) we still want the app to render with
     // empty defaults instead of being stuck.
-    // Best-effort cleanup of legacy cart keys — ignore failures.
     OLD_CART_KEYS.forEach((k) => { AsyncStorage.removeItem(k).catch(() => {}); });
     Promise.all([
       AsyncStorage.getItem(CART_KEY),
@@ -93,9 +92,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
         if (raw) {
           try {
             const s = JSON.parse(raw);
-            setItems(s.items ?? []);
-            setRestaurantId(s.restaurantId ?? null);
-            setRestaurantName(s.restaurantName ?? "");
+            setItems(Array.isArray(s.items) ? s.items : []);
+            setRestaurantId(typeof s.restaurantId === "number" ? s.restaurantId : null);
+            setRestaurantName(typeof s.restaurantName === "string" ? s.restaurantName : "");
             if (typeof s.deliveryFee === "number") setDeliveryFee(s.deliveryFee);
             if (typeof s.freeDeliveryThreshold === "number") setFreeDeliveryThreshold(s.freeDeliveryThreshold);
           } catch (err) {
@@ -106,7 +105,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
           try {
             const parsed = JSON.parse(addr);
             if (typeof parsed === "string") { setSelectedAddressState(parsed); setSelectedAddressInZone(true); }
-            else { setSelectedAddressState(parsed.address ?? ""); setSelectedAddressInZone(parsed.inZone !== false); }
+            else { setSelectedAddressState(String(parsed.address ?? "")); setSelectedAddressInZone(parsed.inZone !== false); }
           } catch { setSelectedAddressState(addr); }
         }
         if (couponRaw) {
@@ -146,114 +145,127 @@ export function CartProvider({ children }: { children: ReactNode }) {
     }
   }, [notes, ready]);
 
-  const setNotes = (n: string) => setNotesState(n);
+  // All actions below are wrapped in `useCallback` so consumers passing them
+  // to `React.memo`-ised children don't re-render on every parent render.
+  const setNotes = useCallback((n: string) => setNotesState(n), []);
 
-  const setSelectedAddress = (a: string, inZone: boolean = true) => {
+  const setSelectedAddress = useCallback((a: string, inZone: boolean = true) => {
     setSelectedAddressState(a);
     setSelectedAddressInZone(inZone);
     AsyncStorage.setItem(ADDR_KEY, JSON.stringify({ address: a, inZone })).catch((err) => {
       console.warn("[Cart] failed to persist address:", err);
     });
-  };
+  }, []);
 
-  const applyPricing = (pricing?: RestaurantPricing) => {
+  const applyPricing = useCallback((pricing?: RestaurantPricing) => {
     if (!pricing) return;
     if (typeof pricing.deliveryFee === "number") setDeliveryFee(pricing.deliveryFee);
     if (typeof pricing.freeDeliveryThreshold === "number") setFreeDeliveryThreshold(pricing.freeDeliveryThreshold);
-  };
+  }, []);
 
-  const addItem = (rId: number, rName: string, item: Omit<CartItem, "quantity">, pricing?: RestaurantPricing) => {
-    if (restaurantId && restaurantId !== rId) {
-      setItems([{ ...item, quantity: 1 }]);
-      setRestaurantId(rId);
+  const addItem = useCallback((rId: number, rName: string, item: Omit<CartItem, "quantity">, pricing?: RestaurantPricing) => {
+    setRestaurantId((prevId) => {
+      if (prevId && prevId !== rId) {
+        // Switched restaurant — replace the cart with the new line.
+        setItems([{ ...item, quantity: 1 }]);
+        setRestaurantName(rName);
+        applyPricing(pricing);
+        return rId;
+      }
       setRestaurantName(rName);
       applyPricing(pricing);
-      return;
-    }
-    setRestaurantId(rId);
-    setRestaurantName(rName);
-    applyPricing(pricing);
-    setItems((prev) => {
-      const ex = prev.find((i) => i.cartLineId === item.cartLineId);
-      if (ex) return prev.map((i) => i.cartLineId === item.cartLineId ? { ...i, quantity: i.quantity + 1 } : i);
-      return [...prev, { ...item, quantity: 1 }];
+      setItems((prev) => {
+        const ex = prev.find((i) => i.cartLineId === item.cartLineId);
+        if (ex) return prev.map((i) => i.cartLineId === item.cartLineId ? { ...i, quantity: i.quantity + 1 } : i);
+        return [...prev, { ...item, quantity: 1 }];
+      });
+      return rId;
     });
-  };
+  }, [applyPricing]);
 
-  const removeItem = (cartLineId: string) => {
+  const removeItem = useCallback((cartLineId: string) => {
     setItems((prev) => {
       const next = prev.filter((i) => i.cartLineId !== cartLineId);
       if (next.length === 0) { setRestaurantId(null); setRestaurantName(""); }
       return next;
     });
-  };
+  }, []);
 
-  const updateQuantity = (cartLineId: string, quantity: number) => {
+  const updateQuantity = useCallback((cartLineId: string, quantity: number) => {
     if (quantity <= 0) { removeItem(cartLineId); return; }
     setItems((prev) => prev.map((i) => i.cartLineId === cartLineId ? { ...i, quantity } : i));
-  };
+  }, [removeItem]);
 
-  const clearCart = () => {
+  const clearCart = useCallback(() => {
     setItems([]); setRestaurantId(null); setRestaurantName("");
     setDeliveryFee(DEFAULT_DELIVERY_FEE);
     setFreeDeliveryThreshold(DEFAULT_FREE_DELIVERY_THRESHOLD);
     setAppliedCoupon(null);
     setNotesState("");
-  };
+  }, []);
 
-  const subtotal = items.reduce((s, i) => s + i.price * i.quantity, 0);
-  const itemCount = items.reduce((s, i) => s + i.quantity, 0);
+  // Derived values memoized so we don't recompute on every parent re-render
+  // and consumers using shallow-compare receive stable references.
+  const subtotal = useMemo(() => items.reduce((s, i) => s + i.price * i.quantity, 0), [items]);
+  const itemCount = useMemo(() => items.reduce((s, i) => s + i.quantity, 0), [items]);
 
   // Re-validate coupon whenever subtotal changes (e.g. drops below minSubtotal).
-  // If still valid, keep it; otherwise drop it silently so totals stay correct.
   useEffect(() => {
     if (!appliedCoupon) return;
     const res = validateCoupon(appliedCoupon.code, { subtotal });
     if (!res.ok) setAppliedCoupon(null);
   }, [subtotal, appliedCoupon]);
 
-  const discount = appliedCoupon
-    ? computeDiscount(appliedCoupon, subtotal)
-    : { itemsDiscount: 0, freeDelivery: false, label: "" };
+  const discount = useMemo(
+    () => appliedCoupon
+      ? computeDiscount(appliedCoupon, subtotal)
+      : { itemsDiscount: 0, freeDelivery: false, label: "" },
+    [appliedCoupon, subtotal],
+  );
 
-  const applyCoupon = (code: string, opts?: { loyaltyPoints?: number }): CouponApplyResult => {
+  const applyCoupon = useCallback((code: string, opts?: { loyaltyPoints?: number }): CouponApplyResult => {
     const res = validateCoupon(code, { subtotal, loyaltyPoints: opts?.loyaltyPoints });
     if (!res.ok) return { ok: false, reason: res.reason };
     setAppliedCoupon(res.coupon);
     return { ok: true, label: res.coupon.label };
-  };
+  }, [subtotal]);
 
-  const removeCoupon = () => setAppliedCoupon(null);
+  const removeCoupon = useCallback(() => setAppliedCoupon(null), []);
 
-  return (
-    <CartContext.Provider
-      value={{
-        items,
-        restaurantId,
-        restaurantName,
-        deliveryFee,
-        freeDeliveryThreshold,
-        addItem,
-        removeItem,
-        updateQuantity,
-        clearCart,
-        subtotal,
-        itemCount,
-        selectedAddress,
-        selectedAddressInZone,
-        setSelectedAddress,
-        appliedCoupon,
-        itemsDiscount: discount.itemsDiscount,
-        freeDeliveryCoupon: discount.freeDelivery,
-        applyCoupon,
-        removeCoupon,
-        notes,
-        setNotes,
-      }}
-    >
-      {children}
-    </CartContext.Provider>
-  );
+  // Memoize the entire context value so consumers that don't depend on the
+  // cart state don't re-render when an unrelated state slice changes.
+  const value = useMemo<CartContextType>(() => ({
+    items,
+    restaurantId,
+    restaurantName,
+    deliveryFee,
+    freeDeliveryThreshold,
+    addItem,
+    removeItem,
+    updateQuantity,
+    clearCart,
+    subtotal,
+    itemCount,
+    selectedAddress,
+    selectedAddressInZone,
+    setSelectedAddress,
+    appliedCoupon,
+    itemsDiscount: discount.itemsDiscount,
+    freeDeliveryCoupon: discount.freeDelivery,
+    applyCoupon,
+    removeCoupon,
+    notes,
+    setNotes,
+  }), [
+    items, restaurantId, restaurantName, deliveryFee, freeDeliveryThreshold,
+    addItem, removeItem, updateQuantity, clearCart,
+    subtotal, itemCount,
+    selectedAddress, selectedAddressInZone, setSelectedAddress,
+    appliedCoupon, discount.itemsDiscount, discount.freeDelivery,
+    applyCoupon, removeCoupon, notes, setNotes,
+  ]);
+
+  return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
 }
 
 export function useCart() {

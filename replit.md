@@ -115,8 +115,12 @@ JWT stored in localStorage (`jatek_token`). `setAuthTokenGetter` registered in `
 ### Mobile App (Expo)
 - `artifacts/jatek-mobile` — Expo (React Native) app at preview path `/mobile/`
 - Phone OTP auth (Twilio), shares same backend API
-- Screens: Login, OTP verify, Home (restaurants), Restaurant detail + menu, Cart, Orders list, Order tracking, Profile
-- State: AuthContext (expo-secure-store token persistence), CartContext (AsyncStorage)
+- Screens: Login, OTP verify, Welcome (Talabat-style Google Maps address picker), Home (restaurants), Restaurant detail + menu, Cart, Orders list, Order tracking, Profile
+- State: AuthContext (expo-secure-store token persistence), CartContext (AsyncStorage, fully memoized via useMemo + useCallback)
+- Maps: Google Maps JS API (key `EXPO_PUBLIC_GOOGLE_MAPS_KEY` / `EXPO_PUBLIC_GOOGLE_PLACES_KEY` ⇐ `GOOGLE_API_KEY_2`), Leaflet+OSM fallback when key missing. Components: `GoogleMapPicker` (centered fixed pin with zone circle), `DriverMap` (live driver tracking with brand-coloured SVG markers + dashed route polyline)
+- Live order tracking: SSE channel `order:<id>` + `driver:<id>` for status & GPS updates; map appears as soon as a driver is assigned (any in-flight status), polling fallback at 60s
+- Performance hardening: `babel-plugin-transform-remove-console` strips `console.log/info` from production bundles (keeps `error`/`warn`); `expo-image` with `memory-disk` cachePolicy + blurhash placeholder for restaurant cards; `RestaurantCard` wrapped in `React.memo` with shallow prop check
+- Reliability: SSE hook does exponential-backoff reconnection (1s → 30s) + 60s read-timeout watchdog; all REST calls go through `jsonFetch` with a 15s AbortController timeout and friendly French error messages
 - Workflow: `artifacts/jatek-mobile: expo`
 
 ### Brand palette (Talabat-inspired)
