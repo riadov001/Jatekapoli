@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   Animated,
   Dimensions,
@@ -10,6 +10,7 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
@@ -17,6 +18,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { useCart } from "@/contexts/CartContext";
+import { useAuth } from "@/contexts/AuthContext";
 
 const PINK = "#E2006A";
 const PINK_SOFT = "#FFE0EE";
@@ -44,10 +46,27 @@ export function CartPreviewSheet({ visible, onClose }: Props) {
     freeDeliveryThreshold,
     updateQuantity,
     clearCart,
+    appliedCoupon,
+    itemsDiscount,
+    freeDeliveryCoupon,
+    applyCoupon,
+    removeCoupon,
   } = useCart();
+  const { user } = useAuth();
 
   const slideY = useRef(new Animated.Value(SHEET_MAX_H)).current;
   const overlayOpacity = useRef(new Animated.Value(0)).current;
+  const [promoInput, setPromoInput] = useState("");
+  const [promoError, setPromoError] = useState<string | null>(null);
+  const [promoOpen, setPromoOpen] = useState(false);
+
+  useEffect(() => {
+    if (!visible) {
+      setPromoInput("");
+      setPromoError(null);
+      setPromoOpen(false);
+    }
+  }, [visible]);
 
   useEffect(() => {
     if (visible) {
@@ -81,14 +100,38 @@ export function CartPreviewSheet({ visible, onClose }: Props) {
     }
   }, [visible, overlayOpacity, slideY]);
 
-  const effectiveDeliveryFee =
+  const baseDeliveryFee =
     subtotal > 0 && subtotal >= freeDeliveryThreshold ? 0 : deliveryFee;
-  const total = subtotal + (subtotal > 0 ? effectiveDeliveryFee : 0);
+  const effectiveDeliveryFee = freeDeliveryCoupon ? 0 : baseDeliveryFee;
+  const discountedSubtotal = Math.max(0, subtotal - itemsDiscount);
+  const total =
+    subtotal > 0 ? discountedSubtotal + effectiveDeliveryFee : 0;
   const remainingForFree = Math.max(0, freeDeliveryThreshold - subtotal);
   const progressPct =
     subtotal <= 0
       ? 0
       : Math.min(100, Math.round((subtotal / freeDeliveryThreshold) * 100));
+
+  const handleApplyPromo = () => {
+    const code = promoInput.trim();
+    if (!code) {
+      setPromoError("Saisissez un code.");
+      return;
+    }
+    const res = applyCoupon(code, { loyaltyPoints: user?.loyaltyPoints ?? 0 });
+    if (!res.ok) {
+      setPromoError(res.reason);
+      return;
+    }
+    setPromoError(null);
+    setPromoInput("");
+    setPromoOpen(false);
+  };
+
+  const handleRemovePromo = () => {
+    removeCoupon();
+    setPromoError(null);
+  };
 
   const goToCart = () => {
     onClose();
@@ -255,11 +298,98 @@ export function CartPreviewSheet({ visible, onClose }: Props) {
                 ))}
               </ScrollView>
 
+              <View style={styles.promoBlock}>
+                {appliedCoupon ? (
+                  <View style={styles.promoApplied}>
+                    <View style={styles.promoAppliedIcon}>
+                      <Ionicons name="pricetag" size={14} color="#16A34A" />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.promoAppliedCode}>
+                        {appliedCoupon.code}
+                      </Text>
+                      <Text style={styles.promoAppliedLabel} numberOfLines={1}>
+                        {appliedCoupon.label}
+                      </Text>
+                    </View>
+                    <TouchableOpacity
+                      onPress={handleRemovePromo}
+                      hitSlop={8}
+                      style={styles.promoRemove}
+                      accessibilityLabel="Retirer le code"
+                    >
+                      <Ionicons name="close" size={16} color="#6B7280" />
+                    </TouchableOpacity>
+                  </View>
+                ) : promoOpen ? (
+                  <View>
+                    <View style={styles.promoInputRow}>
+                      <Ionicons
+                        name="pricetag-outline"
+                        size={16}
+                        color={PINK}
+                        style={{ marginLeft: 12 }}
+                      />
+                      <TextInput
+                        value={promoInput}
+                        onChangeText={(v) => {
+                          setPromoInput(v.toUpperCase());
+                          if (promoError) setPromoError(null);
+                        }}
+                        onSubmitEditing={handleApplyPromo}
+                        placeholder="Code promo"
+                        placeholderTextColor="#9CA3AF"
+                        autoCapitalize="characters"
+                        autoCorrect={false}
+                        returnKeyType="done"
+                        style={styles.promoInput}
+                      />
+                      <TouchableOpacity
+                        onPress={handleApplyPromo}
+                        style={styles.promoApplyBtn}
+                        activeOpacity={0.85}
+                      >
+                        <Text style={styles.promoApplyTxt}>Appliquer</Text>
+                      </TouchableOpacity>
+                    </View>
+                    {promoError ? (
+                      <Text style={styles.promoErrorTxt}>{promoError}</Text>
+                    ) : (
+                      <Text style={styles.promoHintTxt}>
+                        Essayez « WELCOME10 » ou « FREESHIP »
+                      </Text>
+                    )}
+                  </View>
+                ) : (
+                  <TouchableOpacity
+                    onPress={() => setPromoOpen(true)}
+                    activeOpacity={0.8}
+                    style={styles.promoTriggerRow}
+                  >
+                    <Ionicons name="pricetag-outline" size={16} color={PINK} />
+                    <Text style={styles.promoTriggerTxt}>
+                      J'ai un code promo
+                    </Text>
+                    <Ionicons name="chevron-forward" size={16} color="#9CA3AF" />
+                  </TouchableOpacity>
+                )}
+              </View>
+
               <View style={styles.summary}>
                 <View style={styles.sumRow}>
                   <Text style={styles.sumLabel}>Sous-total</Text>
                   <Text style={styles.sumVal}>{subtotal.toFixed(2)} MAD</Text>
                 </View>
+                {itemsDiscount > 0 && (
+                  <View style={styles.sumRow}>
+                    <Text style={[styles.sumLabel, { color: "#16A34A" }]}>
+                      Réduction ({appliedCoupon?.code})
+                    </Text>
+                    <Text style={[styles.sumVal, { color: "#16A34A" }]}>
+                      −{itemsDiscount.toFixed(2)} MAD
+                    </Text>
+                  </View>
+                )}
                 <View style={styles.sumRow}>
                   <Text style={styles.sumLabel}>Livraison</Text>
                   <Text
@@ -462,6 +592,104 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   qtyTxt: { color: NAVY, fontSize: 13, fontWeight: "700", minWidth: 16, textAlign: "center" },
+
+  promoBlock: {
+    paddingTop: 10,
+    paddingBottom: 4,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: BORDER,
+  },
+  promoTriggerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    paddingVertical: 10,
+  },
+  promoTriggerTxt: {
+    flex: 1,
+    color: NAVY,
+    fontSize: 13,
+    fontWeight: "600",
+  },
+  promoInputRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#F5F5F5",
+    borderRadius: 24,
+    paddingRight: 4,
+    paddingVertical: 4,
+  },
+  promoInput: {
+    flex: 1,
+    color: NAVY,
+    fontSize: 14,
+    fontWeight: "600",
+    paddingHorizontal: 10,
+    paddingVertical: Platform.OS === "ios" ? 10 : 6,
+    letterSpacing: 0.5,
+  },
+  promoApplyBtn: {
+    backgroundColor: PINK,
+    paddingHorizontal: 16,
+    paddingVertical: 9,
+    borderRadius: 20,
+  },
+  promoApplyTxt: {
+    color: "#fff",
+    fontSize: 13,
+    fontWeight: "700",
+  },
+  promoHintTxt: {
+    color: MUTED,
+    fontSize: 11,
+    marginTop: 6,
+    paddingHorizontal: 4,
+  },
+  promoErrorTxt: {
+    color: "#DC2626",
+    fontSize: 11,
+    marginTop: 6,
+    paddingHorizontal: 4,
+    fontWeight: "600",
+  },
+  promoApplied: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    backgroundColor: "#E8F8EE",
+    borderRadius: 14,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderWidth: 1,
+    borderColor: "#BBE5C8",
+  },
+  promoAppliedIcon: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: "#fff",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  promoAppliedCode: {
+    color: "#0F5132",
+    fontSize: 13,
+    fontWeight: "800",
+    letterSpacing: 0.5,
+  },
+  promoAppliedLabel: {
+    color: "#1F7A45",
+    fontSize: 11,
+    marginTop: 1,
+  },
+  promoRemove: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: "#fff",
+    alignItems: "center",
+    justifyContent: "center",
+  },
 
   summary: {
     paddingVertical: 12,

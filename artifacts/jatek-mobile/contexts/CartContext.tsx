@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { CouponDef, validateCoupon, computeDiscount } from "@/lib/coupons";
 
 export interface CartItem {
   /** Unique line identifier (combines menuItemId + variant + extras).
@@ -21,6 +22,8 @@ export interface RestaurantPricing {
 const DEFAULT_DELIVERY_FEE = 15;
 const DEFAULT_FREE_DELIVERY_THRESHOLD = 150;
 
+export type CouponApplyResult = { ok: true; label: string } | { ok: false; reason: string };
+
 interface CartContextType {
   items: CartItem[];
   restaurantId: number | null;
@@ -36,6 +39,16 @@ interface CartContextType {
   selectedAddress: string;
   selectedAddressInZone: boolean;
   setSelectedAddress: (a: string, inZone?: boolean) => void;
+  /** Currently applied coupon (validated against current subtotal). */
+  appliedCoupon: CouponDef | null;
+  /** Discount on items (MAD, positive). 0 if no coupon or coupon is shipping-only. */
+  itemsDiscount: number;
+  /** True when coupon offers free delivery. */
+  freeDeliveryCoupon: boolean;
+  /** Try to apply a code. Stored on success. */
+  applyCoupon: (code: string, opts?: { loyaltyPoints?: number }) => CouponApplyResult;
+  /** Remove the currently applied coupon. */
+  removeCoupon: () => void;
 }
 
 const CartContext = createContext<CartContextType | null>(null);
@@ -45,6 +58,7 @@ const CartContext = createContext<CartContextType | null>(null);
 // as `menuItemId` and would cause /api/orders to return 404.
 const CART_KEY = "jatek_cart_v3";
 const ADDR_KEY = "jatek_selected_address_v1";
+const COUPON_KEY = "jatek_cart_coupon_v1";
 const OLD_CART_KEYS = ["jatek_cart_v2", "jatek_cart"];
 
 export function CartProvider({ children }: { children: ReactNode }) {
@@ -55,6 +69,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [freeDeliveryThreshold, setFreeDeliveryThreshold] = useState<number>(DEFAULT_FREE_DELIVERY_THRESHOLD);
   const [selectedAddress, setSelectedAddressState] = useState<string>("");
   const [selectedAddressInZone, setSelectedAddressInZone] = useState<boolean>(true);
+  const [appliedCoupon, setAppliedCoupon] = useState<CouponDef | null>(null);
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
@@ -63,8 +78,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
     // empty defaults instead of being stuck.
     // Best-effort cleanup of legacy cart keys — ignore failures.
     OLD_CART_KEYS.forEach((k) => { AsyncStorage.removeItem(k).catch(() => {}); });
-    Promise.all([AsyncStorage.getItem(CART_KEY), AsyncStorage.getItem(ADDR_KEY)])
-      .then(([raw, addr]) => {
+    Promise.all([AsyncStorage.getItem(CART_KEY), AsyncStorage.getItem(ADDR_KEY), AsyncStorage.getItem(COUPON_KEY)])
+      .then(([raw, addr, couponRaw]) => {
         if (raw) {
           try {
             const s = JSON.parse(raw);
@@ -84,6 +99,12 @@ export function CartProvider({ children }: { children: ReactNode }) {
             else { setSelectedAddressState(parsed.address ?? ""); setSelectedAddressInZone(parsed.inZone !== false); }
           } catch { setSelectedAddressState(addr); }
         }
+        if (couponRaw) {
+          try {
+            const parsed = JSON.parse(couponRaw);
+            if (parsed && typeof parsed.code === "string") setAppliedCoupon(parsed);
+          } catch { /* ignore */ }
+        }
       })
       .catch((err) => {
         console.warn("[Cart] AsyncStorage unavailable:", err);
@@ -95,6 +116,15 @@ export function CartProvider({ children }: { children: ReactNode }) {
     if (!ready) return;
     AsyncStorage.setItem(CART_KEY, JSON.stringify({ items, restaurantId, restaurantName, deliveryFee, freeDeliveryThreshold }));
   }, [items, restaurantId, restaurantName, deliveryFee, freeDeliveryThreshold, ready]);
+
+  useEffect(() => {
+    if (!ready) return;
+    if (appliedCoupon) {
+      AsyncStorage.setItem(COUPON_KEY, JSON.stringify(appliedCoupon)).catch(() => {});
+    } else {
+      AsyncStorage.removeItem(COUPON_KEY).catch(() => {});
+    }
+  }, [appliedCoupon, ready]);
 
   const setSelectedAddress = (a: string, inZone: boolean = true) => {
     setSelectedAddressState(a);
@@ -145,13 +175,57 @@ export function CartProvider({ children }: { children: ReactNode }) {
     setItems([]); setRestaurantId(null); setRestaurantName("");
     setDeliveryFee(DEFAULT_DELIVERY_FEE);
     setFreeDeliveryThreshold(DEFAULT_FREE_DELIVERY_THRESHOLD);
+    setAppliedCoupon(null);
   };
 
   const subtotal = items.reduce((s, i) => s + i.price * i.quantity, 0);
   const itemCount = items.reduce((s, i) => s + i.quantity, 0);
 
+  // Re-validate coupon whenever subtotal changes (e.g. drops below minSubtotal).
+  // If still valid, keep it; otherwise drop it silently so totals stay correct.
+  useEffect(() => {
+    if (!appliedCoupon) return;
+    const res = validateCoupon(appliedCoupon.code, { subtotal });
+    if (!res.ok) setAppliedCoupon(null);
+  }, [subtotal, appliedCoupon]);
+
+  const discount = appliedCoupon
+    ? computeDiscount(appliedCoupon, subtotal)
+    : { itemsDiscount: 0, freeDelivery: false, label: "" };
+
+  const applyCoupon = (code: string, opts?: { loyaltyPoints?: number }): CouponApplyResult => {
+    const res = validateCoupon(code, { subtotal, loyaltyPoints: opts?.loyaltyPoints });
+    if (!res.ok) return { ok: false, reason: res.reason };
+    setAppliedCoupon(res.coupon);
+    return { ok: true, label: res.coupon.label };
+  };
+
+  const removeCoupon = () => setAppliedCoupon(null);
+
   return (
-    <CartContext.Provider value={{ items, restaurantId, restaurantName, deliveryFee, freeDeliveryThreshold, addItem, removeItem, updateQuantity, clearCart, subtotal, itemCount, selectedAddress, selectedAddressInZone, setSelectedAddress }}>
+    <CartContext.Provider
+      value={{
+        items,
+        restaurantId,
+        restaurantName,
+        deliveryFee,
+        freeDeliveryThreshold,
+        addItem,
+        removeItem,
+        updateQuantity,
+        clearCart,
+        subtotal,
+        itemCount,
+        selectedAddress,
+        selectedAddressInZone,
+        setSelectedAddress,
+        appliedCoupon,
+        itemsDiscount: discount.itemsDiscount,
+        freeDeliveryCoupon: discount.freeDelivery,
+        applyCoupon,
+        removeCoupon,
+      }}
+    >
       {children}
     </CartContext.Provider>
   );

@@ -33,8 +33,11 @@ export default function CartScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const t = useT();
-  const { items, restaurantId, restaurantName, updateQuantity, clearCart, subtotal, itemCount, selectedAddress, selectedAddressInZone, deliveryFee, freeDeliveryThreshold } = useCart();
-  const effectiveDeliveryFee = subtotal >= freeDeliveryThreshold ? 0 : deliveryFee;
+  const { items, restaurantId, restaurantName, updateQuantity, clearCart, subtotal, itemCount, selectedAddress, selectedAddressInZone, deliveryFee, freeDeliveryThreshold, appliedCoupon, itemsDiscount, freeDeliveryCoupon, removeCoupon } = useCart();
+  const baseDeliveryFee = subtotal >= freeDeliveryThreshold ? 0 : deliveryFee;
+  const effectiveDeliveryFee = freeDeliveryCoupon ? 0 : baseDeliveryFee;
+  const discountedSubtotal = Math.max(0, subtotal - itemsDiscount);
+  const orderTotal = discountedSubtotal + effectiveDeliveryFee;
   const { token } = useAuth();
   const createOrder = useCreateOrder();
   const friendly = useFriendlyAlert();
@@ -87,11 +90,15 @@ export default function CartScreen() {
       });
       return;
     }
+    const couponNote = appliedCoupon
+      ? `Code promo : ${appliedCoupon.code} (${appliedCoupon.label})`
+      : "";
+    const combinedNotes = [notes.trim(), couponNote].filter(Boolean).join(" — ");
     createOrder.mutate({
       data: {
         restaurantId: restaurantId!,
         deliveryAddress: address.trim(),
-        notes: notes.trim() || undefined,
+        notes: combinedNotes || undefined,
         items: items.map((i) => ({ menuItemId: i.menuItemId, quantity: i.quantity })),
       },
     }, {
