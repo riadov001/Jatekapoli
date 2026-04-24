@@ -7,50 +7,23 @@ import {
   Modal,
   Animated,
   Pressable,
-  ScrollView,
   Dimensions,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-const PINK = "#E91E63";
+const TURQUOISE = "#06B6D4";
+const TURQUOISE_DEEP = "#0E7490";
+const TURQUOISE_SOFT = "#CFFAFE";
 const NAVY = "#0A1B3D";
-const GOLD = "#FFD700";
+const LIME = "#D7F542";
 const { height: SCREEN_H, width: SCREEN_W } = Dimensions.get("window");
 
 const ADS = [
-  {
-    key: "pro",
-    tag: "JATEK PRO",
-    title: "Livraisons illimitées\nsans frais",
-    sub: "Abonnez-vous et économisez chaque jour",
-    accent: PINK,
-    icon: "rocket" as const,
-  },
-  {
-    key: "vip",
-    tag: "JATEK VIP",
-    title: "Accès prioritaire &\noffres exclusives",
-    sub: "Rejoignez le club VIP et bénéficiez d'avantages uniques",
-    accent: NAVY,
-    icon: "star" as const,
-  },
-  {
-    key: "premium",
-    tag: "JATEK PREMIUM",
-    title: "L'expérience\nultime",
-    sub: "Coursier dédié, support 24/7 et réductions maxi",
-    accent: "#7C3AED",
-    icon: "sparkles" as const,
-  },
-  {
-    key: "fast",
-    tag: "JATEK FAST",
-    title: "Livré en\n20 minutes",
-    sub: "Notre réseau express pour les plus pressés",
-    accent: "#EA580C",
-    icon: "flash" as const,
-  },
+  { key: "pro",     tag: "PRO",     icon: "rocket"   as const, label: "1ère\noffre" },
+  { key: "vip",     tag: "VIP",     icon: "star"     as const, label: "2ème\noffre" },
+  { key: "premium", tag: "PREMIUM", icon: "sparkles" as const, label: "3ème\noffre" },
+  { key: "fast",    tag: "FAST",    icon: "flash"    as const, label: "4ème\noffre" },
 ];
 
 interface Props {
@@ -59,24 +32,48 @@ interface Props {
 }
 
 const AUTO_MS = 4000;
-const CARD_W = SCREEN_W * 0.62;
-const CARD_GAP = 10;
-const SNAP = CARD_W + CARD_GAP;
+
+// Fan layout — each card sits at a horizontal offset and a slight rotation,
+// overlapping with its neighbours like a hand of cards.
+const CARD_W = 110;
+const CARD_H = 150;
+const FAN = [
+  { dx: -78, rot: -14 },
+  { dx: -26, rot: -5 },
+  { dx:  26, rot:  5 },
+  { dx:  78, rot: 14 },
+];
+
+// Initial "decomposed" positions — far from the centre, scaled down, rotated.
+const SCATTER = [
+  { dx: -SCREEN_W * 0.7, dy: -160, rot: -55 },
+  { dx:  SCREEN_W * 0.7, dy: -120, rot:  45 },
+  { dx: -SCREEN_W * 0.6, dy:  180, rot:  60 },
+  { dx:  SCREEN_W * 0.6, dy:  160, rot: -50 },
+];
+
+// Sparkle / star positions around the fan.
+const SPARKLES: Array<{ x: number; y: number; size: number; color: string; icon: "star" | "sparkles" }> = [
+  { x:  -130, y:  10, size: 18, color: TURQUOISE,      icon: "star" },
+  { x:  -150, y:  90, size: 12, color: NAVY,           icon: "star" },
+  { x:   135, y:   0, size: 18, color: TURQUOISE,      icon: "star" },
+  { x:   155, y:  85, size: 12, color: NAVY,           icon: "star" },
+  { x:  -100, y: -55, size: 14, color: TURQUOISE_DEEP, icon: "sparkles" },
+  { x:   105, y: -50, size: 14, color: TURQUOISE_DEEP, icon: "sparkles" },
+];
 
 export function JatekAdSheet({ visible, onClose }: Props) {
   const insets = useSafeAreaInsets();
-  const scrollRef = useRef<ScrollView>(null);
   const [activeIdx, setActiveIdx] = useState(0);
   const progress = useRef(new Animated.Value(0)).current;
   const autoTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const userPaused = useRef(false);
 
   // Sheet slide-up
   const slideY = useRef(new Animated.Value(SCREEN_H)).current;
   // Overlay fade
   const overlayOpacity = useRef(new Animated.Value(0)).current;
 
-  // Staggered content anims (header, sub, cards row, dots)
+  // Header / title / sub / cta staggered fade-in
   const contentAnims = useRef(
     Array.from({ length: 4 }, () => ({
       opacity: new Animated.Value(0),
@@ -84,60 +81,56 @@ export function JatekAdSheet({ visible, onClose }: Props) {
     }))
   ).current;
 
-  // Per-card circular splash: cards explode out from the centre on a ring,
-  // each at its own angle, then converge back into the row (Talabat-style).
-  const RADIUS = Math.min(SCREEN_W, SCREEN_H) * 0.55;
-  const PUZZLE_FROM = ADS.map((_, i) => {
-    // Angles spread across the upper hemisphere so cards visibly fan in
-    const angle = -Math.PI / 2 + ((i + 0.5) / ADS.length - 0.5) * Math.PI * 1.1;
-    return {
-      dx: Math.cos(angle) * RADIUS,
-      dy: Math.sin(angle) * RADIUS - 40,
-      rot: ((angle + Math.PI / 2) * 180) / Math.PI * 0.6,
-    };
-  });
+  // Per-card decomposition → fan composition
   const cardAnims = useRef(
     ADS.map((_, i) => ({
       opacity: new Animated.Value(0),
-      translateX: new Animated.Value(PUZZLE_FROM[i % PUZZLE_FROM.length].dx),
-      translateY: new Animated.Value(PUZZLE_FROM[i % PUZZLE_FROM.length].dy),
-      rotate: new Animated.Value(PUZZLE_FROM[i % PUZZLE_FROM.length].rot),
-      scale: new Animated.Value(0.5),
+      translateX: new Animated.Value(SCATTER[i].dx),
+      translateY: new Animated.Value(SCATTER[i].dy),
+      rotate: new Animated.Value(SCATTER[i].rot),
+      scale: new Animated.Value(0.4),
+    }))
+  ).current;
+
+  // Sparkles pop after the cards land
+  const sparkleAnims = useRef(
+    SPARKLES.map(() => ({
+      opacity: new Animated.Value(0),
+      scale: new Animated.Value(0.3),
     }))
   ).current;
 
   const runOpen = () => {
-    // Reset content
     contentAnims.forEach(({ opacity, translateY }) => {
       opacity.setValue(0);
       translateY.setValue(18);
     });
     cardAnims.forEach((a, i) => {
-      const from = PUZZLE_FROM[i % PUZZLE_FROM.length];
       a.opacity.setValue(0);
-      a.translateX.setValue(from.dx);
-      a.translateY.setValue(from.dy);
-      a.rotate.setValue(from.rot);
-      a.scale.setValue(0.5);
+      a.translateX.setValue(SCATTER[i].dx);
+      a.translateY.setValue(SCATTER[i].dy);
+      a.rotate.setValue(SCATTER[i].rot);
+      a.scale.setValue(0.4);
+    });
+    sparkleAnims.forEach((s) => {
+      s.opacity.setValue(0);
+      s.scale.setValue(0.3);
     });
     slideY.setValue(SCREEN_H);
     overlayOpacity.setValue(0);
 
     Animated.parallel([
-      // Overlay fade in
       Animated.timing(overlayOpacity, {
         toValue: 1,
         duration: 280,
         useNativeDriver: true,
       }),
-      // Sheet spring up
       Animated.spring(slideY, {
         toValue: 0,
         friction: 10,
         tension: 75,
         useNativeDriver: true,
       }),
-      // Staggered content fade + slide (header, sub, cards row, dots)
       Animated.stagger(
         70,
         contentAnims.map(({ opacity, translateY }) =>
@@ -156,44 +149,68 @@ export function JatekAdSheet({ visible, onClose }: Props) {
           ])
         )
       ),
-      // Puzzle pieces snap in — staggered, after the cards row container appears
+      // Cards converge into the fan, staggered
       Animated.stagger(
-        110,
-        cardAnims.map((a) =>
+        90,
+        cardAnims.map((a, i) =>
           Animated.parallel([
             Animated.timing(a.opacity, {
               toValue: 1,
-              duration: 280,
+              duration: 240,
               useNativeDriver: true,
             }),
             Animated.spring(a.translateX, {
-              toValue: 0,
+              toValue: FAN[i].dx,
               friction: 7,
-              tension: 70,
+              tension: 65,
               useNativeDriver: true,
             }),
             Animated.spring(a.translateY, {
               toValue: 0,
               friction: 7,
-              tension: 70,
+              tension: 65,
               useNativeDriver: true,
             }),
             Animated.spring(a.rotate, {
-              toValue: 0,
+              toValue: FAN[i].rot,
               friction: 7,
-              tension: 70,
+              tension: 65,
               useNativeDriver: true,
             }),
             Animated.spring(a.scale, {
               toValue: 1,
-              friction: 6,
-              tension: 80,
+              friction: 7,
+              tension: 75,
               useNativeDriver: true,
             }),
           ])
         )
       ),
-    ]).start();
+    ]).start(() => {
+      // Pop the sparkles after cards have settled
+      Animated.stagger(
+        60,
+        sparkleAnims.map((s) =>
+          Animated.parallel([
+            Animated.timing(s.opacity, {
+              toValue: 1,
+              duration: 220,
+              useNativeDriver: true,
+            }),
+            Animated.spring(s.scale, {
+              toValue: 1,
+              friction: 5,
+              tension: 120,
+              useNativeDriver: true,
+            }),
+          ])
+        )
+      ).start();
+
+      // Start the active-card highlight rotation
+      setActiveIdx(0);
+      scheduleNext(0);
+    });
   };
 
   const runClose = () => {
@@ -221,7 +238,6 @@ export function JatekAdSheet({ visible, onClose }: Props) {
 
   const scheduleNext = (fromIdx: number) => {
     clearAuto();
-    if (userPaused.current) return;
     progress.setValue(0);
     Animated.timing(progress, {
       toValue: 1,
@@ -231,23 +247,13 @@ export function JatekAdSheet({ visible, onClose }: Props) {
     autoTimer.current = setTimeout(() => {
       const next = (fromIdx + 1) % ADS.length;
       setActiveIdx(next);
-      scrollRef.current?.scrollTo({ x: next * SNAP, animated: true });
       scheduleNext(next);
     }, AUTO_MS);
   };
 
   useEffect(() => {
     if (visible) {
-      userPaused.current = false;
-      setActiveIdx(0);
-      // Small delay so modal mounts before animating
-      const t = setTimeout(() => {
-        runOpen();
-        scrollRef.current?.scrollTo({ x: 0, animated: false });
-        // Start auto-rotate after the splash settles
-        const t2 = setTimeout(() => scheduleNext(0), 900);
-        autoTimer.current = t2;
-      }, 20);
+      const t = setTimeout(runOpen, 20);
       return () => {
         clearTimeout(t);
         clearAuto();
@@ -277,59 +283,68 @@ export function JatekAdSheet({ visible, onClose }: Props) {
           { paddingBottom: insets.bottom + 16, transform: [{ translateY: slideY }] },
         ]}
       >
-        {/* Handle — always visible immediately */}
+        {/* Handle */}
         <View style={styles.handleWrap}>
           <View style={styles.handle} />
         </View>
 
-        {/* Header — anim[0] */}
-        <Animated.View style={[styles.sheetHeader, animStyle(0)]}>
-          <View style={styles.sheetLogoWrap}>
-            <Ionicons name="bag-handle" size={20} color="#fff" />
-          </View>
-          <Text style={styles.sheetTitle}>Offres Jatek</Text>
+        {/* Close button (top-left) — anim[0] */}
+        <Animated.View style={[styles.closeRow, animStyle(0)]}>
           <TouchableOpacity onPress={onClose} hitSlop={12} style={styles.closeBtn}>
-            <Ionicons name="close" size={22} color="#6B7280" />
+            <Ionicons name="close" size={20} color={NAVY} />
           </TouchableOpacity>
         </Animated.View>
 
-        {/* Subtitle — anim[1] */}
-        <Animated.Text style={[styles.sheetSub, animStyle(1)]}>
-          Découvrez nos formules exclusives
+        {/* Title — anim[1] */}
+        <Animated.View style={[styles.titleRow, animStyle(1)]}>
+          <View style={styles.titleHighlight}>
+            <Text style={styles.titleHighlightTxt}>OFFRES</Text>
+          </View>
+          <Text style={styles.titleTxt}> Jatek</Text>
+        </Animated.View>
+
+        {/* Subtitle — anim[2] */}
+        <Animated.Text style={[styles.subTxt, animStyle(2)]}>
+          Profitez de nos formules exclusives
         </Animated.Text>
 
-        {/* Cards — anim[2] */}
-        <Animated.View style={animStyle(2)}>
-          <ScrollView
-            ref={scrollRef}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.adsRow}
-            decelerationRate="fast"
-            snapToInterval={SNAP}
-            pagingEnabled={false}
-            onScrollBeginDrag={() => {
-              userPaused.current = true;
-              clearAuto();
-            }}
-            onMomentumScrollEnd={(e) => {
-              const idx = Math.round(e.nativeEvent.contentOffset.x / SNAP);
-              const clamped = Math.max(0, Math.min(ADS.length - 1, idx));
-              setActiveIdx(clamped);
-              userPaused.current = false;
-              scheduleNext(clamped);
-            }}
-          >
-            {ADS.map((ad, i) => {
-              const a = cardAnims[i];
-              const rotateInterpolated = a.rotate.interpolate({
-                inputRange: [-30, 30],
-                outputRange: ["-30deg", "30deg"],
-              });
-              return (
-                <Animated.View
-                  key={ad.key}
-                  style={{
+        {/* Fan of cards with sparkles */}
+        <View style={styles.fanArea}>
+          {/* Sparkles behind cards */}
+          {SPARKLES.map((sp, i) => (
+            <Animated.View
+              key={`sp-${i}`}
+              pointerEvents="none"
+              style={[
+                styles.sparkle,
+                {
+                  left: SCREEN_W / 2 + sp.x - sp.size / 2,
+                  top: 30 + sp.y,
+                  opacity: sparkleAnims[i].opacity,
+                  transform: [{ scale: sparkleAnims[i].scale }],
+                },
+              ]}
+            >
+              <Ionicons name={sp.icon} size={sp.size} color={sp.color} />
+            </Animated.View>
+          ))}
+
+          {/* Cards */}
+          {ADS.map((ad, i) => {
+            const a = cardAnims[i];
+            const rotateInterpolated = a.rotate.interpolate({
+              inputRange: [-90, 90],
+              outputRange: ["-90deg", "90deg"],
+            });
+            const isActive = i === activeIdx;
+            return (
+              <Animated.View
+                key={ad.key}
+                style={[
+                  styles.cardWrap,
+                  {
+                    left: SCREEN_W / 2 - CARD_W / 2,
+                    zIndex: isActive ? 10 : i,
                     opacity: a.opacity,
                     transform: [
                       { translateX: a.translateX },
@@ -337,68 +352,33 @@ export function JatekAdSheet({ visible, onClose }: Props) {
                       { rotate: rotateInterpolated },
                       { scale: a.scale },
                     ],
-                  }}
-                >
-                  <TouchableOpacity
-                    activeOpacity={0.88}
-                    style={[styles.adCard, { backgroundColor: ad.accent }]}
-                  >
-                    {/* Decorative circle */}
-                    <View style={styles.decorCircle} />
-
-                    <View style={styles.adIconWrap}>
-                      <Ionicons name={ad.icon} size={20} color={GOLD} />
-                    </View>
-                    <View style={styles.adTag}>
-                      <Text style={styles.adTagTxt}>{ad.tag}</Text>
-                    </View>
-                    <Text style={styles.adTitle}>{ad.title}</Text>
-                    <Text style={styles.adSub}>{ad.sub}</Text>
-                    <View style={styles.adCtaRow}>
-                      <View style={styles.adCta}>
-                        <Text style={[styles.adCtaTxt, { color: ad.accent }]}>Découvrir</Text>
-                        <Ionicons name="arrow-forward" size={14} color={ad.accent} />
-                      </View>
-                    </View>
-                  </TouchableOpacity>
-                </Animated.View>
-              );
-            })}
-          </ScrollView>
-        </Animated.View>
-
-        {/* Progress indicators — anim[3] */}
-        <Animated.View style={[styles.dotsRow, animStyle(3)]}>
-          {ADS.map((_, i) => {
-            const isActive = i === activeIdx;
-            return (
-              <Pressable
-                key={i}
-                onPress={() => {
-                  userPaused.current = false;
-                  setActiveIdx(i);
-                  scrollRef.current?.scrollTo({ x: i * SNAP, animated: true });
-                  scheduleNext(i);
-                }}
-                hitSlop={8}
-                style={[styles.dotTrack, isActive && styles.dotTrackActive]}
+                  },
+                ]}
               >
-                {isActive && (
-                  <Animated.View
-                    style={[
-                      styles.dotFill,
-                      {
-                        width: progress.interpolate({
-                          inputRange: [0, 1],
-                          outputRange: ["0%", "100%"],
-                        }),
-                      },
-                    ]}
-                  />
-                )}
-              </Pressable>
+                <View style={[styles.card, isActive && styles.cardActive]}>
+                  <Text style={styles.cardTitleTop}>JATEK</Text>
+                  <Text style={styles.cardTitleBottom}>{ad.tag}</Text>
+                  <View style={[styles.cardIcon, isActive && styles.cardIconActive]}>
+                    <Ionicons
+                      name={ad.icon}
+                      size={26}
+                      color={isActive ? "#fff" : TURQUOISE}
+                    />
+                  </View>
+                  <View style={[styles.cardFoot, isActive && styles.cardFootActive]}>
+                    <Text style={styles.cardFootTxt}>{ad.label.replace("\n", " ")}</Text>
+                  </View>
+                </View>
+              </Animated.View>
             );
           })}
+        </View>
+
+        {/* CTA — anim[3] */}
+        <Animated.View style={animStyle(3)}>
+          <TouchableOpacity activeOpacity={0.9} style={styles.cta} onPress={onClose}>
+            <Text style={styles.ctaTxt}>Découvrir les offres</Text>
+          </TouchableOpacity>
         </Animated.View>
       </Animated.View>
     </Modal>
@@ -426,103 +406,152 @@ const styles = StyleSheet.create({
   },
   handleWrap: { alignItems: "center", paddingTop: 10, paddingBottom: 4 },
   handle: { width: 44, height: 4, borderRadius: 2, backgroundColor: "#D1D5DB" },
-  sheetHeader: {
-    flexDirection: "row",
-    alignItems: "center",
+
+  closeRow: {
     paddingHorizontal: 20,
-    paddingTop: 10,
-    paddingBottom: 2,
-    gap: 12,
+    paddingTop: 8,
   },
-  sheetLogoWrap: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: PINK,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  sheetTitle: { flex: 1, fontSize: 19, fontFamily: "Inter_700Bold", color: "#0A1B3D" },
   closeBtn: {
     width: 34,
     height: 34,
     borderRadius: 17,
-    backgroundColor: "#F3F4F6",
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    backgroundColor: "#fff",
     alignItems: "center",
     justifyContent: "center",
   },
-  sheetSub: {
-    fontSize: 13,
+
+  titleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 20,
+    marginTop: 14,
+  },
+  titleHighlight: {
+    backgroundColor: LIME,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  titleHighlightTxt: {
+    fontSize: 28,
+    fontFamily: "Inter_900Black",
+    color: NAVY,
+    letterSpacing: -0.5,
+  },
+  titleTxt: {
+    fontSize: 28,
+    fontFamily: "Inter_900Black",
+    color: NAVY,
+    letterSpacing: -0.5,
+  },
+  subTxt: {
+    fontSize: 14,
     fontFamily: "Inter_400Regular",
     color: "#6B7280",
     paddingHorizontal: 20,
-    marginTop: 4,
-    marginBottom: 18,
+    marginTop: 8,
+    marginBottom: 4,
   },
 
-  adsRow: { paddingHorizontal: 14, gap: 10, paddingBottom: 6 },
-  adCard: {
-    width: SCREEN_W * 0.62,
-    borderRadius: 18,
-    padding: 14,
-    gap: 6,
-    overflow: "hidden",
+  fanArea: {
+    height: CARD_H + 80,
+    marginTop: 8,
     position: "relative",
   },
-  decorCircle: {
+  sparkle: {
     position: "absolute",
-    right: -24,
-    top: -24,
-    width: 96,
-    height: 96,
-    borderRadius: 48,
-    backgroundColor: "rgba(255,255,255,0.08)",
   },
-  adIconWrap: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: "rgba(255,255,255,0.18)",
+
+  cardWrap: {
+    position: "absolute",
+    top: 30,
+    width: CARD_W,
+    height: CARD_H,
+  },
+  card: {
+    width: CARD_W,
+    height: CARD_H,
+    borderRadius: 14,
+    backgroundColor: "#fff",
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    paddingVertical: 12,
+    paddingHorizontal: 10,
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 4,
+    overflow: "hidden",
+  },
+  cardActive: {
+    borderColor: TURQUOISE,
+    borderWidth: 2,
+  },
+  cardTitleTop: {
+    fontSize: 14,
+    fontFamily: "Inter_900Black",
+    color: NAVY,
+    letterSpacing: -0.2,
+  },
+  cardTitleBottom: {
+    fontSize: 11,
+    fontFamily: "Inter_700Bold",
+    color: TURQUOISE_DEEP,
+    letterSpacing: 0.6,
+    marginTop: 2,
+  },
+  cardIcon: {
+    marginTop: 12,
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: TURQUOISE_SOFT,
     alignItems: "center",
     justifyContent: "center",
   },
-  adTag: {
-    alignSelf: "flex-start",
-    backgroundColor: "rgba(255,255,255,0.22)",
-    borderRadius: 8,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
+  cardIconActive: {
+    backgroundColor: TURQUOISE,
   },
-  adTagTxt: { color: "#fff", fontSize: 10, fontFamily: "Inter_700Bold", letterSpacing: 0.6 },
-  adTitle: { color: "#fff", fontSize: 16, fontFamily: "Inter_900Black", lineHeight: 20, letterSpacing: -0.3 },
-  adSub: { color: "rgba(255,255,255,0.82)", fontSize: 11, fontFamily: "Inter_400Regular", lineHeight: 15 },
-  adCtaRow: { marginTop: 4 },
-  adCta: {
-    alignSelf: "flex-start",
-    backgroundColor: "#fff",
-    borderRadius: 18,
-    paddingHorizontal: 12,
+  cardFoot: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: TURQUOISE_DEEP,
     paddingVertical: 6,
-    flexDirection: "row",
     alignItems: "center",
-    gap: 5,
   },
-  adCtaTxt: { fontSize: 11, fontFamily: "Inter_700Bold" },
-  dotsRow: { flexDirection: "row", gap: 6, justifyContent: "center", alignItems: "center", paddingTop: 14, paddingBottom: 6 },
-  dotTrack: {
-    width: 14,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: "#E5E7EB",
-    overflow: "hidden",
+  cardFootActive: {
+    backgroundColor: TURQUOISE,
   },
-  dotTrackActive: {
-    width: 28,
-    backgroundColor: "#F3D7E1",
+  cardFootTxt: {
+    fontSize: 10,
+    fontFamily: "Inter_700Bold",
+    color: "#fff",
+    letterSpacing: 0.4,
   },
-  dotFill: {
-    height: "100%",
-    backgroundColor: PINK,
-    borderRadius: 2,
+
+  cta: {
+    marginHorizontal: 20,
+    marginTop: 8,
+    backgroundColor: TURQUOISE,
+    borderRadius: 14,
+    paddingVertical: 16,
+    alignItems: "center",
+    shadowColor: TURQUOISE,
+    shadowOpacity: 0.35,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 6,
+  },
+  ctaTxt: {
+    color: "#fff",
+    fontSize: 15,
+    fontFamily: "Inter_700Bold",
+    letterSpacing: 0.3,
   },
 });

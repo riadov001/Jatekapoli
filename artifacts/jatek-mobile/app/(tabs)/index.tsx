@@ -521,21 +521,28 @@ export default function HomeScreen() {
           )}
         </Animated.View>
       </ScrollView>
-      {/* ─── JATEK Ad floating trigger bar — glued to the top of the tab bar ─── */}
+      {/* ─── JATEK Ad floating trigger bar — glued to the top of the tab bar (Talabat-style) ─── */}
       <Animated.View
         entering={FadeInUp.delay(900).duration(500).springify()}
         style={[s.adTriggerWrap, { bottom: tabBarPad }]}
         pointerEvents="box-none"
       >
-      <TouchableOpacity
-        onPress={() => setAdSheetVisible(true)}
-        activeOpacity={0.75}
-        style={s.adTriggerBtn}
-      >
-        <Ionicons name="chevron-up" size={15} color="#0E7490" />
-        <Text style={s.adTriggerTxt}>Offres & Avantages Jatek</Text>
-        <Ionicons name="chevron-up" size={15} color="#0E7490" />
-      </TouchableOpacity>
+        <TouchableOpacity
+          onPress={() => setAdSheetVisible(true)}
+          activeOpacity={0.85}
+          style={s.adTriggerBtn}
+        >
+          <View style={s.adTriggerIconWrap}>
+            <Ionicons name="bicycle" size={16} color="#fff" />
+          </View>
+          <View style={s.adTriggerTxtWrap}>
+            <View style={s.adTriggerHighlight}>
+              <Text style={s.adTriggerHighlightTxt}>OFFRES</Text>
+            </View>
+            <Text style={s.adTriggerTxt}> & Avantages Jatek</Text>
+          </View>
+          <Ionicons name="chevron-up" size={18} color="#06B6D4" />
+        </TouchableOpacity>
       </Animated.View>
 
       <AddressQuickPicker visible={addressPickerOpen} onClose={() => setAddressPickerOpen(false)} />
@@ -1003,7 +1010,7 @@ const s = StyleSheet.create({
     gap: GRID_GAP,
   },
 
-  // ── Jatek Ad trigger bar (full-width, glued to top of tab bar) ──
+  // ── Jatek Ad trigger bar (Talabat-style — solid pill glued above tab bar) ──
   adTriggerWrap: {
     position: "absolute",
     left: 0,
@@ -1012,17 +1019,45 @@ const s = StyleSheet.create({
   adTriggerBtn: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    backgroundColor: "rgba(207, 250, 254, 0.1)",
-    paddingVertical: 8,
+    gap: 10,
+    backgroundColor: "#F0FCFD",
+    paddingVertical: 10,
+    paddingHorizontal: 14,
     borderTopWidth: 1,
-    borderTopColor: "rgba(34, 211, 238, 0.18)",
+    borderTopColor: "#B2EBF2",
+    shadowColor: "#000",
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: -2 },
+  },
+  adTriggerIconWrap: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: "#06B6D4",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  adTriggerTxtWrap: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  adTriggerHighlight: {
+    backgroundColor: "#D7F542",
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  adTriggerHighlightTxt: {
+    color: "#0A1B3D",
+    fontSize: 13,
+    fontFamily: "Inter_900Black",
+    letterSpacing: 0.4,
   },
   adTriggerTxt: {
-    color: "#0E7490",
-    fontSize: 12,
-    fontFamily: "Inter_600SemiBold",
-    letterSpacing: 0.3,
+    color: "#0A1B3D",
+    fontSize: 13,
+    fontFamily: "Inter_700Bold",
   },
 });
