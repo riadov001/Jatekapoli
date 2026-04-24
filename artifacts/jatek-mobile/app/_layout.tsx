@@ -14,6 +14,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { CartProvider } from "@/contexts/CartContext";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import CookieConsentBanner from "@/components/CookieConsentBanner";
+import SplashOverlay from "@/components/SplashOverlay";
 import { getApiBaseSafe } from "@/lib/apiBase";
 
 // Configure the API base URL — robustly resolves from EXPO_PUBLIC_DOMAIN, then
@@ -93,6 +94,7 @@ export default function RootLayout() {
                   <KeyboardProvider>
                     <RootLayoutNav />
                     <CookieConsentBanner />
+                    <SplashOverlay duration={1800} />
                   </KeyboardProvider>
                 </GestureHandlerRootView>
               </CartProvider>
