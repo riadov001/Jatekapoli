@@ -7,25 +7,83 @@ import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
-import { useSendOtp } from "@workspace/api-client-react";
+import { useSendOtp, useLogin, useRegister } from "@workspace/api-client-react";
 import { useColors } from "@/hooks/useColors";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { CountryPickerModal } from "@/components/CountryPickerModal";
 import { DEFAULT_COUNTRY, type Country } from "@/lib/countries";
 import { useT } from "@/contexts/LanguageContext";
+import { useAuth, type AuthUser } from "@/contexts/AuthContext";
 
 type Channel = "sms" | "whatsapp";
+type Mode = "phone" | "email";
 
 export default function LoginScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const t = useT();
+  const { login: persistLogin } = useAuth();
+  const [mode, setMode] = useState<Mode>("phone");
   const [country, setCountry] = useState<Country>(DEFAULT_COUNTRY);
   const [showPicker, setShowPicker] = useState(false);
   const [phone, setPhone] = useState("");
   const [channel, setChannel] = useState<Channel>("whatsapp");
   const [error, setError] = useState("");
   const sendOtp = useSendOtp();
+
+  // Email mode state
+  const [emailIsRegister, setEmailIsRegister] = useState(false);
+  const [emailName, setEmailName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const loginMut = useLogin();
+  const registerMut = useRegister();
+  const emailBusy = loginMut.isPending || registerMut.isPending;
+
+  const handleEmailSubmit = () => {
+    setError("");
+    const trimmedEmail = email.trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
+      setError("Adresse email invalide.");
+      return;
+    }
+    if (password.length < 6) {
+      setError("Le mot de passe doit contenir au moins 6 caractères.");
+      return;
+    }
+    if (emailIsRegister && emailName.trim().length < 2) {
+      setError("Indiquez votre prénom.");
+      return;
+    }
+    const onAuthSuccess = async (res: any) => {
+      if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      const user = res?.user as AuthUser | undefined;
+      const token = res?.token as string | undefined;
+      if (token && user) {
+        await persistLogin(token, user);
+        router.replace("/(tabs)");
+      } else {
+        setError("Réponse inattendue du serveur.");
+      }
+    };
+    const onAuthError = (err: any) => {
+      if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      const msg = err?.data?.error || err?.message || "Échec de l'authentification.";
+      setError(msg);
+    };
+    if (emailIsRegister) {
+      registerMut.mutate(
+        { data: { name: emailName.trim(), email: trimmedEmail, password, role: "customer" } as any },
+        { onSuccess: onAuthSuccess, onError: onAuthError },
+      );
+    } else {
+      loginMut.mutate(
+        { data: { email: trimmedEmail, password } as any },
+        { onSuccess: onAuthSuccess, onError: onAuthError },
+      );
+    }
+  };
 
   const fullPhone = `${country.dialCode}${phone.replace(/^0+/, "").replace(/\s/g, "")}`;
 
@@ -89,6 +147,107 @@ export default function LoginScreen() {
         </Text>
 
         <View style={styles.form}>
+          {/* Mode selector — phone vs email */}
+          <View style={[styles.modeRow, { backgroundColor: colors.muted, borderRadius: 14 }]}>
+            <TouchableOpacity
+              style={[
+                styles.modeBtn,
+                mode === "phone" && { backgroundColor: colors.card, shadowColor: "#000", shadowOpacity: 0.08, shadowRadius: 6, elevation: 2 },
+              ]}
+              onPress={() => { setMode("phone"); setError(""); }}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="call-outline" size={18} color={mode === "phone" ? colors.primary : colors.mutedForeground} />
+              <Text style={[styles.modeLabel, { color: mode === "phone" ? colors.foreground : colors.mutedForeground }]}>Téléphone</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[
+                styles.modeBtn,
+                mode === "email" && { backgroundColor: colors.card, shadowColor: "#000", shadowOpacity: 0.08, shadowRadius: 6, elevation: 2 },
+              ]}
+              onPress={() => { setMode("email"); setError(""); }}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="mail-outline" size={18} color={mode === "email" ? colors.primary : colors.mutedForeground} />
+              <Text style={[styles.modeLabel, { color: mode === "email" ? colors.foreground : colors.mutedForeground }]}>Email</Text>
+            </TouchableOpacity>
+          </View>
+
+          {mode === "email" ? (
+            <View style={{ gap: 10 }}>
+              {emailIsRegister && (
+                <>
+                  <Text style={[styles.label, { color: colors.foreground }]}>Prénom</Text>
+                  <View style={[styles.inputRow, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                    <Ionicons name="person-outline" size={18} color={colors.mutedForeground} style={{ paddingLeft: 14 }} />
+                    <TextInput
+                      style={[styles.input, { color: colors.foreground }]}
+                      placeholder="Salah"
+                      placeholderTextColor={colors.mutedForeground}
+                      value={emailName}
+                      onChangeText={(v) => { setEmailName(v); setError(""); }}
+                      autoCapitalize="words"
+                    />
+                  </View>
+                </>
+              )}
+              <Text style={[styles.label, { color: colors.foreground }]}>Email</Text>
+              <View style={[styles.inputRow, { backgroundColor: colors.card, borderColor: error ? colors.destructive : colors.border }]}>
+                <Ionicons name="mail-outline" size={18} color={colors.mutedForeground} style={{ paddingLeft: 14 }} />
+                <TextInput
+                  style={[styles.input, { color: colors.foreground }]}
+                  placeholder="vous@exemple.com"
+                  placeholderTextColor={colors.mutedForeground}
+                  value={email}
+                  onChangeText={(v) => { setEmail(v); setError(""); }}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                />
+              </View>
+              <Text style={[styles.label, { color: colors.foreground }]}>Mot de passe</Text>
+              <View style={[styles.inputRow, { backgroundColor: colors.card, borderColor: error ? colors.destructive : colors.border }]}>
+                <Ionicons name="lock-closed-outline" size={18} color={colors.mutedForeground} style={{ paddingLeft: 14 }} />
+                <TextInput
+                  style={[styles.input, { color: colors.foreground }]}
+                  placeholder="••••••••"
+                  placeholderTextColor={colors.mutedForeground}
+                  value={password}
+                  onChangeText={(v) => { setPassword(v); setError(""); }}
+                  secureTextEntry={!showPassword}
+                  autoCapitalize="none"
+                  returnKeyType="done"
+                  onSubmitEditing={handleEmailSubmit}
+                />
+                <TouchableOpacity onPress={() => setShowPassword((s) => !s)} hitSlop={12} style={{ paddingHorizontal: 14 }}>
+                  <Ionicons name={showPassword ? "eye-off-outline" : "eye-outline"} size={20} color={colors.mutedForeground} />
+                </TouchableOpacity>
+              </View>
+              {error ? <Text style={[styles.errorText, { color: colors.destructive }]}>{error}</Text> : null}
+              <TouchableOpacity
+                style={[styles.btn, { backgroundColor: colors.primary, opacity: emailBusy ? 0.7 : 1 }]}
+                onPress={handleEmailSubmit}
+                disabled={emailBusy}
+                activeOpacity={0.8}
+              >
+                {emailBusy ? (
+                  <ActivityIndicator color="#fff" size="small" />
+                ) : (
+                  <>
+                    <Ionicons name="mail-outline" size={20} color="#fff" />
+                    <Text style={styles.btnText}>{emailIsRegister ? "Créer mon compte" : "Se connecter"}</Text>
+                    <Ionicons name="arrow-forward" size={20} color="#fff" />
+                  </>
+                )}
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => { setEmailIsRegister((v) => !v); setError(""); }} style={{ alignSelf: "center", paddingVertical: 8 }}>
+                <Text style={{ color: colors.primary, fontFamily: "Inter_600SemiBold", fontSize: 13 }}>
+                  {emailIsRegister ? "Déjà un compte ? Se connecter" : "Nouveau ? Créer un compte"}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+          <>
           {/* Channel selector */}
           <Text style={[styles.label, { color: colors.foreground }]}>{t("login_channel_label")}</Text>
           <View style={[styles.channelRow, { backgroundColor: colors.muted, borderRadius: 14 }]}>
@@ -178,11 +337,15 @@ export default function LoginScreen() {
               </>
             )}
           </TouchableOpacity>
+          </>
+          )}
         </View>
 
-        <Text style={[styles.hint, { color: colors.mutedForeground }]}>
-          {channel === "whatsapp" ? t("login_hint_whatsapp") : t("login_hint_sms")}
-        </Text>
+        {mode === "phone" && (
+          <Text style={[styles.hint, { color: colors.mutedForeground }]}>
+            {channel === "whatsapp" ? t("login_hint_whatsapp") : t("login_hint_sms")}
+          </Text>
+        )}
       </ScrollView>
 
       <CountryPickerModal
@@ -225,6 +388,9 @@ const styles = StyleSheet.create({
   },
   form: { width: "100%", gap: 10 },
   label: { fontSize: 14, fontFamily: "Inter_500Medium", marginBottom: 2 },
+  modeRow: { flexDirection: "row", padding: 4, gap: 4, marginBottom: 6 },
+  modeBtn: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, paddingVertical: 11, borderRadius: 11 },
+  modeLabel: { fontSize: 14, fontFamily: "Inter_600SemiBold" },
   channelRow: {
     flexDirection: "row",
     padding: 4,
