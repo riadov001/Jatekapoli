@@ -55,22 +55,25 @@ function stripProtocol(domain) {
 }
 
 function getDeploymentDomain() {
-  // Explicit override always wins — used for production builds pointing at the
-  // custom domain (e.g. jatek.straight-path.eu).
-  if (process.env.EXPO_PUBLIC_DOMAIN) {
-    return stripProtocol(process.env.EXPO_PUBLIC_DOMAIN);
+  // MOBILE_DEPLOYMENT_DOMAIN: explicit override for the static-build URL where
+  // Expo Go fetches manifests/bundles. Distinct from EXPO_PUBLIC_DOMAIN which
+  // is the API server URL consumed at runtime by apiBase.ts.
+  if (process.env.MOBILE_DEPLOYMENT_DOMAIN) {
+    return stripProtocol(process.env.MOBILE_DEPLOYMENT_DOMAIN);
   }
 
+  // Auto-set by Replit in production deployments (e.g. jatekapp.replit.app).
   if (process.env.REPLIT_INTERNAL_APP_DOMAIN) {
     return stripProtocol(process.env.REPLIT_INTERNAL_APP_DOMAIN);
   }
 
+  // Auto-set by Replit in development (e.g. xyz.picard.replit.dev).
   if (process.env.REPLIT_DEV_DOMAIN) {
     return stripProtocol(process.env.REPLIT_DEV_DOMAIN);
   }
 
   console.error(
-    "ERROR: No deployment domain found. Set REPLIT_INTERNAL_APP_DOMAIN, REPLIT_DEV_DOMAIN, or EXPO_PUBLIC_DOMAIN",
+    "ERROR: No deployment domain found. Set MOBILE_DEPLOYMENT_DOMAIN, REPLIT_INTERNAL_APP_DOMAIN, or REPLIT_DEV_DOMAIN",
   );
   process.exit(1);
 }
