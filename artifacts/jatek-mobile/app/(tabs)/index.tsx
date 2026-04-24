@@ -249,7 +249,7 @@ function RestaurantTile({
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
-  const { selectedAddress } = useCart();
+  const { selectedAddress, itemCount } = useCart();
 
   const [search, setSearch] = useState("");
   const [activeCat, setActiveCat] = useState<string | null>(null);
@@ -342,10 +342,17 @@ export default function HomeScreen() {
 
               <TouchableOpacity
                 activeOpacity={0.85}
-                style={s.avatar}
-                onPress={() => router.push("/profile")}
+                style={s.cartBtn}
+                onPress={() => router.push("/cart")}
+                accessibilityRole="button"
+                accessibilityLabel="Voir le panier"
               >
-                <Ionicons name="person" size={18} color={PINK} />
+                <Ionicons name="bag-handle" size={20} color={PINK} />
+                {itemCount > 0 && (
+                  <View style={s.cartBadge}>
+                    <Text style={s.cartBadgeTxt}>{itemCount > 9 ? "9+" : itemCount}</Text>
+                  </View>
+                )}
               </TouchableOpacity>
             </View>
 
@@ -610,6 +617,39 @@ const s = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     overflow: "hidden",
+  },
+  cartBtn: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: "#FFFFFF",
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#000",
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 3,
+  },
+  cartBadge: {
+    position: "absolute",
+    top: -4,
+    right: -4,
+    minWidth: 18,
+    height: 18,
+    paddingHorizontal: 4,
+    borderRadius: 9,
+    backgroundColor: "#FFD400",
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1.5,
+    borderColor: "#FFFFFF",
+  },
+  cartBadgeTxt: {
+    color: "#0A1B3D",
+    fontSize: 10,
+    fontFamily: "Inter_700Bold",
+    lineHeight: 12,
   },
   searchBox: {
     height: 48,
