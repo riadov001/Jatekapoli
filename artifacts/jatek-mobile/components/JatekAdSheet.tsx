@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from "react";
+import React, { useRef, useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -58,8 +58,18 @@ interface Props {
   onClose: () => void;
 }
 
+const AUTO_MS = 4000;
+const CARD_W = SCREEN_W * 0.62;
+const CARD_GAP = 10;
+const SNAP = CARD_W + CARD_GAP;
+
 export function JatekAdSheet({ visible, onClose }: Props) {
   const insets = useSafeAreaInsets();
+  const scrollRef = useRef<ScrollView>(null);
+  const [activeIdx, setActiveIdx] = useState(0);
+  const progress = useRef(new Animated.Value(0)).current;
+  const autoTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const userPaused = useRef(false);
 
   // Sheet slide-up
   const slideY = useRef(new Animated.Value(SCREEN_H)).current;
@@ -201,12 +211,49 @@ export function JatekAdSheet({ visible, onClose }: Props) {
     ]).start();
   };
 
+  const clearAuto = () => {
+    if (autoTimer.current) {
+      clearTimeout(autoTimer.current);
+      autoTimer.current = null;
+    }
+    progress.stopAnimation();
+  };
+
+  const scheduleNext = (fromIdx: number) => {
+    clearAuto();
+    if (userPaused.current) return;
+    progress.setValue(0);
+    Animated.timing(progress, {
+      toValue: 1,
+      duration: AUTO_MS,
+      useNativeDriver: false,
+    }).start();
+    autoTimer.current = setTimeout(() => {
+      const next = (fromIdx + 1) % ADS.length;
+      setActiveIdx(next);
+      scrollRef.current?.scrollTo({ x: next * SNAP, animated: true });
+      scheduleNext(next);
+    }, AUTO_MS);
+  };
+
   useEffect(() => {
     if (visible) {
+      userPaused.current = false;
+      setActiveIdx(0);
       // Small delay so modal mounts before animating
-      const t = setTimeout(runOpen, 20);
-      return () => clearTimeout(t);
+      const t = setTimeout(() => {
+        runOpen();
+        scrollRef.current?.scrollTo({ x: 0, animated: false });
+        // Start auto-rotate after the splash settles
+        const t2 = setTimeout(() => scheduleNext(0), 900);
+        autoTimer.current = t2;
+      }, 20);
+      return () => {
+        clearTimeout(t);
+        clearAuto();
+      };
     } else {
+      clearAuto();
       runClose();
     }
   }, [visible]);
@@ -254,12 +301,24 @@ export function JatekAdSheet({ visible, onClose }: Props) {
         {/* Cards — anim[2] */}
         <Animated.View style={animStyle(2)}>
           <ScrollView
+            ref={scrollRef}
             horizontal
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.adsRow}
             decelerationRate="fast"
-            snapToInterval={SCREEN_W * 0.62 + 10}
+            snapToInterval={SNAP}
             pagingEnabled={false}
+            onScrollBeginDrag={() => {
+              userPaused.current = true;
+              clearAuto();
+            }}
+            onMomentumScrollEnd={(e) => {
+              const idx = Math.round(e.nativeEvent.contentOffset.x / SNAP);
+              const clamped = Math.max(0, Math.min(ADS.length - 1, idx));
+              setActiveIdx(clamped);
+              userPaused.current = false;
+              scheduleNext(clamped);
+            }}
           >
             {ADS.map((ad, i) => {
               const a = cardAnims[i];
@@ -308,11 +367,38 @@ export function JatekAdSheet({ visible, onClose }: Props) {
           </ScrollView>
         </Animated.View>
 
-        {/* Dots — anim[3] */}
+        {/* Progress indicators — anim[3] */}
         <Animated.View style={[styles.dotsRow, animStyle(3)]}>
-          {ADS.map((_, i) => (
-            <View key={i} style={[styles.dot, i === 0 && styles.dotActive]} />
-          ))}
+          {ADS.map((_, i) => {
+            const isActive = i === activeIdx;
+            return (
+              <Pressable
+                key={i}
+                onPress={() => {
+                  userPaused.current = false;
+                  setActiveIdx(i);
+                  scrollRef.current?.scrollTo({ x: i * SNAP, animated: true });
+                  scheduleNext(i);
+                }}
+                hitSlop={8}
+                style={[styles.dotTrack, isActive && styles.dotTrackActive]}
+              >
+                {isActive && (
+                  <Animated.View
+                    style={[
+                      styles.dotFill,
+                      {
+                        width: progress.interpolate({
+                          inputRange: [0, 1],
+                          outputRange: ["0%", "100%"],
+                        }),
+                      },
+                    ]}
+                  />
+                )}
+              </Pressable>
+            );
+          })}
         </Animated.View>
       </Animated.View>
     </Modal>
@@ -422,7 +508,21 @@ const styles = StyleSheet.create({
     gap: 5,
   },
   adCtaTxt: { fontSize: 11, fontFamily: "Inter_700Bold" },
-  dotsRow: { flexDirection: "row", gap: 6, justifyContent: "center", paddingTop: 14, paddingBottom: 6 },
-  dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: "#D1D5DB" },
-  dotActive: { backgroundColor: PINK, width: 20, borderRadius: 3 },
+  dotsRow: { flexDirection: "row", gap: 6, justifyContent: "center", alignItems: "center", paddingTop: 14, paddingBottom: 6 },
+  dotTrack: {
+    width: 14,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: "#E5E7EB",
+    overflow: "hidden",
+  },
+  dotTrackActive: {
+    width: 28,
+    backgroundColor: "#F3D7E1",
+  },
+  dotFill: {
+    height: "100%",
+    backgroundColor: PINK,
+    borderRadius: 2,
+  },
 });
