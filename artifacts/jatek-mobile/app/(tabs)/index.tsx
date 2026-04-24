@@ -1014,10 +1014,10 @@ const s = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
-    backgroundColor: "rgba(207, 250, 254, 0.3)",
+    backgroundColor: "rgba(207, 250, 254, 0.1)",
     paddingVertical: 8,
     borderTopWidth: 1,
-    borderTopColor: "rgba(34, 211, 238, 0.25)",
+    borderTopColor: "rgba(34, 211, 238, 0.18)",
   },
   adTriggerTxt: {
     color: "#0E7490",

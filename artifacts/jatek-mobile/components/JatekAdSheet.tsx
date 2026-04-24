@@ -74,14 +74,18 @@ export function JatekAdSheet({ visible, onClose }: Props) {
     }))
   ).current;
 
-  // Per-card "puzzle" entry: each card flies in from a different corner with
-  // rotation + scale, like puzzle pieces snapping into place.
-  const PUZZLE_FROM = [
-    { dx: -SCREEN_W * 0.6, dy: -120, rot: -25 }, // top-left
-    { dx:  SCREEN_W * 0.6, dy: -100, rot:  20 }, // top-right
-    { dx: -SCREEN_W * 0.6, dy:  140, rot:  18 }, // bottom-left
-    { dx:  SCREEN_W * 0.6, dy:  120, rot: -22 }, // bottom-right
-  ];
+  // Per-card circular splash: cards explode out from the centre on a ring,
+  // each at its own angle, then converge back into the row (Talabat-style).
+  const RADIUS = Math.min(SCREEN_W, SCREEN_H) * 0.55;
+  const PUZZLE_FROM = ADS.map((_, i) => {
+    // Angles spread across the upper hemisphere so cards visibly fan in
+    const angle = -Math.PI / 2 + ((i + 0.5) / ADS.length - 0.5) * Math.PI * 1.1;
+    return {
+      dx: Math.cos(angle) * RADIUS,
+      dy: Math.sin(angle) * RADIUS - 40,
+      rot: ((angle + Math.PI / 2) * 180) / Math.PI * 0.6,
+    };
+  });
   const cardAnims = useRef(
     ADS.map((_, i) => ({
       opacity: new Animated.Value(0),
@@ -254,7 +258,7 @@ export function JatekAdSheet({ visible, onClose }: Props) {
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.adsRow}
             decelerationRate="fast"
-            snapToInterval={SCREEN_W * 0.8 + 12}
+            snapToInterval={SCREEN_W * 0.62 + 10}
             pagingEnabled={false}
           >
             {ADS.map((ad, i) => {
@@ -284,7 +288,7 @@ export function JatekAdSheet({ visible, onClose }: Props) {
                     <View style={styles.decorCircle} />
 
                     <View style={styles.adIconWrap}>
-                      <Ionicons name={ad.icon} size={28} color={GOLD} />
+                      <Ionicons name={ad.icon} size={20} color={GOLD} />
                     </View>
                     <View style={styles.adTag}>
                       <Text style={styles.adTagTxt}>{ad.tag}</Text>
@@ -370,28 +374,28 @@ const styles = StyleSheet.create({
     marginBottom: 18,
   },
 
-  adsRow: { paddingHorizontal: 16, gap: 12, paddingBottom: 6 },
+  adsRow: { paddingHorizontal: 14, gap: 10, paddingBottom: 6 },
   adCard: {
-    width: SCREEN_W * 0.8,
-    borderRadius: 22,
-    padding: 22,
-    gap: 10,
+    width: SCREEN_W * 0.62,
+    borderRadius: 18,
+    padding: 14,
+    gap: 6,
     overflow: "hidden",
     position: "relative",
   },
   decorCircle: {
     position: "absolute",
-    right: -30,
-    top: -30,
-    width: 130,
-    height: 130,
-    borderRadius: 65,
+    right: -24,
+    top: -24,
+    width: 96,
+    height: 96,
+    borderRadius: 48,
     backgroundColor: "rgba(255,255,255,0.08)",
   },
   adIconWrap: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     backgroundColor: "rgba(255,255,255,0.18)",
     alignItems: "center",
     justifyContent: "center",
@@ -399,25 +403,25 @@ const styles = StyleSheet.create({
   adTag: {
     alignSelf: "flex-start",
     backgroundColor: "rgba(255,255,255,0.22)",
-    borderRadius: 10,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
   },
-  adTagTxt: { color: "#fff", fontSize: 11, fontFamily: "Inter_700Bold", letterSpacing: 0.8 },
-  adTitle: { color: "#fff", fontSize: 22, fontFamily: "Inter_900Black", lineHeight: 28, letterSpacing: -0.4 },
-  adSub: { color: "rgba(255,255,255,0.82)", fontSize: 13, fontFamily: "Inter_400Regular", lineHeight: 18 },
-  adCtaRow: { marginTop: 6 },
+  adTagTxt: { color: "#fff", fontSize: 10, fontFamily: "Inter_700Bold", letterSpacing: 0.6 },
+  adTitle: { color: "#fff", fontSize: 16, fontFamily: "Inter_900Black", lineHeight: 20, letterSpacing: -0.3 },
+  adSub: { color: "rgba(255,255,255,0.82)", fontSize: 11, fontFamily: "Inter_400Regular", lineHeight: 15 },
+  adCtaRow: { marginTop: 4 },
   adCta: {
     alignSelf: "flex-start",
     backgroundColor: "#fff",
-    borderRadius: 22,
-    paddingHorizontal: 16,
-    paddingVertical: 9,
+    borderRadius: 18,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
+    gap: 5,
   },
-  adCtaTxt: { fontSize: 13, fontFamily: "Inter_700Bold" },
+  adCtaTxt: { fontSize: 11, fontFamily: "Inter_700Bold" },
   dotsRow: { flexDirection: "row", gap: 6, justifyContent: "center", paddingTop: 14, paddingBottom: 6 },
   dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: "#D1D5DB" },
   dotActive: { backgroundColor: PINK, width: 20, borderRadius: 3 },
