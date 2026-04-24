@@ -49,6 +49,9 @@ interface CartContextType {
   applyCoupon: (code: string, opts?: { loyaltyPoints?: number }) => CouponApplyResult;
   /** Remove the currently applied coupon. */
   removeCoupon: () => void;
+  /** Free-form note to the restaurant (allergies, cooking prefs, etc.). */
+  notes: string;
+  setNotes: (n: string) => void;
 }
 
 const CartContext = createContext<CartContextType | null>(null);
@@ -59,6 +62,7 @@ const CartContext = createContext<CartContextType | null>(null);
 const CART_KEY = "jatek_cart_v3";
 const ADDR_KEY = "jatek_selected_address_v1";
 const COUPON_KEY = "jatek_cart_coupon_v1";
+const NOTES_KEY = "jatek_cart_notes_v1";
 const OLD_CART_KEYS = ["jatek_cart_v2", "jatek_cart"];
 
 export function CartProvider({ children }: { children: ReactNode }) {
@@ -70,6 +74,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [selectedAddress, setSelectedAddressState] = useState<string>("");
   const [selectedAddressInZone, setSelectedAddressInZone] = useState<boolean>(true);
   const [appliedCoupon, setAppliedCoupon] = useState<CouponDef | null>(null);
+  const [notes, setNotesState] = useState<string>("");
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
@@ -78,8 +83,13 @@ export function CartProvider({ children }: { children: ReactNode }) {
     // empty defaults instead of being stuck.
     // Best-effort cleanup of legacy cart keys — ignore failures.
     OLD_CART_KEYS.forEach((k) => { AsyncStorage.removeItem(k).catch(() => {}); });
-    Promise.all([AsyncStorage.getItem(CART_KEY), AsyncStorage.getItem(ADDR_KEY), AsyncStorage.getItem(COUPON_KEY)])
-      .then(([raw, addr, couponRaw]) => {
+    Promise.all([
+      AsyncStorage.getItem(CART_KEY),
+      AsyncStorage.getItem(ADDR_KEY),
+      AsyncStorage.getItem(COUPON_KEY),
+      AsyncStorage.getItem(NOTES_KEY),
+    ])
+      .then(([raw, addr, couponRaw, notesRaw]) => {
         if (raw) {
           try {
             const s = JSON.parse(raw);
@@ -105,6 +115,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
             if (parsed && typeof parsed.code === "string") setAppliedCoupon(parsed);
           } catch { /* ignore */ }
         }
+        if (typeof notesRaw === "string") setNotesState(notesRaw);
       })
       .catch((err) => {
         console.warn("[Cart] AsyncStorage unavailable:", err);
@@ -125,6 +136,17 @@ export function CartProvider({ children }: { children: ReactNode }) {
       AsyncStorage.removeItem(COUPON_KEY).catch(() => {});
     }
   }, [appliedCoupon, ready]);
+
+  useEffect(() => {
+    if (!ready) return;
+    if (notes) {
+      AsyncStorage.setItem(NOTES_KEY, notes).catch(() => {});
+    } else {
+      AsyncStorage.removeItem(NOTES_KEY).catch(() => {});
+    }
+  }, [notes, ready]);
+
+  const setNotes = (n: string) => setNotesState(n);
 
   const setSelectedAddress = (a: string, inZone: boolean = true) => {
     setSelectedAddressState(a);
@@ -176,6 +198,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     setDeliveryFee(DEFAULT_DELIVERY_FEE);
     setFreeDeliveryThreshold(DEFAULT_FREE_DELIVERY_THRESHOLD);
     setAppliedCoupon(null);
+    setNotesState("");
   };
 
   const subtotal = items.reduce((s, i) => s + i.price * i.quantity, 0);
@@ -224,6 +247,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
         freeDeliveryCoupon: discount.freeDelivery,
         applyCoupon,
         removeCoupon,
+        notes,
+        setNotes,
       }}
     >
       {children}
