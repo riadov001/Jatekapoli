@@ -111,7 +111,7 @@ export function DriverMap({ driverLat, driverLng, destLat, destLng, height = 220
   if (Platform.OS === "web") {
     return (
       <View style={[styles.container, { height }]}>
-        {/* @ts-expect-error iframe is web-only */}
+        {/* iframe is a web-only DOM element */}
         <iframe
           ref={iframeRef as any}
           srcDoc={initialHtml}

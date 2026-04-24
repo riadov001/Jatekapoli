@@ -108,7 +108,7 @@ export function LocationMapPicker({ latitude, longitude, onChange, height = 220 
   if (Platform.OS === "web") {
     return (
       <View style={[styles.wrap, { height }]}>
-        {/* @ts-expect-error — iframe is a valid web-only DOM element */}
+        {/* iframe is a valid web-only DOM element */}
         <iframe
           ref={iframeRef as any}
           srcDoc={html}
