@@ -310,6 +310,7 @@ export default function HomeScreen() {
   // on every device (handles bottom safe-area / home indicator automatically).
   const tabBarHeight = useBottomTabBarHeight();
   const tabBarPad = tabBarHeight;
+  const fabBottom = insets.bottom + tabBarHeight + 16;
 
   return (
     <View style={s.root}>
@@ -528,7 +529,7 @@ export default function HomeScreen() {
       {/* ─── JATEK Ad floating trigger bar — glued to the top of the tab bar (Talabat-style) ─── */}
       <Animated.View
         entering={FadeInUp.delay(900).duration(500).springify()}
-        style={[s.adTriggerWrap, { bottom: tabBarPad }]}
+        style={[s.adTriggerWrap, { bottom: fabBottom }]}
         pointerEvents="box-none"
       >
         <TouchableOpacity
