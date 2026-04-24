@@ -371,6 +371,45 @@ export function CartPreviewSheet({ visible, onClose }: Props) {
                 ))}
               </ScrollView>
 
+              {suggestions.length > 0 && (
+                <View style={styles.suggestBlock}>
+                  <Text style={styles.suggestTitle}>Ajoutez quelque chose ?</Text>
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={{ paddingRight: 4, gap: 10 }}
+                  >
+                    {suggestions.map((m: any) => (
+                      <View key={m.id} style={styles.suggestCard}>
+                        {m.imageUrl ? (
+                          <Image source={{ uri: m.imageUrl }} style={styles.suggestImg} />
+                        ) : (
+                          <View style={[styles.suggestImg, styles.suggestImgFallback]}>
+                            <Ionicons name="restaurant" size={20} color={PINK} />
+                          </View>
+                        )}
+                        <Text style={styles.suggestName} numberOfLines={2}>
+                          {m.name}
+                        </Text>
+                        <View style={styles.suggestFoot}>
+                          <Text style={styles.suggestPrice}>
+                            {Number(m.price).toFixed(2)} MAD
+                          </Text>
+                          <TouchableOpacity
+                            onPress={() => handleAddSuggestion(m)}
+                            style={styles.suggestAdd}
+                            activeOpacity={0.85}
+                            accessibilityLabel={`Ajouter ${m.name}`}
+                          >
+                            <Ionicons name="add" size={16} color="#fff" />
+                          </TouchableOpacity>
+                        </View>
+                      </View>
+                    ))}
+                  </ScrollView>
+                </View>
+              )}
+
               <View style={styles.promoBlock}>
                 {appliedCoupon ? (
                   <View style={styles.promoApplied}>
@@ -665,6 +704,65 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   qtyTxt: { color: NAVY, fontSize: 13, fontWeight: "700", minWidth: 16, textAlign: "center" },
+
+  suggestBlock: {
+    paddingTop: 12,
+    paddingBottom: 4,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: BORDER,
+  },
+  suggestTitle: {
+    color: NAVY,
+    fontSize: 13,
+    fontWeight: "700",
+    marginBottom: 8,
+  },
+  suggestCard: {
+    width: 124,
+    backgroundColor: "#FAFAFA",
+    borderRadius: 14,
+    padding: 8,
+    borderWidth: 1,
+    borderColor: BORDER,
+  },
+  suggestImg: {
+    width: "100%",
+    height: 64,
+    borderRadius: 10,
+    backgroundColor: "#F0F0F0",
+  },
+  suggestImgFallback: { alignItems: "center", justifyContent: "center" },
+  suggestName: {
+    color: NAVY,
+    fontSize: 11.5,
+    fontWeight: "600",
+    marginTop: 6,
+    minHeight: 30,
+  },
+  suggestFoot: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginTop: 4,
+  },
+  suggestPrice: {
+    color: PINK,
+    fontSize: 12,
+    fontWeight: "800",
+  },
+  suggestAdd: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: PINK,
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: PINK,
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 3,
+  },
 
   promoBlock: {
     paddingTop: 10,
