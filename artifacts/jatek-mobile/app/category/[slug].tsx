@@ -15,6 +15,7 @@ import {
 import { useLocalSearchParams, router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
+import Animated, { FadeInDown, FadeIn } from "react-native-reanimated";
 import { useListRestaurants, useGetFeaturedRestaurants, type Restaurant } from "@workspace/api-client-react";
 import { getApiBaseSafe } from "@/lib/apiBase";
 
@@ -345,7 +346,7 @@ export default function CategoryScreen() {
         ListHeaderComponent={
           <>
             {/* ─── Search bar ─── */}
-            <View style={styles.searchWrap}>
+            <Animated.View entering={FadeInDown.delay(80).duration(450).springify()} style={styles.searchWrap}>
               <Ionicons name="search" size={16} color={TEXT_MUTED} />
               <TextInput
                 style={styles.searchInput}
@@ -360,10 +361,11 @@ export default function CategoryScreen() {
                   <Ionicons name="close-circle" size={16} color={TEXT_MUTED} />
                 </TouchableOpacity>
               )}
-            </View>
+            </Animated.View>
 
             {/* ─── Sub-categories as icon slider ─── */}
-            <ScrollView
+            <Animated.ScrollView
+              entering={FadeInDown.delay(160).duration(500).springify()}
               horizontal
               showsHorizontalScrollIndicator={false}
               style={styles.subcatScroll}
@@ -378,11 +380,11 @@ export default function CategoryScreen() {
                   onPress={() => setActiveSubId(sub.id)}
                 />
               ))}
-            </ScrollView>
+            </Animated.ScrollView>
 
             {/* ─── VIP / Promo partners horizontal slider (Talabat style) ─── */}
             {vipPartners.length > 0 && (
-              <View style={styles.vipSection}>
+              <Animated.View entering={FadeInDown.delay(260).duration(550).springify()} style={styles.vipSection}>
                 <View style={styles.vipHeader}>
                   <Text style={styles.vipTitle}>Partenaires VIP & Promotions</Text>
                 </View>
@@ -405,14 +407,14 @@ export default function CategoryScreen() {
                     />
                   ))}
                 </ScrollView>
-              </View>
+              </Animated.View>
             )}
 
             {/* ─── Results count ─── */}
             {!isLoading && filtered.length > 0 && (
-              <Text style={styles.resultsCount}>
+              <Animated.Text entering={FadeIn.delay(340).duration(400)} style={styles.resultsCount}>
                 {filtered.length} établissement{filtered.length > 1 ? "s" : ""}
-              </Text>
+              </Animated.Text>
             )}
 
             {isLoading && (
@@ -423,8 +425,13 @@ export default function CategoryScreen() {
             )}
           </>
         }
-        renderItem={({ item }) => (
-          <RestaurantCardGrid restaurant={item} onPress={() => goRestaurant(item.id)} color={config.color} />
+        renderItem={({ item, index }) => (
+          <Animated.View
+            entering={FadeInDown.delay(380 + index * 60).duration(420).springify()}
+            style={{ flex: 1 }}
+          >
+            <RestaurantCardGrid restaurant={item} onPress={() => goRestaurant(item.id)} color={config.color} />
+          </Animated.View>
         )}
         ListEmptyComponent={
           !isLoading ? <EmptyCategorySection color={config.color} label={config.label} /> : null
