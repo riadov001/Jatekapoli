@@ -166,9 +166,16 @@ export default function OrderDetailScreen() {
   }
 
   const currentStep = STEP_KEYS[currentIdx] ?? STEP_KEYS[0];
-  const showMap = order.status === "picked_up" && driverPos;
   const isCompleted = order.status === "delivered";
   const isCancelled = order.status === "cancelled";
+  // Show the live driver map as soon as a driver has been assigned
+  // (any status from "accepted" onwards) and we have *some* coordinate
+  // for either the driver or the destination. Falls back to the
+  // destination-only view while the driver is still being located.
+  const driverAssigned = !!order.driverId;
+  const inFlight = !isCompleted && !isCancelled;
+  const mapDriverPos = driverPos ?? (driverAssigned && destPos ? destPos : null);
+  const showMap = inFlight && driverAssigned && (driverPos || destPos);
 
   const distanceKm = driverPos && destPos ? haversineKm(driverPos, destPos) : null;
   const etaMin = order.estimatedDeliveryTime ?? null;
@@ -234,20 +241,38 @@ export default function OrderDetailScreen() {
           </Animated.View>
         )}
 
-        {/* Live map */}
+        {/* Live map — visible as soon as a driver is assigned */}
         {showMap && (
           <Animated.View entering={FadeIn.duration(400)} style={styles.mapWrap}>
             <DriverMap
-              driverLat={driverPos!.lat}
-              driverLng={driverPos!.lng}
+              driverLat={mapDriverPos!.lat}
+              driverLng={mapDriverPos!.lng}
               destLat={destPos?.lat}
               destLng={destPos?.lng}
-              height={240}
+              height={320}
+              pinColor={colors.primary}
+              driverColor={colors.turquoise}
             />
             <View style={styles.mapOverlay}>
-              <PulsingDot color="#22C55E" />
-              <Text style={styles.mapOverlayText}>{t("order_live_tracking")}</Text>
+              <PulsingDot color={driverPos ? "#22C55E" : colors.yellow} />
+              <Text style={[styles.mapOverlayText, { color: driverPos ? "#16A34A" : "#A07A00" }]}>
+                {driverPos ? t("order_live_tracking") : t("order_status_accepted")}
+              </Text>
             </View>
+            {distanceKm != null && (
+              <View style={[styles.mapEtaPill, { backgroundColor: colors.primary }]}>
+                <Ionicons name="bicycle" size={14} color="#fff" />
+                <Text style={styles.mapEtaText}>{distanceKm.toFixed(1)} km</Text>
+              </View>
+            )}
+          </Animated.View>
+        )}
+        {inFlight && !driverAssigned && (
+          <Animated.View entering={FadeIn.duration(400)} style={[styles.mapWrap, { height: 140, backgroundColor: colors.muted, alignItems: "center", justifyContent: "center", flexDirection: "row", gap: 10 }]}>
+            <Ionicons name="time-outline" size={22} color={colors.mutedForeground} />
+            <Text style={{ color: colors.mutedForeground, fontFamily: "Inter_600SemiBold", fontSize: 13 }}>
+              {t("order_status_pending_desc")}
+            </Text>
           </Animated.View>
         )}
 
@@ -447,9 +472,11 @@ const styles = StyleSheet.create({
   metaLabel: { flex: 1, fontSize: 13, fontFamily: "Inter_400Regular" },
   metaValue: { fontSize: 13, fontFamily: "Inter_600SemiBold" },
 
-  mapWrap: { marginHorizontal: 16, marginBottom: 12, borderRadius: 16, overflow: "hidden", position: "relative" },
+  mapWrap: { marginHorizontal: 16, marginBottom: 12, borderRadius: 18, overflow: "hidden", position: "relative" },
   mapOverlay: { position: "absolute", top: 12, left: 12, flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: "rgba(255,255,255,0.95)", paddingHorizontal: 10, paddingVertical: 6, borderRadius: 20 },
-  mapOverlayText: { fontSize: 11, fontFamily: "Inter_700Bold", color: "#16A34A" },
+  mapOverlayText: { fontSize: 11, fontFamily: "Inter_700Bold" },
+  mapEtaPill: { position: "absolute", bottom: 12, right: 12, flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 22, shadowColor: "#000", shadowOpacity: 0.2, shadowRadius: 6, shadowOffset: { width: 0, height: 3 }, elevation: 5 },
+  mapEtaText: { color: "#fff", fontSize: 12, fontFamily: "Inter_700Bold" },
 
   driverCard: { marginHorizontal: 16, marginBottom: 12, padding: 14, borderRadius: 16, borderWidth: 1, flexDirection: "row", alignItems: "center", gap: 12 },
   driverAvatar: { width: 50, height: 50, borderRadius: 25, alignItems: "center", justifyContent: "center" },
