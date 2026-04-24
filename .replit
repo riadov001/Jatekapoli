@@ -64,12 +64,12 @@ packages = ["eas-cli", "unzipNLS"]
 [userenv.shared]
 
 [userenv.development]
-EXPO_PUBLIC_DOMAIN = "Backend.jatek.app"
 INFOBIP_WA_SENDER = "+15072600620"
+EXPO_PUBLIC_DOMAIN = "ma.jatek.app"
 
 [userenv.production]
-EXPO_PUBLIC_DOMAIN = "Backend.jatek.app"
 INFOBIP_WA_SENDER = "+15072600620"
+EXPO_PUBLIC_DOMAIN = "ma.jatek.app"
 
 [objectStorage]
 defaultBucketID = "replit-objstore-da72a41c-10aa-4e77-9354-01883c790dff"
