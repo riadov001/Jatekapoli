@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { db, restaurantsTable, ordersTable, reviewsTable } from "@workspace/db";
-import { eq, ilike, and, avg, count, sum, sql } from "drizzle-orm";
+import { eq, ilike, and, or, avg, count, sum, sql } from "drizzle-orm";
 import {
   CreateRestaurantBody,
   UpdateRestaurantBody,
@@ -74,7 +74,14 @@ router.get("/restaurants", async (req, res): Promise<void> => {
     conditions.push(eq(restaurantsTable.businessType, query.businessType));
   }
   if (query.search) {
-    conditions.push(ilike(restaurantsTable.name, `%${query.search}%`));
+    const term = `%${query.search}%`;
+    const searchCond = or(
+      ilike(restaurantsTable.name, term),
+      ilike(restaurantsTable.description, term),
+      ilike(restaurantsTable.category, term),
+      ilike(restaurantsTable.address, term),
+    );
+    if (searchCond) conditions.push(searchCond);
   }
   if (query.ownerId !== undefined) {
     conditions.push(eq(restaurantsTable.ownerId, query.ownerId));

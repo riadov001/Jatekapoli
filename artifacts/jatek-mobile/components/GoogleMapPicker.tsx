@@ -15,7 +15,6 @@ interface Props {
 const GOOGLE_KEY = (process.env.EXPO_PUBLIC_GOOGLE_MAPS_KEY ?? process.env.EXPO_PUBLIC_GOOGLE_PLACES_KEY ?? "").trim();
 
 function buildGoogleHtml(lat: number, lng: number, pin: string, zone: string) {
-  const safePin = pin.replace(/[^#0-9a-fA-F]/g, "") || "E91E8C";
   return `<!DOCTYPE html>
 <html>
 <head>
@@ -25,7 +24,7 @@ function buildGoogleHtml(lat: number, lng: number, pin: string, zone: string) {
   html,body,#m{height:100%;margin:0;padding:0;background:#eef;font-family:-apple-system,BlinkMacSystemFont,sans-serif}
   .center-pin{
     position:absolute;left:50%;top:50%;transform:translate(-50%,-100%);
-    pointer-events:none;z-index:5;
+    pointer-events:none;z-index:600;
   }
   .center-pin svg{filter:drop-shadow(0 4px 6px rgba(0,0,0,.3))}
   .pin-shadow{
@@ -33,7 +32,7 @@ function buildGoogleHtml(lat: number, lng: number, pin: string, zone: string) {
     transform:translate(-50%,-50%);
     width:18px;height:6px;border-radius:50%;
     background:rgba(0,0,0,.25);
-    pointer-events:none;z-index:4;
+    pointer-events:none;z-index:599;
   }
 </style>
 </head>
@@ -53,8 +52,11 @@ function buildGoogleHtml(lat: number, lng: number, pin: string, zone: string) {
       else if(window.parent){window.parent.postMessage(JSON.stringify(payload),'*');}
     }catch(e){}
   }
+  var googleReady=false;
+  var fallbackUsed=false;
   var debounceTimer=null;
-  function emitCenter(map){
+
+  function emitCenterGoogle(map){
     if(debounceTimer)clearTimeout(debounceTimer);
     debounceTimer=setTimeout(function(){
       var c=map.getCenter();
@@ -62,33 +64,72 @@ function buildGoogleHtml(lat: number, lng: number, pin: string, zone: string) {
     },200);
   }
   function initMap(){
-    var center={lat:${lat},lng:${lng}};
-    var map=new google.maps.Map(document.getElementById('m'),{
-      center:center,zoom:15,disableDefaultUI:true,
-      gestureHandling:'greedy',clickableIcons:false,
-      styles:[
-        {featureType:'poi.business',stylers:[{visibility:'on'}]},
-        {featureType:'transit',stylers:[{visibility:'off'}]},
-      ],
-    });
-    new google.maps.Circle({
-      map:map,center:{lat:${OUJDA_CENTER.latitude},lng:${OUJDA_CENTER.longitude}},
-      radius:${MAX_RADIUS_KM * 1000},
-      strokeColor:'${zone}',strokeOpacity:0.6,strokeWeight:1.2,
-      fillColor:'${zone}',fillOpacity:0.07,clickable:false,
-    });
-    map.addListener('center_changed',function(){emitCenter(map);});
-    map.addListener('idle',function(){emitCenter(map);});
-    function applyMsg(raw){
-      try{var d=JSON.parse(raw);if(d&&typeof d.lat==='number'&&typeof d.lng==='number'){map.panTo({lat:d.lat,lng:d.lng});}}catch(e){}
-    }
-    document.addEventListener('message',function(ev){applyMsg(ev.data);});
-    window.addEventListener('message',function(ev){applyMsg(ev.data);});
-    send({ready:true});
+    try{
+      googleReady=true;
+      var center={lat:${lat},lng:${lng}};
+      var map=new google.maps.Map(document.getElementById('m'),{
+        center:center,zoom:15,disableDefaultUI:true,
+        gestureHandling:'greedy',clickableIcons:false,
+      });
+      window.__map=map;
+      new google.maps.Circle({
+        map:map,center:{lat:${OUJDA_CENTER.latitude},lng:${OUJDA_CENTER.longitude}},
+        radius:${MAX_RADIUS_KM * 1000},
+        strokeColor:'${zone}',strokeOpacity:0.6,strokeWeight:1.2,
+        fillColor:'${zone}',fillOpacity:0.07,clickable:false,
+      });
+      map.addListener('center_changed',function(){emitCenterGoogle(map);});
+      map.addListener('idle',function(){emitCenterGoogle(map);});
+      function applyMsg(raw){
+        try{var d=JSON.parse(raw);if(d&&typeof d.lat==='number'&&typeof d.lng==='number'){map.panTo({lat:d.lat,lng:d.lng});}}catch(e){}
+      }
+      document.addEventListener('message',function(ev){applyMsg(ev.data);});
+      window.addEventListener('message',function(ev){applyMsg(ev.data);});
+      send({ready:true,provider:'google'});
+    }catch(e){ loadLeafletFallback(); }
   }
   window.initMap=initMap;
+
+  function loadLeafletFallback(){
+    if(fallbackUsed)return; fallbackUsed=true;
+    var el=document.getElementById('m'); if(el){el.innerHTML='';}
+    var css=document.createElement('link'); css.rel='stylesheet';
+    css.href='https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+    document.head.appendChild(css);
+    var s=document.createElement('script');
+    s.src='https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+    s.onload=function(){
+      try{
+        var center=[${lat},${lng}];
+        var map=L.map('m',{zoomControl:false,attributionControl:false}).setView(center,15);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,subdomains:['a','b','c']}).addTo(map);
+        L.circle([${OUJDA_CENTER.latitude},${OUJDA_CENTER.longitude}],{radius:${MAX_RADIUS_KM * 1000},color:'${zone}',weight:1.2,fillColor:'${zone}',fillOpacity:0.07}).addTo(map);
+        var t=null;
+        map.on('move',function(){
+          if(t)clearTimeout(t);
+          t=setTimeout(function(){var c=map.getCenter();send({lat:c.lat,lng:c.lng});},200);
+        });
+        function applyMsg(raw){
+          try{var d=JSON.parse(raw);if(d&&typeof d.lat==='number'&&typeof d.lng==='number'){map.panTo([d.lat,d.lng]);}}catch(e){}
+        }
+        document.addEventListener('message',function(ev){applyMsg(ev.data);});
+        window.addEventListener('message',function(ev){applyMsg(ev.data);});
+        setTimeout(function(){map.invalidateSize();},150);
+        setTimeout(function(){map.invalidateSize();},600);
+        send({ready:true,provider:'leaflet-fallback'});
+      }catch(e){ send({error:'leaflet-init-failed'}); }
+    };
+    s.onerror=function(){ send({error:'leaflet-load-failed'}); };
+    document.body.appendChild(s);
+  }
+
+  // Google Maps reports auth failures via this global
+  window.gm_authFailure=function(){ loadLeafletFallback(); };
+
+  // Watchdog: if Google Maps script doesn't init in 5s, fall back
+  setTimeout(function(){ if(!googleReady) loadLeafletFallback(); },5000);
 </script>
-<script async defer src="https://maps.googleapis.com/maps/api/js?key=${GOOGLE_KEY}&callback=initMap&v=quarterly"></script>
+<script async defer src="https://maps.googleapis.com/maps/api/js?key=${GOOGLE_KEY}&callback=initMap&v=quarterly" onerror="loadLeafletFallback()"></script>
 </body>
 </html>`;
 }

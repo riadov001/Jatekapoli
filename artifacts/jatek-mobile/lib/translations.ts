@@ -246,8 +246,8 @@ const en: typeof fr = {
 
   gps_title: "Enable location",
   gps_text: "To offer delivery to your current spot, Jatek needs access to your device GPS. You can revoke it any time.",
-  gps_allow: "Enable location",
-  gps_deny: "Not now",
+  gps_allow: "Allow",
+  gps_deny: "Later",
   gps_locating: "Locating…",
   gps_denied_title: "Permission denied",
   gps_denied_text: "Enable location in your device settings to use this feature.",
@@ -415,8 +415,8 @@ const ar: typeof fr = {
 
   gps_title: "تفعيل تحديد الموقع",
   gps_text: "لاقتراح التوصيل إلى موقعك الحالي، يحتاج Jatek إلى الوصول إلى GPS جهازك. يمكنك إيقافه في أي وقت.",
-  gps_allow: "تفعيل الموقع",
-  gps_deny: "ليس الآن",
+  gps_allow: "السماح",
+  gps_deny: "لاحقًا",
   gps_locating: "جارٍ تحديد الموقع…",
   gps_denied_title: "تم رفض الإذن",
   gps_denied_text: "فعّل الموقع من إعدادات الجهاز لاستخدام هذه الميزة.",

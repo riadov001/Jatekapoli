@@ -19,6 +19,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useColors } from "@/hooks/useColors";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { GoogleMapPicker } from "@/components/GoogleMapPicker";
+import { useFriendlyAlert } from "@/components/FriendlyAlert";
 import { useCart } from "@/contexts/CartContext";
 import {
   OUJDA_CENTER,
@@ -33,6 +34,7 @@ export default function WelcomeScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { setSelectedAddress } = useCart();
+  const friendly = useFriendlyAlert();
 
   const [coords, setCoords] = useState({
     latitude: OUJDA_CENTER.latitude,
@@ -76,13 +78,27 @@ export default function WelcomeScreen() {
         status = req.status;
       }
       if (status !== "granted") {
-        Alert.alert("Localisation refusée", "Vous pouvez sélectionner votre position sur la carte.");
+        friendly.show({
+          tone: "warning",
+          icon: "navigate-outline",
+          title: "Localisation refusée",
+          message: "Pas de souci, choisissez votre point de livraison directement sur la carte.",
+          primary: { label: "Compris" },
+          hideSecondary: true,
+        });
         return;
       }
       const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
       await updateForCoords(loc.coords.latitude, loc.coords.longitude);
     } catch {
-      Alert.alert("Erreur", "Impossible d'obtenir votre position.");
+      friendly.show({
+        tone: "error",
+        icon: "alert-circle-outline",
+        title: "Position introuvable",
+        message: "Impossible d'obtenir votre position. Vérifiez que le GPS est activé.",
+        primary: { label: "OK" },
+        hideSecondary: true,
+      });
     } finally {
       setLocating(false);
     }

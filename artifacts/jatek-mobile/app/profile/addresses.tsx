@@ -1,17 +1,19 @@
 import React, { useEffect, useState, useCallback } from "react";
-import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, ScrollView, Modal, TextInput, Alert } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, ScrollView, Modal, TextInput } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import ProfileScreenLayout from "@/components/ProfileScreenLayout";
 import { useColors } from "@/hooks/useColors";
 import { listAddresses, createAddress, updateAddress, deleteAddress, type SavedAddress } from "@/lib/api";
 import { AddressAutocomplete } from "@/components/AddressAutocomplete";
-import { LocationMapPicker } from "@/components/LocationMapPicker";
+import { GoogleMapPicker } from "@/components/GoogleMapPicker";
+import { useFriendlyAlert } from "@/components/FriendlyAlert";
 import { useCart } from "@/contexts/CartContext";
 import { OUJDA_CENTER, checkDeliveryZone, reverseGeocode } from "@/utils/deliveryZone";
 
 export default function AddressesScreen() {
   const colors = useColors();
+  const friendly = useFriendlyAlert();
   const { select, returnTo } = useLocalSearchParams<{ select?: string; returnTo?: string }>();
   const selectMode = select === "1";
   const { setSelectedAddress } = useCart();
@@ -43,9 +45,18 @@ export default function AddressesScreen() {
 
   const load = useCallback(async () => {
     try { setItems(await listAddresses()); }
-    catch (e: any) { Alert.alert("Erreur", e?.message ?? "Impossible de charger."); }
+    catch (e: any) {
+      friendly.show({
+        tone: "error",
+        icon: "cloud-offline-outline",
+        title: "Chargement impossible",
+        message: e?.message ?? "Impossible de récupérer vos adresses pour le moment.",
+        primary: { label: "OK" },
+        hideSecondary: true,
+      });
+    }
     finally { setLoading(false); }
-  }, []);
+  }, [friendly]);
   useEffect(() => { load(); }, [load]);
 
   const openAdd = () => { setEditing(null); setLabel(""); setFullAddress(""); setDetails(""); setIsDefault(items.length === 0); setFormAddrInZone(true); setCoords({ latitude: OUJDA_CENTER.latitude, longitude: OUJDA_CENTER.longitude }); setShowForm(true); };
@@ -62,8 +73,28 @@ export default function AddressesScreen() {
   };
 
   const save = async () => {
-    if (!label.trim() || !fullAddress.trim()) { Alert.alert("Champs requis", "Le libellé et l'adresse sont requis."); return; }
-    if (!formAddrInZone) { Alert.alert("Hors zone", "Désolé, cette adresse est en dehors de notre zone de livraison (5 km autour d'Oujda). Nous arrivons bientôt chez vous !"); return; }
+    if (!label.trim() || !fullAddress.trim()) {
+      friendly.show({
+        tone: "info",
+        icon: "alert-circle-outline",
+        title: "Champs requis",
+        message: "Le libellé et l'adresse sont requis pour enregistrer.",
+        primary: { label: "OK" },
+        hideSecondary: true,
+      });
+      return;
+    }
+    if (!formAddrInZone) {
+      friendly.show({
+        tone: "warning",
+        icon: "location-outline",
+        title: "Hors zone de livraison",
+        message: "Cette adresse est en dehors de notre zone de 5 km autour d'Oujda. Nous arrivons bientôt chez vous !",
+        primary: { label: "OK" },
+        hideSecondary: true,
+      });
+      return;
+    }
     setSaving(true);
     try {
       if (editing) {
@@ -74,18 +105,34 @@ export default function AddressesScreen() {
         setItems((prev) => [created, ...prev.map((x) => isDefault ? { ...x, isDefault: false } : x)]);
       }
       setShowForm(false);
-    } catch (e: any) { Alert.alert("Erreur", e?.message ?? "Impossible d'enregistrer."); }
+    } catch (e: any) {
+      friendly.show({
+        tone: "error",
+        icon: "alert-circle-outline",
+        title: "Enregistrement impossible",
+        message: e?.message ?? "Une erreur est survenue, veuillez réessayer.",
+        primary: { label: "OK" },
+        hideSecondary: true,
+      });
+    }
     finally { setSaving(false); }
   };
 
   const onDelete = (id: number) => {
-    Alert.alert("Supprimer cette adresse ?", "", [
-      { text: "Annuler", style: "cancel" },
-      { text: "Supprimer", style: "destructive", onPress: async () => {
-        setItems((prev) => prev.filter((x) => x.id !== id));
-        try { await deleteAddress(id); } catch { load(); }
-      } },
-    ]);
+    friendly.show({
+      tone: "warning",
+      icon: "trash-outline",
+      title: "Supprimer cette adresse ?",
+      message: "Vous pourrez toujours en ajouter une nouvelle plus tard.",
+      primary: {
+        label: "Supprimer",
+        onPress: async () => {
+          setItems((prev) => prev.filter((x) => x.id !== id));
+          try { await deleteAddress(id); } catch { load(); }
+        },
+      },
+      secondary: { label: "Annuler" },
+    });
   };
 
   const setAsDefault = async (id: number) => {
@@ -158,7 +205,9 @@ export default function AddressesScreen() {
             <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
               <Text style={[styles.sheetTitle, { color: colors.heading }]}>{editing ? "Modifier l'adresse" : "Nouvelle adresse"}</Text>
               <Text style={[styles.label, { color: colors.mutedForeground }]}>Choisir sur la carte</Text>
-              <LocationMapPicker latitude={coords.latitude} longitude={coords.longitude} onChange={onMapPick} height={200} />
+              <View style={{ borderRadius: 16, overflow: "hidden" }}>
+                <GoogleMapPicker latitude={coords.latitude} longitude={coords.longitude} onChange={onMapPick} height={220} />
+              </View>
               <Text style={[styles.label, { color: colors.mutedForeground }]}>Libellé</Text>
               <TextInput value={label} onChangeText={setLabel} placeholder="Domicile, Bureau..." placeholderTextColor={colors.mutedForeground} style={[styles.input, { backgroundColor: colors.card, color: colors.heading, borderColor: colors.border }]} />
               <Text style={[styles.label, { color: colors.mutedForeground }]}>Adresse (saisie manuelle ou autocomplete)</Text>
