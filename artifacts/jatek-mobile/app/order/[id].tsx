@@ -27,7 +27,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useGetOrder, useListDrivers, getGetOrderQueryKey } from "@workspace/api-client-react";
 import { useColors } from "@/hooks/useColors";
 import { useSSE } from "@/hooks/useSSE";
-import { usePushNotifications } from "@/hooks/usePushNotifications";
+import { scheduleOrderStatusNotification } from "@/hooks/usePushNotifications";
 import { DriverMap } from "@/components/DriverMap";
 import { apiBase, geocodeAddress, getDriverLocation, getAuthToken } from "@/lib/api";
 import { useT, useLang } from "@/contexts/LanguageContext";
@@ -96,7 +96,6 @@ export default function OrderDetailScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const t = useT();
-  const { scheduleOrderStatusNotification } = usePushNotifications();
   const { lang } = useLang();
   const locale = lang === "fr" ? "fr-FR" : lang === "ar" ? "ar-MA" : "en-GB";
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -143,7 +142,6 @@ export default function OrderDetailScreen() {
     enabled: !!orderId,
     events: {
       order_status: () => {
-        haptic("success");
         refetch();
       },
       driver_location: (data: any) => {
@@ -162,7 +160,7 @@ export default function OrderDetailScreen() {
       scheduleOrderStatusNotification(order.status, order.id);
     }
     lastStatus.current = order.status;
-  }, [order?.status, order?.id, scheduleOrderStatusNotification]);
+  }, [order?.status, order?.id]);
 
   const currentIdx = order ? STATUS_ORDER.indexOf(order.status) : -1;
 

@@ -1,12 +1,13 @@
 /**
  * usePushNotifications — local push notification support for order status changes.
  *
- * - Requests notification permissions once on mount
- * - Schedules an immediate local notification on each order status transition
- * - Listens for notification taps and navigates to the relevant order screen
- * - Gracefully no-ops on web (notifications API unavailable in Expo web runtime)
+ * Split into two concerns:
+ *  - useNotificationSetup(): requests permissions + registers global tap listener.
+ *    Call once at app root (_layout.tsx) so taps work even when order screen is unmounted.
+ *  - scheduleOrderStatusNotification(): standalone async utility.
+ *    Call from any screen when the order status changes.
  */
-import { useEffect, useRef, useCallback } from "react";
+import { useEffect, useRef } from "react";
 import { Platform } from "react-native";
 import { router } from "expo-router";
 import * as Notifications from "expo-notifications";
@@ -30,7 +31,11 @@ Notifications.setNotificationHandler({
   }),
 });
 
-export function usePushNotifications() {
+/**
+ * Call once in the root layout to request permissions and listen for
+ * notification taps app-wide (works even when the order screen is not mounted).
+ */
+export function useNotificationSetup() {
   const listenerRef = useRef<Notifications.EventSubscription | null>(null);
 
   useEffect(() => {
@@ -54,27 +59,26 @@ export function usePushNotifications() {
       listenerRef.current?.remove();
     };
   }, []);
+}
 
-  const scheduleOrderStatusNotification = useCallback(
-    async (status: string, orderId: number) => {
-      if (Platform.OS === "web") return;
-      const info = STATUS_LABELS[status];
-      if (!info) return;
-      try {
-        await Notifications.scheduleNotificationAsync({
-          content: {
-            title: info.title,
-            body: info.body,
-            data: { orderId },
-            sound: true,
-          },
-          trigger: null,
-        });
-      } catch {
-      }
-    },
-    [],
-  );
-
-  return { scheduleOrderStatusNotification };
+/**
+ * Schedules an immediate local notification for an order status change.
+ * Safe to call on web (no-op).
+ */
+export async function scheduleOrderStatusNotification(status: string, orderId: number) {
+  if (Platform.OS === "web") return;
+  const info = STATUS_LABELS[status];
+  if (!info) return;
+  try {
+    await Notifications.scheduleNotificationAsync({
+      content: {
+        title: info.title,
+        body: info.body,
+        data: { orderId },
+        sound: true,
+      },
+      trigger: null,
+    });
+  } catch {
+  }
 }
