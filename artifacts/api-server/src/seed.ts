@@ -3,17 +3,49 @@ import { db, usersTable, restaurantsTable, menuItemsTable, driversTable, reviews
 import { eq } from "drizzle-orm";
 
 export async function runSeedIfEmpty() {
+  const isProd = process.env.NODE_ENV === "production";
   try {
-    await ensureTestClient();
+    // Always ensure core admin accounts exist (safe in prod)
+    await ensureCoreAccounts();
+
+    if (isProd) {
+      // Production: never seed demo/test data — real data only
+      console.log("[seed] Production mode: skipping demo data seeding.");
+      return;
+    }
+
     const existing = await db.select().from(restaurantsTable).limit(1);
     if (existing.length > 0) return;
 
-    console.log("[seed] DB is empty, seeding...");
+    // Also ensure the dev test-client account exists
+    await ensureTestClient();
+
+    console.log("[seed] Dev/test mode: DB is empty, seeding demo data…");
     await seedAll();
     console.log("[seed] Done!");
   } catch (err) {
     console.error("[seed] Error:", err);
   }
+}
+
+// Ensures essential accounts exist in any environment (admin, super_admin)
+async function ensureCoreAccounts() {
+  const hashedPassword = await bcrypt.hash(
+    process.env.ADMIN_SEED_PASSWORD || "password123",
+    10,
+  );
+  await db
+    .insert(usersTable)
+    .values({
+      name: "Admin Jatek",
+      email: process.env.ADMIN_SEED_EMAIL || "admin@jatek.ma",
+      password: hashedPassword,
+      role: "super_admin",
+      phone: "+212600000000",
+      loyaltyPoints: 0,
+      isActive: true,
+    })
+    .onConflictDoNothing({ target: usersTable.email });
 }
 
 const TEST_CLIENT_EMAIL = "testclient@jatek.ma";

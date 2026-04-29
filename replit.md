@@ -56,6 +56,16 @@ users, restaurants, menuItems, orders, orderItems, drivers, reviews, categories,
 - 9 ads (4 jatek_offer, 3 vip_banner, 2 promo_banner)
 - 8 shorts with Unsplash food thumbnails
 
+### Production Configuration
+- **Deployment target**: autoscale (Replit)
+- **Build script**: `scripts/build-production.sh` — builds API server + food-delivery (BASE_PATH=/) + backend-dashboard (BASE_PATH=/admin/)
+- **Start script**: `scripts/start-production.sh` — sets NODE_ENV=production, PORT=8080, starts API server
+- **Static serving**: In production, API server serves food-delivery at `/` and backend-dashboard at `/admin/` as SPAs
+- **Seed isolation**: In production (NODE_ENV=production) only `ensureCoreAccounts()` runs (creates admin@jatek.ma). Demo/test data is never seeded in prod.
+- **Admin production credentials**: Set `ADMIN_SEED_EMAIL` + `ADMIN_SEED_PASSWORD` env vars to override defaults
+- **Mobile production URL**: Set `EXPO_PUBLIC_DOMAIN` at EAS build time to point to the production API domain
+- **Parallel dev/test**: Dev environment continues to run alongside production; test data stays in dev DB only
+
 ### Production hardening (API server)
 - Security: `helmet` (HSTS, X-Frame, nosniff, no x-powered-by), CORS allowlist with credentials, body size limit 1mb.
 - Rate limiting: 300 req/min global on `/api/*`, 30 req/15min on `/api/auth/*`. SSE `/api/events` and `/healthz` skip the limiter.
@@ -101,6 +111,8 @@ users, restaurants, menuItems, orders, orderItems, drivers, reviews, categories,
 - `/admin/restaurants/:id/menu` — Admin menu CRUD for any restaurant
 - `/admin/reviews` — Admin review moderation
 - `/admin/support` — Admin support tickets management
+- `/admin/promotions` — Admin promotions/ads CRUD (full create/edit/delete via backend ads API)
+- `/admin/settings` — Platform settings (localStorage persistence + role check)
 - `/restaurant/dashboard` — Restaurant owner order management
 - `/restaurant/menu` — Menu CRUD
 - `/driver/dashboard` — Driver availability + earnings
