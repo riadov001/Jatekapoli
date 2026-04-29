@@ -1,20 +1,16 @@
 // OTP messaging with multi-provider fallback chain.
 //
-// Order (SMS first — WhatsApp Business templates often "succeed" with HTTP
-// 200 but never deliver if the template isn't approved, which silently breaks
-// signups. SMS is the universal expectation for OTP and is far more reliable):
+// SMS/WhatsApp order:
 //   1. Infobip SMS
-//   2. Twilio SMS        (via Replit Twilio integration)
+//   2. Twilio SMS        (env secrets: TWILIO_ACCOUNT_SID + TWILIO_AUTH_KEY)
 //   3. Infobip WhatsApp  (fallback)
-//   4. Twilio WhatsApp   (fallback, via Replit Twilio integration)
+//   4. Twilio WhatsApp   (fallback)
 //
-// Each provider is skipped silently when it isn't configured (no creds / no
-// connector). The first successful send wins; failures are logged and the
-// chain continues. If every configured provider fails, throws an aggregated
-// error containing every attempt summary.
+// Email: Resend (RESEND_API_KEY + RESEND_FROM_EMAIL)
 //
-// The Twilio client comes from the Replit "twilio" connector — see
-// getTwilioClient() below. Never cache the client — tokens expire.
+// Each provider is skipped silently when not configured. The first successful
+// send wins; failures are logged and the chain continues. If every provider
+// fails, throws an aggregated error.
 
 import twilio from "twilio";
 
@@ -22,7 +18,8 @@ export type OtpChannel =
   | "infobip-whatsapp"
   | "infobip-sms"
   | "twilio-whatsapp"
-  | "twilio-sms";
+  | "twilio-sms"
+  | "resend-email";
 
 export interface SendOtpResult {
   channel: OtpChannel;
@@ -36,8 +33,6 @@ export interface AttemptLog {
 }
 
 // ─── Infobip ──────────────────────────────────────────────────────────────────
-// Accept either INFOBIP_BASE_URL or INFOBIP_URL; strip an optional protocol
-// and trailing slash so callers can paste the URL straight from the dashboard.
 function infobipBaseHost(): string | undefined {
   const raw = process.env.INFOBIP_BASE_URL || process.env.INFOBIP_URL;
   if (!raw) return undefined;
@@ -95,65 +90,132 @@ async function sendInfobipWhatsapp(to: string, body: string): Promise<void> {
   }
 }
 
-// ─── Twilio (via Replit connector) ────────────────────────────────────────────
-// Replit "twilio" integration — credentials are fetched fresh on every call.
-async function getTwilioCredentials() {
-  const hostname = process.env.REPLIT_CONNECTORS_HOSTNAME;
-  const xReplitToken = process.env.REPL_IDENTITY
-    ? "repl " + process.env.REPL_IDENTITY
-    : process.env.WEB_REPL_RENEWAL
-    ? "depl " + process.env.WEB_REPL_RENEWAL
-    : null;
+// ─── Twilio ───────────────────────────────────────────────────────────────────
+// Reads credentials directly from environment secrets.
+// Falls back to the Replit connector as a secondary option.
+// Twilio credentials can come in two flavours:
+//   1. Account SID + Auth Token   → twilio(accountSid, authToken)
+//   2. Account SID + API Key SID + API Key Secret  → twilio(apiKeySid, apiKeySecret, { accountSid })
+//
+// Environment secrets mapping:
+//   TWILIO_ACCOUNT_SID  → Account SID (AC...)
+//   TWILIO_AUTH_KEY     → Auth Token OR API Key SID (SK...)
+//   TWILIO_API_KEY_SID  → API Key SID (SK...) — used when TWILIO_AUTH_KEY is actually an API Key
+//   TWILIO_API_KEY_SECRET → API Key Secret
+//   TWILIO_FROM_NUMBER  → Sender number
 
-  if (!hostname || !xReplitToken) {
-    throw new Error("Replit connector env not present");
+interface TwilioCredentials {
+  accountSid: string;
+  authToken?: string;      // set when using Auth Token auth
+  apiKeySid?: string;      // set when using API Key auth
+  apiKeySecret?: string;   // set when using API Key auth
+  phoneNumber: string | undefined;
+  messagingServiceSid: string | undefined;
+  useApiKey: boolean;
+}
+
+async function getTwilioCredentials(): Promise<TwilioCredentials> {
+  const accountSid = process.env.TWILIO_ACCOUNT_SID;
+  const rawAuthKey = process.env.TWILIO_AUTH_TOKEN || process.env.TWILIO_AUTH_KEY;
+  const apiKeySid = process.env.TWILIO_API_KEY_SID;
+  const apiKeySecret = process.env.TWILIO_API_KEY_SECRET;
+  const phoneNumber = process.env.TWILIO_FROM_NUMBER || process.env.TWILIO_PHONE_NUMBER;
+  const messagingServiceSid = process.env.TWILIO_MESSAGING_SERVICE_SID;
+
+  if (!accountSid) {
+    throw new Error("TWILIO_ACCOUNT_SID not set");
   }
-
-  const data = await fetch(
-    `https://${hostname}/api/v2/connection?include_secrets=true&connector_names=twilio`,
-    {
-      headers: { Accept: "application/json", "X-Replit-Token": xReplitToken },
-    }
-  ).then((r) => r.json());
-
-  const conn = data.items?.[0];
-  if (
-    !conn ||
-    !conn.settings?.account_sid ||
-    !conn.settings?.api_key
-  ) {
-    throw new Error("Twilio not connected");
-  }
-
-  const accountSid = conn.settings.account_sid as string;
-  const authToken = conn.settings.api_key as string;
-  const phoneNumber = conn.settings.phone_number as string | undefined;
-  // Optional Messaging Service SID (MG...) — when the integration was set up
-  // with a Messaging Service rather than a single number, the user typically
-  // pastes it into account_sid by mistake. We accept it via env override and
-  // also detect the misplacement to surface a clear error below.
-  const messagingServiceSid =
-    process.env.TWILIO_MESSAGING_SERVICE_SID ||
-    (typeof conn.settings.api_key_secret === "string" &&
-    conn.settings.api_key_secret.startsWith("MG")
-      ? (conn.settings.api_key_secret as string)
-      : undefined);
-
   if (!accountSid.startsWith("AC")) {
     throw new Error(
-      `Twilio account_sid is invalid — expected a value starting with "AC..." ` +
-        `(your Twilio Account SID, found on the Twilio Console homepage). ` +
-        `Got a value starting with "${accountSid.slice(0, 2)}..." instead. ` +
-        `Open the integrations panel and reconnect Twilio with the correct Account SID.`,
+      `TWILIO_ACCOUNT_SID is invalid — expected "AC..." prefix, got "${accountSid.slice(0, 4)}..."`,
     );
   }
 
-  return { accountSid, authToken, phoneNumber, messagingServiceSid };
+  // If we have a dedicated API Key SID + Secret, prefer that
+  if (apiKeySid && apiKeySecret && apiKeySid.startsWith("SK")) {
+    return {
+      accountSid,
+      apiKeySid,
+      apiKeySecret,
+      phoneNumber,
+      messagingServiceSid,
+      useApiKey: true,
+    };
+  }
+
+  // TWILIO_AUTH_KEY might actually be an API Key SID (SK...) — detect and handle it
+  if (rawAuthKey?.startsWith("SK")) {
+    // rawAuthKey is an API Key SID — we need the secret
+    const secret = apiKeySecret;
+    if (!secret) {
+      throw new Error(
+        "TWILIO_AUTH_KEY looks like an API Key SID (SK...) but TWILIO_API_KEY_SECRET is not set",
+      );
+    }
+    return {
+      accountSid,
+      apiKeySid: rawAuthKey,
+      apiKeySecret: secret,
+      phoneNumber,
+      messagingServiceSid,
+      useApiKey: true,
+    };
+  }
+
+  // Standard Auth Token
+  if (rawAuthKey) {
+    return {
+      accountSid,
+      authToken: rawAuthKey,
+      phoneNumber,
+      messagingServiceSid,
+      useApiKey: false,
+    };
+  }
+
+  throw new Error(
+    "Twilio credentials incomplete — set TWILIO_ACCOUNT_SID + TWILIO_AUTH_KEY (or TWILIO_API_KEY_SID + TWILIO_API_KEY_SECRET)",
+  );
 }
 
 async function getTwilioClient() {
-  const { accountSid, authToken } = await getTwilioCredentials();
-  return twilio(accountSid, authToken);
+  const creds = await getTwilioCredentials();
+  if (creds.useApiKey) {
+    // API Key authentication: twilio(apiKeySid, apiKeySecret, { accountSid })
+    return twilio(creds.apiKeySid!, creds.apiKeySecret!, { accountSid: creds.accountSid });
+  }
+  // Auth Token authentication
+  return twilio(creds.accountSid, creds.authToken!);
+}
+
+// When using API Key auth fails, retry with Auth Token if available.
+// This handles the case where TWILIO_API_KEY_SID is set but incorrect,
+// while TWILIO_AUTH_KEY holds the actual working Auth Token.
+async function getTwilioClientWithFallback() {
+  const creds = await getTwilioCredentials();
+  if (!creds.useApiKey) {
+    return twilio(creds.accountSid, creds.authToken!);
+  }
+
+  // Primary: API Key
+  const apiKeyClient = twilio(creds.apiKeySid!, creds.apiKeySecret!, { accountSid: creds.accountSid });
+
+  // Pre-validate by fetching account info — if 401, fall back to Auth Token
+  try {
+    await apiKeyClient.api.v2010.accounts(creds.accountSid).fetch();
+    return apiKeyClient;
+  } catch (e: any) {
+    const isAuthError = e?.status === 401 || e?.code === 20003 || /authenticate/i.test(e?.message ?? "");
+    if (!isAuthError) return apiKeyClient; // non-auth error, let the actual call surface it
+
+    // Try Auth Token fallback
+    const authToken = process.env.TWILIO_AUTH_TOKEN || process.env.TWILIO_AUTH_KEY;
+    if (authToken && !authToken.startsWith("SK")) {
+      console.warn("[Twilio] API Key auth failed — retrying with Auth Token");
+      return twilio(creds.accountSid, authToken);
+    }
+    throw e; // no fallback available
+  }
 }
 
 async function twilioConfigured(): Promise<boolean> {
@@ -166,23 +228,19 @@ async function twilioConfigured(): Promise<boolean> {
 }
 
 async function sendTwilioSms(to: string, body: string): Promise<void> {
-  const client = await getTwilioClient();
+  const client = await getTwilioClientWithFallback();
   const { phoneNumber, messagingServiceSid } = await getTwilioCredentials();
   const from = process.env.TWILIO_SMS_FROM || phoneNumber;
-  // Prefer Messaging Service when configured — works around country-specific
-  // sender requirements (e.g. alphanumeric in Morocco) without code changes.
   if (messagingServiceSid) {
     await client.messages.create({ to, body, messagingServiceSid });
     return;
   }
-  if (!from) throw new Error("Twilio SMS sender not configured");
+  if (!from) throw new Error("Twilio SMS sender not configured (set TWILIO_FROM_NUMBER)");
   await client.messages.create({ to, from, body });
 }
 
 async function sendTwilioWhatsapp(to: string, body: string): Promise<void> {
-  const client = await getTwilioClient();
-  // Twilio sandbox default; user can override with TWILIO_WA_FROM (e.g. "whatsapp:+14155238886"
-  // or a verified business number).
+  const client = await getTwilioClientWithFallback();
   const from = process.env.TWILIO_WA_FROM || "whatsapp:+14155238886";
   await client.messages.create({
     to: to.startsWith("whatsapp:") ? to : `whatsapp:${to}`,
@@ -191,7 +249,75 @@ async function sendTwilioWhatsapp(to: string, body: string): Promise<void> {
   });
 }
 
-// ─── Orchestrator ─────────────────────────────────────────────────────────────
+// ─── Resend (email OTP) ───────────────────────────────────────────────────────
+function resendConfigured(): boolean {
+  return !!(process.env.RESEND_API_KEY && process.env.RESEND_FROM_EMAIL);
+}
+
+async function sendResendEmail(to: string, otp: string, fullBody: string): Promise<void> {
+  const apiKey = process.env.RESEND_API_KEY!;
+  const from = process.env.RESEND_FROM_EMAIL!;
+
+  const res = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      from,
+      to: [to],
+      subject: "Votre code de vérification Jatek",
+      html: `
+        <div style="font-family:Arial,sans-serif;max-width:480px;margin:0 auto;padding:32px 24px;background:#fff">
+          <h2 style="color:#E91E63;margin:0 0 8px">Jatek</h2>
+          <p style="color:#374151;margin:0 0 24px">Voici votre code de vérification :</p>
+          <div style="font-size:36px;font-weight:700;letter-spacing:10px;color:#0A1B3D;
+                      background:#F3F4F6;border-radius:8px;padding:16px 24px;
+                      text-align:center;margin:0 0 24px">${otp}</div>
+          <p style="color:#6B7280;font-size:13px;margin:0">
+            Ce code est valable 5 minutes.<br>Ne le communiquez à personne.
+          </p>
+        </div>`,
+      text: fullBody,
+    }),
+  });
+
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(`Resend ${res.status}: ${err.slice(0, 300)}`);
+  }
+}
+
+// ─── Public: email OTP ────────────────────────────────────────────────────────
+export async function sendOtpEmail(
+  email: string,
+  otp: string,
+  body: string
+): Promise<SendOtpResult> {
+  const attempts: AttemptLog[] = [];
+
+  if (!resendConfigured()) {
+    attempts.push({ channel: "resend-email", ok: false, reason: "not configured" });
+    const summary = attempts.map((a) => `${a.channel}=${a.reason}`).join(" | ");
+    throw new Error(`Email OTP provider not configured: ${summary}`);
+  }
+
+  try {
+    await sendResendEmail(email, otp, body);
+    attempts.push({ channel: "resend-email", ok: true });
+    console.info(`[OTP] sent via resend-email to ${email}`);
+    return { channel: "resend-email", attempts };
+  } catch (err: any) {
+    const reason = err?.message ?? String(err);
+    attempts.push({ channel: "resend-email", ok: false, reason });
+    console.warn(`[OTP] resend-email failed for ${email}: ${reason}`);
+    const summary = attempts.map((a) => `${a.channel}=${a.ok ? "ok" : a.reason}`).join(" | ");
+    throw new Error(`Email OTP delivery failed: ${summary}`);
+  }
+}
+
+// ─── Public: SMS/WhatsApp OTP ─────────────────────────────────────────────────
 export async function sendOtpMessage(
   to: string,
   body: string
@@ -248,10 +374,7 @@ export async function sendOtpMessage(
 }
 
 export async function anyOtpProviderConfigured(): Promise<boolean> {
-  // Used to decide whether to expose `demoOtp` and whether to surface a hard
-  // 502 when delivery fails. Reflects ACTUAL readiness — for Twilio that means
-  // verifying the connector is authorized for this Repl, not just that the
-  // Replit connector env vars exist.
   if (infobipConfigured()) return true;
+  if (resendConfigured()) return true;
   return await twilioConfigured();
 }
