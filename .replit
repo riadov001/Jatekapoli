@@ -3,8 +3,6 @@ modules = ["nodejs-24", "postgresql-16"]
 [deployment]
 router = "application"
 deploymentTarget = "autoscale"
-run = ["bash", "scripts/start-production.sh"]
-build = ["bash", "scripts/build-production.sh"]
 
 [deployment.postBuild]
 args = ["pnpm", "store", "prune"]
