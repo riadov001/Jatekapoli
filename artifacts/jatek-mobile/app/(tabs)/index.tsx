@@ -414,7 +414,7 @@ export default function HomeScreen() {
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={s.vipScrollRow}
           decelerationRate="fast"
-          snapToInterval={SCREEN_W * 0.78 + 12}
+          snapToInterval={SCREEN_W - 20}
         >
           {(featuredPartners ?? []).slice(0, 6).map((r, i) => (
             <VipBannerCard
@@ -832,8 +832,8 @@ const s = StyleSheet.create({
     paddingVertical: 2,
   },
   vipCard: {
-    width: SCREEN_W * 0.78,
-    height: 130,
+    width: SCREEN_W - 32,
+    height: 190,
     borderRadius: 18,
     overflow: "hidden",
     justifyContent: "flex-end",
