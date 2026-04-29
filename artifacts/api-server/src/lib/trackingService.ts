@@ -24,6 +24,9 @@ interface DriverState {
   lat: number | null;
   lng: number | null;
   lastSeen: number;
+  /** Last ETA in minutes computed at the most recent location update.
+   *  `null` when no destination coords were supplied by the driver app. */
+  eta: number | null;
   /** Active orders currently being delivered by this driver. Drives which
    *  channels we publish driver_location / driver_offline events on. */
   orderIds: Set<number>;
@@ -42,6 +45,7 @@ function getOrCreate(driverId: number): DriverState {
       lat: null,
       lng: null,
       lastSeen: Date.now(),
+      eta: null,
       orderIds: new Set(),
       offlineNotified: false,
     };
@@ -55,15 +59,16 @@ export function updateLocation(
   driverId: number,
   lat: number,
   lng: number,
-  orderId?: number,
+  opts?: { orderId?: number; eta?: number | null },
 ): DriverState {
   const s = getOrCreate(driverId);
   s.lat = lat;
   s.lng = lng;
   s.lastSeen = Date.now();
   s.offlineNotified = false;
-  if (typeof orderId === "number") s.orderIds.add(orderId);
-  logger.debug({ driverId, lat, lng, orderId }, "trackingService.updateLocation");
+  if (opts?.eta !== undefined) s.eta = opts.eta;
+  if (typeof opts?.orderId === "number") s.orderIds.add(opts.orderId);
+  logger.debug({ driverId, lat, lng, eta: s.eta, orderId: opts?.orderId }, "trackingService.updateLocation");
   return s;
 }
 

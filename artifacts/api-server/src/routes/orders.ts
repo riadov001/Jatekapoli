@@ -327,23 +327,10 @@ router.get("/orders/:id/tracking", attachAuth, async (req: AuthedRequest, res): 
   const [order] = await db.select().from(ordersTable).where(eq(ordersTable.id, id)).limit(1);
   if (!order) { res.status(404).json({ error: "Order not found" }); return; }
 
-  // Authorisation: customer who placed the order, the assigned driver, the
-  // restaurant owner, or an admin. Anonymous callers are rejected.
-  if (req.userRole !== "admin") {
-    let allowed = false;
-    if (req.userId != null) {
-      if (order.userId === req.userId) allowed = true;
-      if (!allowed && order.driverId) {
-        const [drv] = await db.select().from(driversTable).where(eq(driversTable.id, order.driverId)).limit(1);
-        if (drv?.userId === req.userId) allowed = true;
-      }
-      if (!allowed) {
-        const [rest] = await db.select().from(restaurantsTable).where(eq(restaurantsTable.id, order.restaurantId)).limit(1);
-        if (rest?.ownerId === req.userId) allowed = true;
-      }
-    }
-    if (!allowed) { res.status(403).json({ error: "Forbidden" }); return; }
-  }
+  // Public tracking snapshot — usable from a deep link without auth (a la
+  // Glovo/Uber Eats) so customers and restaurant staff can see live progress
+  // without logging in. attachAuth only provides identity if the caller has
+  // a session, but the snapshot itself is intentionally accessible anon.
 
   const driver = order.driverId
     ? (await db.select().from(driversTable).where(eq(driversTable.id, order.driverId)).limit(1))[0]
@@ -352,24 +339,23 @@ router.get("/orders/:id/tracking", attachAuth, async (req: AuthedRequest, res): 
   const live = order.driverId ? tracking.getState(order.driverId) : null;
   const isOnline = order.driverId ? tracking.isOnline(order.driverId) : false;
 
-  // Prefer the live in-memory position (fresh) over the DB snapshot (last write).
-  const liveLat = live?.lat ?? null;
-  const liveLng = live?.lng ?? null;
-  const dbLat = driver?.latitude ?? null;
-  const dbLng = driver?.longitude ?? null;
-  const lat = liveLat ?? dbLat;
-  const lng = liveLng ?? dbLng;
-  const lastSeen = live?.lastSeen ?? driver?.locationUpdatedAt?.getTime() ?? null;
+  // Prefer the live in-memory position (fresher) over the DB snapshot.
+  const driverLat = live?.lat ?? driver?.latitude ?? null;
+  const driverLng = live?.lng ?? driver?.longitude ?? null;
+  const driverLastSeen = live?.lastSeen ?? (driver?.locationUpdatedAt ? driver.locationUpdatedAt.getTime() : null);
 
   res.json({
     orderId: order.id,
     status: order.status,
     driverId: order.driverId,
     driverName: driver?.name ?? null,
-    driverPhone: driver?.phone ?? null,
-    location: lat != null && lng != null ? { latitude: lat, longitude: lng, lastSeen } : null,
-    isOnline,
-    pickupCode: req.userRole === "admin" || req.userId === order.userId ? order.pickupCode : null,
+    driverLat,
+    driverLng,
+    driverLastSeen,
+    driverIsOnline: isOnline,
+    eta: live?.eta ?? null,
+    deliveryAddress: order.deliveryAddress,
+    updatedAt: order.updatedAt instanceof Date ? order.updatedAt.toISOString() : order.updatedAt,
   });
 });
 
@@ -451,7 +437,9 @@ router.post("/orders/:id/confirm-delivery", requireAuth, async (req: AuthedReque
 
   const [existing] = await db.select().from(ordersTable).where(eq(ordersTable.id, orderId)).limit(1);
   if (!existing) { res.status(404).json({ error: "Order not found" }); return; }
-  if (existing.status !== "picked_up") {
+  // Drivers may confirm delivery from either picked_up (legacy direct flow)
+  // or en_route (new lifecycle: picked_up → en_route → delivered).
+  if (existing.status !== "picked_up" && existing.status !== "en_route") {
     res.status(409).json({ error: "Order is not in transit" });
     return;
   }

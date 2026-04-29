@@ -153,10 +153,6 @@ router.patch("/drivers/:id/location", requireAuth, async (req: AuthedRequest, re
       inArray(ordersTable.status, ["picked_up", "en_route"]),
     ));
 
-  // Refresh the in-memory live state — this also feeds the offline watchdog.
-  for (const o of activeOrders) tracking.attachOrder(id, o.id);
-  tracking.updateLocation(id, latitude, longitude);
-
   // Optional ETA — only computable when the client supplied destination coords.
   // We deliberately don't store delivery lat/lng in the orders table, so the
   // driver app passes them per-update from its routing/Maps SDK.
@@ -164,6 +160,11 @@ router.patch("/drivers/:id/location", requireAuth, async (req: AuthedRequest, re
     typeof destLat === "number" && typeof destLng === "number"
       ? tracking.calculateETA(latitude, longitude, destLat, destLng)
       : null;
+
+  // Refresh the in-memory live state — this also feeds the offline watchdog
+  // and the GET /orders/:id/tracking snapshot endpoint.
+  for (const o of activeOrders) tracking.attachOrder(id, o.id);
+  tracking.updateLocation(id, latitude, longitude, { eta });
 
   const basePayload = {
     driverId: id,
@@ -211,8 +212,8 @@ router.post("/drivers/:id/heartbeat", requireAuth, async (req: AuthedRequest, re
     return;
   }
 
-  const state = tracking.recordHeartbeat(id);
-  res.json({ ok: true, lastSeen: state.lastSeen });
+  tracking.recordHeartbeat(id);
+  res.json({ alive: true, ts: Date.now() });
 });
 
 router.get("/drivers/:id/location", async (req, res): Promise<void> => {
