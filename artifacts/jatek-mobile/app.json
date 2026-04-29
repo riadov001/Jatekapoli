@@ -44,6 +44,14 @@
         {
           "locationWhenInUsePermission": "Allow Jatek to use your location to fill in your delivery address."
         }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/icon.png",
+          "color": "#E91E63",
+          "androidMode": "default"
+        }
       ]
     ],
     "experiments": {

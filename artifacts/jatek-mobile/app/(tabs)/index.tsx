@@ -16,7 +16,7 @@ import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
-import Animated, { FadeInDown, FadeInUp, FadeIn } from "react-native-reanimated";
+import Animated, { FadeInDown, FadeInUp } from "react-native-reanimated";
 import {
   useListRestaurants,
   useGetFeaturedRestaurants,
@@ -32,7 +32,6 @@ import { ShortPlayerModal } from "@/components/ShortPlayerModal";
 import { AddressQuickPicker } from "@/components/AddressQuickPicker";
 import { JatekAdSheet } from "@/components/JatekAdSheet";
 import { CartPreviewSheet } from "@/components/CartPreviewSheet";
-import { JatekScrollingBanner } from "@/components/JatekScrollingBanner";
 
 function trackBannerClick(restaurantId: number) {
   try {
@@ -406,11 +405,6 @@ export default function HomeScreen() {
           ))}
         </Animated.ScrollView>
 
-        {/* ─── JATEK brand scrolling banner ─── */}
-        <Animated.View entering={FadeIn.delay(200).duration(500)}>
-          <JatekScrollingBanner />
-        </Animated.View>
-
         {/* ─── Partenaires VIP & promotions (Talabat-style horizontal slider) ─── */}
         <Animated.View entering={FadeInDown.delay(260).duration(500).springify()} style={s.vipHeaderWrap}>
           <Text style={s.vipSectionTitle}>Partenaires VIP & Promos</Text>
@@ -586,7 +580,7 @@ const s = StyleSheet.create({
   },
   header: {
     paddingHorizontal: 16,
-    paddingBottom: 38,
+    paddingBottom: 22,
     backgroundColor: PINK,
   },
   headerTopRow: {
@@ -678,7 +672,7 @@ const s = StyleSheet.create({
   },
   // ── Shop categories horizontal slider ──
   sliderSectionTitle: {
-    fontSize: 16,
+    fontSize: 18,
     fontFamily: "Inter_700Bold",
     color: TEXT_DARK,
     marginTop: 20,
@@ -831,7 +825,7 @@ const s = StyleSheet.create({
     marginBottom: 10,
   },
   vipSectionTitle: {
-    fontSize: 18,
+    fontSize: 19,
     fontFamily: "Inter_700Bold",
     color: TEXT_DARK,
     letterSpacing: -0.3,
@@ -884,7 +878,7 @@ const s = StyleSheet.create({
     marginBottom: 12,
   },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: 19,
     fontFamily: "Inter_700Bold",
     color: TEXT_DARK,
     letterSpacing: -0.3,
@@ -958,7 +952,7 @@ const s = StyleSheet.create({
   },
   tileImgWrap: {
     width: "100%",
-    height: 110,
+    height: 96,
     position: "relative",
     backgroundColor: "#F3F4F6",
   },
@@ -1018,7 +1012,7 @@ const s = StyleSheet.create({
   },
   tileName: {
     flex: 1,
-    fontSize: 14,
+    fontSize: 15,
     fontFamily: "Inter_700Bold",
     color: TEXT_DARK,
   },
@@ -1046,7 +1040,7 @@ const s = StyleSheet.create({
     marginTop: 22,
   },
   gridSectionTitle: {
-    fontSize: 20,
+    fontSize: 22,
     fontFamily: "Inter_700Bold",
     color: TEXT_DARK,
     letterSpacing: -0.3,

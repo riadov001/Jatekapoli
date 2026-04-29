@@ -27,6 +27,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useGetOrder, useListDrivers, getGetOrderQueryKey } from "@workspace/api-client-react";
 import { useColors } from "@/hooks/useColors";
 import { useSSE } from "@/hooks/useSSE";
+import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { DriverMap } from "@/components/DriverMap";
 import { apiBase, geocodeAddress, getDriverLocation, getAuthToken } from "@/lib/api";
 import { useT, useLang } from "@/contexts/LanguageContext";
@@ -95,6 +96,7 @@ export default function OrderDetailScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const t = useT();
+  const { scheduleOrderStatusNotification } = usePushNotifications();
   const { lang } = useLang();
   const locale = lang === "fr" ? "fr-FR" : lang === "ar" ? "ar-MA" : "en-GB";
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -152,12 +154,15 @@ export default function OrderDetailScreen() {
     },
   });
 
-  // Haptic when status changes from polling
+  // Haptic + push notification when status changes (SSE or polling)
   useEffect(() => {
     if (!order) return;
-    if (lastStatus.current && lastStatus.current !== order.status) haptic("success");
+    if (lastStatus.current && lastStatus.current !== order.status) {
+      haptic("success");
+      scheduleOrderStatusNotification(order.status, order.id);
+    }
     lastStatus.current = order.status;
-  }, [order?.status]);
+  }, [order?.status, order?.id, scheduleOrderStatusNotification]);
 
   const currentIdx = order ? STATUS_ORDER.indexOf(order.status) : -1;
 

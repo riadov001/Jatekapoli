@@ -84,7 +84,6 @@ export default function RestaurantScreen() {
 
   const heroUri = restaurant.coverImageUrl || restaurant.imageUrl;
   const isOpen = (restaurant as { isOpen?: boolean | null }).isOpen !== false;
-  const openingHoursText = (restaurant as any).openingHours || "9h00 - 23h00";
 
   const Header = (
     <View>
@@ -153,7 +152,7 @@ export default function RestaurantScreen() {
           </View>
 
           {restaurant.description ? (
-            <Text style={[styles.rDesc, { color: colors.mutedForeground }]} numberOfLines={2}>
+            <Text style={[styles.rDesc, { color: colors.foreground }]} numberOfLines={2}>
               {restaurant.description}
             </Text>
           ) : null}
@@ -191,12 +190,6 @@ export default function RestaurantScreen() {
             </View>
           </View>
 
-          <View style={styles.hoursRow}>
-            <Ionicons name="calendar-outline" size={14} color={colors.mutedForeground} />
-            <Text style={[styles.hoursTxt, { color: colors.mutedForeground }]} numberOfLines={1}>
-              Horaires : {openingHoursText}
-            </Text>
-          </View>
         </View>
       </View>
 
@@ -420,16 +413,13 @@ const styles = StyleSheet.create({
   ratingRow: { flexDirection: "row", alignItems: "center", gap: 4, marginTop: 1 },
   ratingTxt: { fontSize: 12, fontFamily: "Inter_700Bold" },
   ratingCount: { fontSize: 11, fontFamily: "Inter_400Regular" },
-  rDesc: { fontSize: 12, fontFamily: "Inter_400Regular", lineHeight: 17 },
+  rDesc: { fontSize: 14, fontFamily: "Inter_400Regular", lineHeight: 20 },
   divider: { height: 1, marginVertical: 1 },
   metaRow: { flexDirection: "row", alignItems: "center", gap: 8, flexWrap: "wrap" },
   metaItem: { flexDirection: "row", alignItems: "center", gap: 4 },
   metaText: { fontSize: 11, fontFamily: "Inter_600SemiBold" },
   metaDot: { width: 3, height: 3, borderRadius: 1.5, backgroundColor: "#D1D5DB" },
   openDot: { width: 6, height: 6, borderRadius: 3 },
-  hoursRow: { flexDirection: "row", alignItems: "center", gap: 6 },
-  hoursTxt: { fontSize: 11, fontFamily: "Inter_500Medium" },
-
   warningBanner: {
     marginHorizontal: SIDE, marginTop: 14, padding: 10, borderRadius: 10, borderWidth: 1,
     flexDirection: "row", alignItems: "center", gap: 8,
