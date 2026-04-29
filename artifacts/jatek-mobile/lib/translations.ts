@@ -71,9 +71,9 @@ const fr = {
 
   // GPS permission popup
   gps_title: "Activer la localisation",
-  gps_text: "Pour vous proposer la livraison à votre position, Jatek a besoin d'accéder au GPS de votre appareil. Vous pouvez désactiver cet accès à tout moment.",
-  gps_allow: "Activer la localisation",
-  gps_deny: "Pas maintenant",
+  gps_text: "Pour vous livrer rapidement, Jatek a besoin de votre position. Vous pouvez révoquer l'accès à tout moment.",
+  gps_allow: "Autoriser",
+  gps_deny: "Plus tard",
   gps_locating: "Localisation en cours…",
   gps_denied_title: "Permission refusée",
   gps_denied_text: "Activez la localisation dans les réglages de votre appareil pour utiliser cette fonctionnalité.",
