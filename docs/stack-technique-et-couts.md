@@ -232,7 +232,7 @@ Interface de gestion staff/admin (artifact `backend-dashboard`, preview path `/a
 | UI | **shadcn/ui** + Radix | Composants identiques, palette magenta Jatek |
 | Routing | **wouter** | SPA, base path `/admin/` |
 | Auth | JWT `localStorage["jatek_backend_token"]` | Séparé du token client |
-| RBAC | 5 rôles | super_admin, admin, manager, restaurant_owner, employee |
+| RBAC | 6 rôles | super_admin, admin, manager, restaurant_owner, employee, other |
 | API | `GET|POST|PATCH|DELETE /api/backend/*` | Routes dédiées staff |
 
 **Pages du dashboard :**
@@ -255,6 +255,8 @@ Interface de gestion staff/admin (artifact `backend-dashboard`, preview path `/a
 | `/notifications` | admin | Notifications push |
 | `/reports` | admin, manager | Rapports et analytics |
 
+> Note : Les colonnes "Accès" indiquent la politique enforced côté API (`/api/backend/*` dans `backend.ts`) — chaque endpoint vérifie le rôle et scope les données en conséquence. La navigation frontend est filtrée par l'UI mais la sécurité réelle est backend.
+
 ---
 
 ## 7. Authentification & OTP
@@ -266,7 +268,7 @@ Interface de gestion staff/admin (artifact `backend-dashboard`, preview path `/a
 | Méthode alternative | **WhatsApp OTP** (même flow, fallback SMS auto) |
 | Méthode admin/test | Email + mot de passe (bcrypt, coût 10) |
 | Rate limiting OTP | 1 requête/minute max, 3 tentatives de vérification |
-| Roles | `customer` · `driver` · `restaurant_owner` · `admin` · `manager` · `employee` · `super_admin` |
+| Roles | `customer` · `driver` · `restaurant_owner` · `admin` · `manager` · `employee` · `super_admin` · `other` |
 | RGPD | Consentement horodaté au register (`userConsents`) |
 | Fallback WhatsApp | Si erreur Twilio 63007/63031 → bascule SMS automatiquement |
 
