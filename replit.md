@@ -40,7 +40,7 @@ See the `pnpm-workspace` skill for workspace structure, TypeScript setup, and pa
 - `lib/db` — Drizzle ORM schema + client
 
 ### DB Models
-users, restaurants, menuItems, orders, orderItems, drivers, reviews, categories, ads, shorts
+users, restaurants, menuItems, orders, orderItems, drivers, reviews, categories, ads, shorts, addresses, favorites, otpCodes, userConsents, paymentMethods, supportTickets, quotes, notificationPrefs, dashboardTodos
 
 ### Content Management (new)
 - `categories` — shop/restaurant categories with icon, accentColor, parentId (sub-categories), businessType, sortOrder
@@ -82,7 +82,7 @@ users, restaurants, menuItems, orders, orderItems, drivers, reviews, categories,
 - manager@jatek.ma (manager)
 - employee@jatek.ma (employee assigned to Jatek Market Al Qods)
 
-### Frontend Routes
+### Frontend Routes (food-delivery)
 - `/` — Home (hero, category filter, Support Local, all restaurants)
 - `/restaurants/:id` — Restaurant detail + menu
 - `/cart` — Cart checkout
@@ -91,10 +91,15 @@ users, restaurants, menuItems, orders, orderItems, drivers, reviews, categories,
 - `/rewards` — Loyalty points & tier (Bronze/Silver/Gold)
 - `/profile` — User profile
 - `/login`, `/register` — Auth
+- `/forgot-password` — Password reset
+- `/legal` — Legal / CGU page
+- `/welcome` — Onboarding address picker (fullscreen, no Layout wrapper)
 - `/admin` — Redirects to `/admin/dashboard`
 - `/admin/dashboard` — Admin stats (all `/admin/*` routes are gated by `AdminRoute` which requires `role === "admin"`)
 - `/admin/users`, `/admin/restaurants`, `/admin/drivers`, `/admin/orders`
 - `/admin/restaurants/:id/menu` — Admin menu CRUD for any restaurant
+- `/admin/reviews` — Admin review moderation
+- `/admin/support` — Admin support tickets management
 - `/restaurant/dashboard` — Restaurant owner order management
 - `/restaurant/menu` — Menu CRUD
 - `/driver/dashboard` — Driver availability + earnings
@@ -115,13 +120,46 @@ JWT stored in localStorage (`jatek_token`). `setAuthTokenGetter` registered in `
 ### Mobile App (Expo)
 - `artifacts/jatek-mobile` — Expo (React Native) app at preview path `/mobile/`
 - Phone OTP auth (Twilio), shares same backend API
-- Screens: Login, OTP verify, Welcome (Talabat-style Google Maps address picker), Home (restaurants), Restaurant detail + menu, Cart, Orders list, Order tracking, Profile
 - State: AuthContext (expo-secure-store token persistence), CartContext (AsyncStorage, fully memoized via useMemo + useCallback)
 - Maps: Google Maps JS API (key `EXPO_PUBLIC_GOOGLE_MAPS_KEY` / `EXPO_PUBLIC_GOOGLE_PLACES_KEY` ⇐ `GOOGLE_API_KEY_2`), Leaflet+OSM fallback when key missing. Components: `GoogleMapPicker` (centered fixed pin with zone circle), `DriverMap` (live driver tracking with brand-coloured SVG markers + dashed route polyline)
 - Live order tracking: SSE channel `order:<id>` + `driver:<id>` for status & GPS updates; map appears as soon as a driver is assigned (any in-flight status), polling fallback at 60s
 - Performance hardening: `babel-plugin-transform-remove-console` strips `console.log/info` from production bundles (keeps `error`/`warn`); `expo-image` with `memory-disk` cachePolicy + blurhash placeholder for restaurant cards; `RestaurantCard` wrapped in `React.memo` with shallow prop check
 - Reliability: SSE hook does exponential-backoff reconnection (1s → 30s) + 60s read-timeout watchdog; all REST calls go through `jsonFetch` with a 15s AbortController timeout and friendly French error messages
 - Workflow: `artifacts/jatek-mobile: expo`
+
+#### Mobile Screens (Expo Router file-based)
+- `(auth)/login` — Phone number input
+- `(auth)/otp` — OTP code verification
+- `(auth)/welcome` — Address picker onboarding (Google Maps / Leaflet)
+- `(tabs)/index` — Home feed (restaurants, categories, ads)
+- `(tabs)/restaurants` — Browse all restaurants
+- `(tabs)/favoris` — Saved favourites
+- `(tabs)/orders` — Orders history
+- `(tabs)/profile` — Profile hub (tab)
+- `(tabs)/deliver` — Driver tab: available deliveries & earnings (role-conditional)
+- `(tabs)/manage` — Restaurant owner tab: order management (role-conditional)
+- `restaurant/[id]` — Restaurant detail + menu
+- `category/[slug]` — Category filtered listings
+- `order/[id]` — Live order tracking with SSE map
+- `cart` — Cart review & checkout
+- `quote/new` — Courier quote / price estimate
+- `driver-onboarding` — Mandatory driver profile setup (vehicle, zone)
+- `restaurant-onboarding` — Mandatory restaurant profile setup
+- `profile/info` — Edit personal info
+- `profile/addresses` — Saved delivery addresses
+- `profile/payments` — Payment methods
+- `profile/favorites` — Favourites management
+- `profile/notifications` — Notification preferences
+- `profile/reorder` — Reorder from past orders
+- `profile/reviews` — My reviews
+- `profile/coupons` — Promo codes / coupons
+- `profile/support` — Contact support
+- `profile/feedback` — Leave feedback
+- `profile/help` — Help & FAQ
+- `profile/language` — Language selector
+- `profile/privacy` — Privacy settings
+- `profile/legal` — Legal / CGU
+- `profile/report` — Report an issue
 
 ### Brand palette (Talabat-inspired)
 - Primary **Hot pink** `#E2006A` — main CTAs, brand mark, delivery-time pills
@@ -140,3 +178,21 @@ Staff/admin dashboard for Jatek with full RBAC (super_admin, admin, manager, res
 - Demo accounts (password `password123`): super@jatek.ma, admin@jatek.ma, manager@jatek.ma, owner@jatek.ma, employee@jatek.ma.
 - Auth: JWT in `localStorage["jatek_backend_token"]`, attached via `setAuthTokenGetter` from `@workspace/api-client-react`.
 - Frontend: react-vite + tanstack-query + wouter + shadcn, Jatek magenta palette.
+
+### Backend Dashboard Routes
+- `/` — Dashboard (KPI stats, orders chart, todos)
+- `/orders` — Orders management (all roles, scoped by role)
+- `/products` — Menu items / products management
+- `/categories` — Categories & sub-categories management
+- `/shops` — Restaurants & shops management
+- `/reviews` — Customer reviews moderation
+- `/customers` — Customer accounts list & detail
+- `/staff` — Staff accounts management (admin/super_admin only)
+- `/deliverymen` — Driver accounts management
+- `/roles` — Role & permissions management (super_admin only)
+- `/settings` — Platform settings (placeholder)
+- `/promotions` — Promotions & ads management (placeholder)
+- `/wallets` — Wallets & payouts (placeholder)
+- `/notifications` — Push notifications (placeholder)
+- `/reports` — Analytics & reports (placeholder)
+- `/login` — Staff login (email + password, no OTP)

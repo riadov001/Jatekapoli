@@ -12,45 +12,46 @@
 3. [Base de données](#3-base-de-données)
 4. [Application mobile (Expo)](#4-application-mobile-expo)
 5. [PWA Web (React)](#5-pwa-web-react)
-6. [Authentification & OTP](#6-authentification--otp)
-7. [Messagerie SMS & WhatsApp](#7-messagerie-sms--whatsapp)
-8. [Email transactionnel](#8-email-transactionnel)
-9. [Géolocalisation & Cartographie](#9-géolocalisation--cartographie)
-10. [Notifications Push](#10-notifications-push)
-11. [Stockage fichiers & médias](#11-stockage-fichiers--médias)
-12. [Temps réel (Live Tracking)](#12-temps-réel-live-tracking)
-13. [Infrastructure & Hébergement](#13-infrastructure--hébergement)
-14. [Monitoring & Logs](#14-monitoring--logs)
-15. [CDN & Sécurité réseau](#15-cdn--sécurité-réseau)
-16. [Distribution App Store](#16-distribution-app-store)
-17. [Tableau de coûts consolidés](#17-tableau-de-coûts-consolidés)
-18. [Recommandations d'optimisation](#18-recommandations-doptimisation)
+6. [Tableau de bord back-office](#6-tableau-de-bord-back-office)
+7. [Authentification & OTP](#7-authentification--otp)
+8. [Messagerie SMS & WhatsApp](#8-messagerie-sms--whatsapp)
+9. [Email transactionnel](#9-email-transactionnel)
+10. [Géolocalisation & Cartographie](#10-géolocalisation--cartographie)
+11. [Notifications Push](#11-notifications-push)
+12. [Stockage fichiers & médias](#12-stockage-fichiers--médias)
+13. [Temps réel (Live Tracking)](#13-temps-réel-live-tracking)
+14. [Infrastructure & Hébergement](#14-infrastructure--hébergement)
+15. [Monitoring & Logs](#15-monitoring--logs)
+16. [CDN & Sécurité réseau](#16-cdn--sécurité-réseau)
+17. [Distribution App Store](#17-distribution-app-store)
+18. [Tableau de coûts consolidés](#18-tableau-de-coûts-consolidés)
+19. [Recommandations d'optimisation](#19-recommandations-doptimisation)
 
 ---
 
 ## 1. Architecture globale
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                        CLIENTS                                  │
-│   iOS App (Expo)    Android App (Expo)    PWA Web (React/Vite) │
-└──────────┬──────────────────┬──────────────────┬───────────────┘
-           │                  │                  │
-           └──────────────────┴──────────────────┘
-                              │ HTTPS / REST API + SSE
-                              ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                   API SERVER (Express.js)                       │
-│   Auth JWT │ OTP Twilio │ Drizzle ORM │ Pino Logger           │
-│   Replit Autoscale — Node.js 24 — TypeScript                   │
-└──────────────────────┬──────────────────────────────────────────┘
-                       │
-        ┌──────────────┼──────────────┐
-        ▼              ▼              ▼
-┌──────────────┐ ┌──────────┐ ┌─────────────────────────┐
-│  PostgreSQL  │ │ GCS / OS │ │  Services externes       │
-│  (Replit DB) │ │ (Images) │ │  Twilio · Resend · Maps  │
-└──────────────┘ └──────────┘ └─────────────────────────┘
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                              CLIENTS                                         │
+│  iOS App (Expo)  Android App (Expo)  PWA Web (React/Vite)  Back-office (React)│
+└──────┬─────────────────┬─────────────────┬──────────────────────┬───────────┘
+       │                 │                 │                      │
+       └─────────────────┴─────────────────┴──────────────────────┘
+                                     │ HTTPS / REST API + SSE
+                                     ▼
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                        API SERVER (Express.js)                               │
+│   Auth JWT │ OTP Twilio │ Drizzle ORM │ Pino Logger │ RBAC /api/backend/*   │
+│   Replit Autoscale — Node.js 24 — TypeScript                                │
+└──────────────────────────┬───────────────────────────────────────────────────┘
+                           │
+          ┌────────────────┼────────────────┐
+          ▼                ▼                ▼
+┌──────────────┐  ┌──────────┐  ┌─────────────────────────┐
+│  PostgreSQL  │  │ GCS / OS │  │  Services externes       │
+│  (Replit DB) │  │ (Images) │  │  Twilio · Resend · Maps  │
+└──────────────┘  └──────────┘  └─────────────────────────┘
 ```
 
 **Flux de données principaux :**
@@ -146,12 +147,31 @@
 - iOS 15+ (iPhone, sans tablette)
 - Android (API 23+, ACCESS_COARSE_LOCATION + ACCESS_FINE_LOCATION)
 
+**Structure des écrans (Expo Router — file-based) :**
+
+| Groupe | Écran | Description |
+|--------|-------|-------------|
+| `(auth)` | `login`, `otp`, `welcome` | Authentification OTP + onboarding adresse |
+| `(tabs)` | `index`, `restaurants`, `favoris`, `orders`, `profile` | Navigation principale client |
+| `(tabs)` | `deliver`, `manage` | Tabs conditionnels livreur / propriétaire |
+| — | `restaurant/[id]` | Détail restaurant + menu |
+| — | `category/[slug]` | Listing filtré par catégorie |
+| — | `order/[id]` | Suivi commande live (SSE + carte) |
+| — | `cart` | Panier + checkout |
+| — | `quote/new` | Estimation de prix course |
+| — | `driver-onboarding` | Profil conducteur obligatoire |
+| — | `restaurant-onboarding` | Profil restaurant obligatoire |
+| `profile/` | `info`, `addresses`, `payments`, `favorites`, `notifications`, `reorder`, `reviews`, `coupons`, `support`, `feedback`, `help`, `language`, `privacy`, `legal`, `report` | Sous-pages profil |
+
 **Fonctionnalités clés mobiles :**
 - Tabs rôle-conditionnels : Client / Livreur (`Livrer`) / Propriétaire (`Gérer`)
 - Onboarding obligatoire avant opération (profil conducteur ou restaurant)
 - Saisie code remise 4 chiffres (validation remise colis)
 - Suivi commande live via SSE + carte Leaflet (WebView)
 - OTP via Twilio SMS ou WhatsApp (fallback automatique)
+- Gestion complète du profil (adresses, paiements, favoris, avis, notifications, etc.)
+- Système de devis / estimation de course (quote/new)
+- Navigation par catégorie (catégorie filtrée `category/[slug]`)
 
 ---
 
@@ -178,9 +198,61 @@
 - Service Worker (mise en cache offline des assets statiques)
 - Comptes démo intégrés (page login, onglet Email)
 
+**Routes frontend (`food-delivery`) :**
+
+| Route | Rôle |
+|-------|------|
+| `/`, `/restaurants` | Page d'accueil (restaurants, catégories, pubs) |
+| `/restaurants/:id` | Détail restaurant + menu |
+| `/cart` | Panier + checkout |
+| `/orders`, `/orders/:id` | Historique commandes + suivi |
+| `/rewards` | Programme fidélité (Bronze/Silver/Gold) |
+| `/profile` | Profil utilisateur |
+| `/login`, `/register`, `/forgot-password` | Authentification |
+| `/legal` | CGU / mentions légales |
+| `/welcome` | Onboarding adresse (fullscreen) |
+| `/admin/*` | Interface admin intégrée (gated `AdminRoute`) |
+| `/restaurant/dashboard`, `/restaurant/menu` | Panel propriétaire |
+| `/driver/dashboard` | Panel livreur |
+
 ---
 
-## 6. Authentification & OTP
+## 6. Tableau de bord back-office
+
+Interface de gestion staff/admin (artifact `backend-dashboard`, preview path `/admin/`).
+
+| Composant | Technologie | Détail |
+|-----------|-------------|--------|
+| Framework | **React 19** + Vite | Même stack que food-delivery |
+| UI | **shadcn/ui** + Radix | Composants identiques, palette magenta Jatek |
+| Routing | **wouter** | SPA, base path `/admin/` |
+| Auth | JWT `localStorage["jatek_backend_token"]` | Séparé du token client |
+| RBAC | 5 rôles | super_admin, admin, manager, restaurant_owner, employee |
+| API | `GET|POST|PATCH|DELETE /api/backend/*` | Routes dédiées staff |
+
+**Pages du dashboard :**
+
+| Route | Accès | Description |
+|-------|-------|-------------|
+| `/` | Tous rôles | Dashboard KPI + chart commandes + todos |
+| `/orders` | Tous rôles (scopé) | Gestion commandes |
+| `/products` | admin, manager, owner | Items menu / produits |
+| `/categories` | admin, manager | Catégories et sous-catégories |
+| `/shops` | admin, manager | Restaurants et commerces |
+| `/reviews` | admin, manager | Modération avis clients |
+| `/customers` | admin, manager | Comptes clients |
+| `/staff` | admin, super_admin | Comptes staff |
+| `/deliverymen` | admin, manager | Comptes livreurs |
+| `/roles` | super_admin | Rôles & permissions |
+| `/settings` | admin, super_admin | Paramètres plateforme |
+| `/promotions` | admin, manager | Promotions et publicités |
+| `/wallets` | admin | Portefeuilles et paiements |
+| `/notifications` | admin | Notifications push |
+| `/reports` | admin, manager | Rapports et analytics |
+
+---
+
+## 7. Authentification & OTP
 
 | Mécanisme | Détail |
 |-----------|--------|
@@ -189,13 +261,13 @@
 | Méthode alternative | **WhatsApp OTP** (même flow, fallback SMS auto) |
 | Méthode admin/test | Email + mot de passe (bcrypt, coût 10) |
 | Rate limiting OTP | 1 requête/minute max, 3 tentatives de vérification |
-| Roles | `customer` · `driver` · `restaurant_owner` · `admin` |
+| Roles | `customer` · `driver` · `restaurant_owner` · `admin` · `manager` · `employee` · `super_admin` |
 | RGPD | Consentement horodaté au register (`userConsents`) |
 | Fallback WhatsApp | Si erreur Twilio 63007/63031 → bascule SMS automatiquement |
 
 ---
 
-## 7. Messagerie SMS & WhatsApp
+## 8. Messagerie SMS & WhatsApp
 
 ### Twilio (fournisseur actuel)
 
@@ -243,7 +315,7 @@
 
 ---
 
-## 8. Email transactionnel
+## 9. Email transactionnel
 
 > **Resend** — Recommandé pour les notifications email (non encore intégré, prévu)
 
@@ -264,7 +336,7 @@
 
 ---
 
-## 9. Géolocalisation & Cartographie
+## 10. Géolocalisation & Cartographie
 
 ### Stack actuelle
 
@@ -315,7 +387,7 @@
 
 ---
 
-## 10. Notifications Push
+## 11. Notifications Push
 
 | Service | Rôle | Coût |
 |---------|------|------|
@@ -329,7 +401,7 @@
 
 ---
 
-## 11. Stockage fichiers & médias
+## 12. Stockage fichiers & médias
 
 ### Google Cloud Storage (actuel)
 
@@ -351,7 +423,7 @@
 
 ---
 
-## 12. Temps réel (Live Tracking)
+## 13. Temps réel (Live Tracking)
 
 | Technologie | Rôle | Coût |
 |-------------|------|------|
@@ -367,7 +439,7 @@
 
 ---
 
-## 13. Infrastructure & Hébergement
+## 14. Infrastructure & Hébergement
 
 ### Replit Autoscale (actuel)
 
@@ -398,7 +470,7 @@
 
 ---
 
-## 14. Monitoring & Logs
+## 15. Monitoring & Logs
 
 | Service | Usage | Plan gratuit | Plan payant | **Recommandé pour** |
 |---------|-------|-------------|-------------|----------------------|
@@ -418,7 +490,7 @@
 
 ---
 
-## 15. CDN & Sécurité réseau
+## 16. CDN & Sécurité réseau
 
 | Service | Usage | Plan | **Coût** |
 |---------|-------|------|----------|
@@ -431,7 +503,7 @@
 
 ---
 
-## 16. Distribution App Store
+## 17. Distribution App Store
 
 | Plateforme | Frais | Type | Récurrence |
 |------------|-------|------|------------|
@@ -444,7 +516,7 @@
 
 ---
 
-## 17. Tableau de coûts consolidés
+## 18. Tableau de coûts consolidés
 
 ### 📊 Récapitulatif par palier
 
@@ -543,7 +615,7 @@ Coût mensuel total estimé (avec Twilio US)
 
 ---
 
-## 18. Recommandations d'optimisation
+## 19. Recommandations d'optimisation
 
 ### 🔴 Priorité haute — SMS (économie potentielle : 80–90%)
 
@@ -601,4 +673,4 @@ pnpm --filter @workspace/jatek-mobile add expo-notifications
 
 ---
 
-*Document généré depuis le codebase Jatek — Version monorepo pnpm, Node.js 24, Expo SDK 54*
+*Document généré depuis le codebase Jatek — Version monorepo pnpm, Node.js 24, Expo SDK 54 — 4 artifacts : food-delivery, backend-dashboard, jatek-mobile, api-server*
