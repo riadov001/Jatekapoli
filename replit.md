@@ -84,6 +84,7 @@ users, restaurants, menuItems, orders, orderItems, drivers, reviews, categories,
 
 ### Frontend Routes (food-delivery)
 - `/` — Home (hero, category filter, Support Local, all restaurants)
+- `/restaurants` — Alias for home (same component, all restaurants)
 - `/restaurants/:id` — Restaurant detail + menu
 - `/cart` — Cart checkout
 - `/orders` — My orders list

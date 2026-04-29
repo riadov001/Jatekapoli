@@ -84,20 +84,25 @@
 
 | Entité | Description |
 |--------|-------------|
-| `users` | Clients, livreurs, propriétaires, admins |
+| `users` | Clients, livreurs, propriétaires, admins (7 rôles) |
 | `restaurants` | Établissements avec profil légal (legalName, ICE) |
 | `menuItems` | Plats avec prix, descriptions, photos |
 | `orders` | Commandes (ref. JTK-YYMM-XXXXXX, kitchenCode 3 chiffres, pickupCode 4 chiffres) |
+| `orderItems` | Lignes de commande (quantité, prix unitaire) |
 | `drivers` | Profils livreurs (véhicule, zone) |
 | `reviews` | Avis clients sur restaurants |
+| `categories` | Catégories/sous-catégories (parentId, businessType, sortOrder, accentColor) |
+| `ads` | Publicités : types `jatek_offer`, `vip_banner`, `promo_banner` |
+| `shorts` | Contenu short-form vidéo/image lié à un restaurant |
 | `otpCodes` | Codes OTP temporaires (TTL 5 min, 3 tentatives max) |
 | `favorites` | Restaurants favoris par client |
 | `addresses` | Adresses de livraison sauvegardées |
 | `paymentMethods` | Méthodes de paiement (actuellement COD) |
 | `supportTickets` | Tickets support client |
 | `notificationPrefs` | Préférences notifications par utilisateur |
-| `userConsents` | Consentements RGPD |
+| `userConsents` | Consentements RGPD (horodatage + version politique) |
 | `quotes` | Devis/estimations de prix livraison |
+| `dashboardTodos` | Tâches/rappels dans le tableau de bord back-office |
 
 ---
 
