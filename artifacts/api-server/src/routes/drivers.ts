@@ -1,7 +1,8 @@
 import { Router, type IRouter } from "express";
 import { db, driversTable, ordersTable } from "@workspace/db";
-import { eq, and, sum, count } from "drizzle-orm";
+import { eq, and, inArray } from "drizzle-orm";
 import { publish } from "../lib/sse";
+import * as tracking from "../lib/trackingService";
 import { requireAuth, type AuthedRequest } from "../middlewares/auth";
 import {
   UpdateDriverBody,
@@ -119,7 +120,7 @@ router.patch("/drivers/:id/location", requireAuth, async (req: AuthedRequest, re
   const id = parseInt(req.params.id, 10);
   if (isNaN(id)) { res.status(400).json({ error: "Invalid driver id" }); return; }
 
-  const { latitude, longitude } = req.body;
+  const { latitude, longitude, destLat, destLng } = req.body ?? {};
   if (typeof latitude !== "number" || typeof longitude !== "number") {
     res.status(400).json({ error: "latitude and longitude (numbers) required" });
     return;
@@ -132,28 +133,86 @@ router.patch("/drivers/:id/location", requireAuth, async (req: AuthedRequest, re
     return;
   }
 
+  const now = new Date();
   const [driver] = await db
     .update(driversTable)
-    .set({ latitude, longitude, locationUpdatedAt: new Date() })
+    .set({ latitude, longitude, locationUpdatedAt: now })
     .where(eq(driversTable.id, id))
     .returning();
 
   if (!driver) { res.status(404).json({ error: "Driver not found" }); return; }
 
-  // Find the active order for this driver and publish location to the order channel
-  const [activeOrder] = await db
+  // All active orders this driver is currently delivering (picked_up OR en_route).
+  // We fan out the location event so every interested party (customer, restaurant
+  // owner, admin tracking dashboard, the driver's own client) receives it.
+  const activeOrders = await db
     .select({ id: ordersTable.id })
     .from(ordersTable)
-    .where(and(eq(ordersTable.driverId, id), eq(ordersTable.status, "picked_up")))
-    .limit(1);
+    .where(and(
+      eq(ordersTable.driverId, id),
+      inArray(ordersTable.status, ["picked_up", "en_route"]),
+    ));
 
-  if (activeOrder) {
-    publish(`order:${activeOrder.id}`, "driver_location", { latitude, longitude, driverId: id, orderId: activeOrder.id });
+  // Refresh the in-memory live state — this also feeds the offline watchdog.
+  for (const o of activeOrders) tracking.attachOrder(id, o.id);
+  tracking.updateLocation(id, latitude, longitude);
+
+  // Optional ETA — only computable when the client supplied destination coords.
+  // We deliberately don't store delivery lat/lng in the orders table, so the
+  // driver app passes them per-update from its routing/Maps SDK.
+  const eta =
+    typeof destLat === "number" && typeof destLng === "number"
+      ? tracking.calculateETA(latitude, longitude, destLat, destLng)
+      : null;
+
+  const basePayload = {
+    driverId: id,
+    latitude,
+    longitude,
+    timestamp: now.getTime(),
+    eta,
+    isOnline: true,
+  };
+
+  // Per-order channels (customer + restaurant tracking)
+  for (const o of activeOrders) {
+    publish(`order:${o.id}`, "driver_location", { ...basePayload, orderId: o.id });
   }
-  // Also publish to driver-specific channel so dashboard can consume
-  publish(`driver:${id}`, "driver_location", { latitude, longitude, driverId: id });
+  // Driver's own channel (their app's UI / debug)
+  publish(`driver:${id}`, "driver_location", basePayload);
+  // Global admin tracking dashboard — sees every delivery in flight.
+  publish("admin_tracking", "driver_location", {
+    ...basePayload,
+    orderIds: activeOrders.map((o) => o.id),
+  });
 
-  res.json({ latitude: driver.latitude, longitude: driver.longitude, locationUpdatedAt: driver.locationUpdatedAt });
+  res.json({
+    latitude: driver.latitude,
+    longitude: driver.longitude,
+    locationUpdatedAt: driver.locationUpdatedAt,
+    eta,
+    activeOrderIds: activeOrders.map((o) => o.id),
+  });
+});
+
+/**
+ * Driver heartbeat ping — used when the driver app cannot send a fresh GPS
+ * fix yet (e.g. waiting for first lock) but wants to stay online so the
+ * watchdog doesn't flag them as offline.
+ */
+router.post("/drivers/:id/heartbeat", requireAuth, async (req: AuthedRequest, res): Promise<void> => {
+  const id = parseInt(req.params.id, 10);
+  if (isNaN(id)) { res.status(400).json({ error: "Invalid driver id" }); return; }
+
+  const [driver] = await db.select().from(driversTable).where(eq(driversTable.id, id)).limit(1);
+  if (!driver) { res.status(404).json({ error: "Driver not found" }); return; }
+  if (req.userRole !== "admin" && driver.userId !== req.userId) {
+    res.status(403).json({ error: "Forbidden" });
+    return;
+  }
+
+  const state = tracking.recordHeartbeat(id);
+  res.json({ ok: true, lastSeen: state.lastSeen });
 });
 
 router.get("/drivers/:id/location", async (req, res): Promise<void> => {

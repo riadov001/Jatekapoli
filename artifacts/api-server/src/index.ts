@@ -1,6 +1,7 @@
 import app from "./app";
 import { logger } from "./lib/logger";
 import { runSeedIfEmpty } from "./seed";
+import { startTrackingWatchdog } from "./lib/trackingService";
 
 const rawPort = process.env["PORT"];
 
@@ -25,6 +26,11 @@ const server = app.listen(port, "0.0.0.0", (err) => {
   logger.info({ port }, "Server listening on 0.0.0.0");
 
   runSeedIfEmpty().catch((e) => logger.error({ err: e }, "Seed error"));
+
+  // Start the in-memory driver tracking watchdog (flips silent drivers to
+  // offline after 30s, broadcasts driver_offline events on the relevant SSE
+  // channels). Idempotent — safe across hot reloads.
+  startTrackingWatchdog();
 });
 
 server.keepAliveTimeout = 65_000;

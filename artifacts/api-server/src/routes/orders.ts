@@ -21,6 +21,7 @@ import {
   ListOrdersQueryParams,
 } from "@workspace/api-zod";
 import { publish } from "../lib/sse";
+import * as tracking from "../lib/trackingService";
 
 const router: IRouter = Router();
 
@@ -33,7 +34,7 @@ async function getOrderWithItems(orderId: number) {
 }
 
 router.get("/orders/active", async (req, res): Promise<void> => {
-  const activeStatuses = ["pending", "accepted", "preparing", "ready", "picked_up"];
+  const activeStatuses = ["pending", "accepted", "preparing", "ready", "picked_up", "en_route"];
   const orders = await db.select().from(ordersTable).where(inArray(ordersTable.status, activeStatuses));
 
   const ordersWithItems = await Promise.all(
@@ -219,6 +220,25 @@ router.patch("/orders/:id/status", requireAuth, async (req: AuthedRequest, res):
     return;
   }
 
+  // Authorise the picked_up → en_route transition: only the assigned driver
+  // (or admin) may flip an order to en_route, and only from picked_up.
+  if (parsed.data.status === "en_route") {
+    const [existing] = await db.select().from(ordersTable).where(eq(ordersTable.id, params.data.id)).limit(1);
+    if (!existing) { res.status(404).json({ error: "Order not found" }); return; }
+    if (existing.status !== "picked_up") {
+      res.status(409).json({ error: "Order must be picked_up before transitioning to en_route" });
+      return;
+    }
+    if (req.userRole !== "admin") {
+      if (!existing.driverId) { res.status(403).json({ error: "Order has no assigned driver" }); return; }
+      const [drv] = await db.select().from(driversTable).where(eq(driversTable.id, existing.driverId)).limit(1);
+      if (!drv || drv.userId !== req.userId) {
+        res.status(403).json({ error: "Only the assigned driver can mark the order as en_route" });
+        return;
+      }
+    }
+  }
+
   const updateData: any = { status: parsed.data.status };
   if (parsed.data.driverId) {
     updateData.driverId = parsed.data.driverId;
@@ -273,6 +293,8 @@ router.patch("/orders/:id/status", requireAuth, async (req: AuthedRequest, res):
   // Push real-time events
   publish(`order:${order.id}`, "order_status", { orderId: order.id, status: order.status, order: orderWithItems });
   publish(`restaurant:${order.restaurantId}`, "order_status", { orderId: order.id, status: order.status });
+  // Admin tracking dashboard sees every status change for live ops visibility.
+  publish("admin_tracking", "order_status", { orderId: order.id, status: order.status, driverId: order.driverId });
 
   // When order is ready, notify available drivers
   if (parsed.data.status === "ready") {
@@ -284,7 +306,71 @@ router.patch("/orders/:id/status", requireAuth, async (req: AuthedRequest, res):
     publish(`driver_orders:${parsed.data.driverId}`, "order_assigned", { orderId: order.id, order: orderWithItems });
   }
 
+  // When the driver hits the road, attach the order to their live tracking
+  // channel so subsequent /location pings fan out on this order:{id} channel.
+  if (parsed.data.status === "en_route" && order.driverId) {
+    tracking.attachOrder(order.driverId, order.id);
+  }
+
   res.json(orderWithItems);
+});
+
+/**
+ * Live tracking snapshot for an order — combines DB persistence with the
+ * in-memory tracking service. Useful for clients that just opened the page
+ * and need an initial state before subscribing to the SSE channel.
+ */
+router.get("/orders/:id/tracking", attachAuth, async (req: AuthedRequest, res): Promise<void> => {
+  const id = parseInt(req.params.id, 10);
+  if (isNaN(id)) { res.status(400).json({ error: "Invalid order id" }); return; }
+
+  const [order] = await db.select().from(ordersTable).where(eq(ordersTable.id, id)).limit(1);
+  if (!order) { res.status(404).json({ error: "Order not found" }); return; }
+
+  // Authorisation: customer who placed the order, the assigned driver, the
+  // restaurant owner, or an admin. Anonymous callers are rejected.
+  if (req.userRole !== "admin") {
+    let allowed = false;
+    if (req.userId != null) {
+      if (order.userId === req.userId) allowed = true;
+      if (!allowed && order.driverId) {
+        const [drv] = await db.select().from(driversTable).where(eq(driversTable.id, order.driverId)).limit(1);
+        if (drv?.userId === req.userId) allowed = true;
+      }
+      if (!allowed) {
+        const [rest] = await db.select().from(restaurantsTable).where(eq(restaurantsTable.id, order.restaurantId)).limit(1);
+        if (rest?.ownerId === req.userId) allowed = true;
+      }
+    }
+    if (!allowed) { res.status(403).json({ error: "Forbidden" }); return; }
+  }
+
+  const driver = order.driverId
+    ? (await db.select().from(driversTable).where(eq(driversTable.id, order.driverId)).limit(1))[0]
+    : null;
+
+  const live = order.driverId ? tracking.getState(order.driverId) : null;
+  const isOnline = order.driverId ? tracking.isOnline(order.driverId) : false;
+
+  // Prefer the live in-memory position (fresh) over the DB snapshot (last write).
+  const liveLat = live?.lat ?? null;
+  const liveLng = live?.lng ?? null;
+  const dbLat = driver?.latitude ?? null;
+  const dbLng = driver?.longitude ?? null;
+  const lat = liveLat ?? dbLat;
+  const lng = liveLng ?? dbLng;
+  const lastSeen = live?.lastSeen ?? driver?.locationUpdatedAt?.getTime() ?? null;
+
+  res.json({
+    orderId: order.id,
+    status: order.status,
+    driverId: order.driverId,
+    driverName: driver?.name ?? null,
+    driverPhone: driver?.phone ?? null,
+    location: lat != null && lng != null ? { latitude: lat, longitude: lng, lastSeen } : null,
+    isOnline,
+    pickupCode: req.userRole === "admin" || req.userId === order.userId ? order.pickupCode : null,
+  });
 });
 
 /** Driver accepts a "ready" order — assigns themselves to it */
@@ -337,9 +423,14 @@ router.post("/orders/:id/accept-delivery", requireAuth, async (req: AuthedReques
 
   const orderWithItems = await getOrderWithItems(order.id);
 
-  // Notify customer + restaurant
+  // Notify customer + restaurant + admin tracking dashboard.
   publish(`order:${orderId}`, "order_status", { orderId, status: "picked_up", driverName: driver.name, order: orderWithItems });
   publish(`restaurant:${order.restaurantId}`, "order_status", { orderId, status: "picked_up", driverName: driver.name });
+  publish("admin_tracking", "order_status", { orderId, status: "picked_up", driverId, driverName: driver.name });
+
+  // Start tracking the order in the in-memory live state so subsequent driver
+  // location pings get fanned out on the order:{id} channel.
+  tracking.attachOrder(driverId, orderId);
 
   res.json(orderWithItems);
 });
@@ -402,6 +493,10 @@ router.post("/orders/:id/confirm-delivery", requireAuth, async (req: AuthedReque
   const orderWithItems = await getOrderWithItems(order.id);
   publish(`order:${order.id}`, "order_status", { orderId: order.id, status: "delivered", order: orderWithItems });
   publish(`restaurant:${order.restaurantId}`, "order_status", { orderId: order.id, status: "delivered" });
+  publish("admin_tracking", "order_status", { orderId: order.id, status: "delivered", driverId: order.driverId });
+
+  // Stop fanning out live location updates for this completed order.
+  if (order.driverId) tracking.detachOrder(order.driverId, order.id);
 
   res.json(orderWithItems);
 });

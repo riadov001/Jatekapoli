@@ -2,7 +2,7 @@ modules = ["nodejs-24", "postgresql-16"]
 
   [deployment]
   router = "application"
-  deploymentTarget = "vm"
+deploymentTarget = "cloudrun"
   run = ["bash", "scripts/start-production.sh"]
   build = ["bash", "scripts/build-production.sh"]
 

@@ -49,10 +49,14 @@ router.use(contentRouter);
  * SSE endpoint — clients subscribe to one or more channels:
  *   GET /api/events?channels=order:5,restaurant:2
  * Channels:
- *   order:{id}          → order status changes (for customer tracking)
- *   restaurant:{id}     → new incoming orders (for restaurant dashboard)
- *   available_orders    → orders ready for pickup (for driver app)
- *   driver:{id}         → location updates (for customer tracking live map)
+ *   order:{id}            → order status + driver location for customer tracking
+ *   restaurant:{id}       → new incoming orders (for restaurant dashboard)
+ *   available_orders      → orders ready for pickup (for driver app)
+ *   driver:{id}           → driver's own status + location stream
+ *   driver_orders:{id}    → orders newly assigned to a driver
+ *   admin_tracking        → global live ops dashboard: every order_status change,
+ *                            every driver_location ping, plus driver_offline events
+ *                            from the in-memory tracking watchdog
  */
 router.get("/events", requireAuth, (req, res) => {
   const raw = (req.query.channels as string) ?? "";
