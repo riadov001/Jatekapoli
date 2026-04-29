@@ -1,36 +1,26 @@
 {
   "cli": {
-    "version": ">= 14.0.0",
-    "appVersionSource": "remote"
+    "version": ">= 1.0.0",
+    "appVersionSource": "local"
   },
   "build": {
     "development": {
       "developmentClient": true,
       "distribution": "internal",
+      "autoIncrement": true,
       "android": {
-        "buildType": "apk"
+        "buildType": "apk",
+        "gradleCommand": ":app:assembleDebug"
       }
     },
     "preview": {
       "distribution": "internal",
-      "android": {
-        "buildType": "apk"
-      },
-      "env": {
-        "EXPO_PUBLIC_DOMAIN": "ma.jatek.app"
-      }
+      "autoIncrement": true,
+      "android": { "buildType": "apk" }
     },
     "production": {
-      "channel": "production",
-      "android": {
-        "buildType": "app-bundle"
-      },
-      "env": {
-        "EXPO_PUBLIC_DOMAIN": "ma.jatek.app"
-      }
+      "autoIncrement": true,
+      "android": { "buildType": "app-bundle" }
     }
-  },
-  "submit": {
-    "production": {}
   }
 }
