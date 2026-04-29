@@ -132,11 +132,6 @@ export default function RestaurantScreen() {
             </View>
             <View style={styles.infoTextWrap}>
               <Text style={[styles.rName, { color: colors.foreground }]} numberOfLines={1}>{restaurant.name}</Text>
-              {restaurant.category ? (
-                <Text style={[styles.rTags, { color: colors.mutedForeground }]} numberOfLines={1}>
-                  {restaurant.category}
-                </Text>
-              ) : null}
               <View style={styles.ratingRow}>
                 <Ionicons name="star" size={13} color={colors.yellow} />
                 <Text style={[styles.ratingTxt, { color: colors.foreground }]}>
@@ -148,49 +143,16 @@ export default function RestaurantScreen() {
                   </Text>
                 )}
               </View>
+              <View style={styles.openRow}>
+                <View style={[styles.openDot, { backgroundColor: isOpen ? colors.turquoise : "#9CA3AF" }]} />
+                <Text style={[styles.openTxt, { color: isOpen ? colors.turquoise : colors.mutedForeground }]}>
+                  {isOpen ? "Ouvert" : "Fermé"}
+                </Text>
+              </View>
             </View>
             <TouchableOpacity onPress={() => setInfoModalOpen(true)} hitSlop={12} activeOpacity={0.7}>
               <Ionicons name="chevron-forward" size={22} color={colors.primary} />
             </TouchableOpacity>
-          </View>
-
-          {restaurant.description ? (
-            <Text style={[styles.rDesc, { color: colors.foreground }]} numberOfLines={2}>
-              {restaurant.description}
-            </Text>
-          ) : null}
-
-          <View style={[styles.divider, { backgroundColor: colors.border }]} />
-
-          <View style={styles.metaRow}>
-            <View style={styles.metaItem}>
-              <Ionicons name="time-outline" size={15} color={colors.mutedForeground} />
-              <Text style={[styles.metaText, { color: colors.foreground }]}>
-                {restaurant.deliveryTime != null ? `${restaurant.deliveryTime}-${restaurant.deliveryTime + 10} min` : "— min"}
-              </Text>
-            </View>
-            <View style={styles.metaDot} />
-            <View style={styles.metaItem}>
-              <Ionicons name="bicycle-outline" size={15} color={restaurant.deliveryFee === 0 ? colors.turquoise : colors.mutedForeground} />
-              <Text style={[styles.metaText, {
-                color: restaurant.deliveryFee === 0 ? colors.turquoise : colors.foreground,
-                fontFamily: restaurant.deliveryFee === 0 ? "Inter_700Bold" : "Inter_600SemiBold",
-              }]}>
-                {restaurant.deliveryFee != null
-                  ? (restaurant.deliveryFee === 0 ? "Gratuit" : `${restaurant.deliveryFee} MAD`)
-                  : "—"}
-              </Text>
-            </View>
-            <View style={styles.metaDot} />
-            <View style={styles.metaItem}>
-              <View style={[styles.openDot, { backgroundColor: isOpen ? colors.turquoise : "#9CA3AF" }]} />
-              <Text style={[styles.metaText, {
-                color: isOpen ? colors.turquoise : colors.mutedForeground,
-                fontFamily: "Inter_700Bold",
-              }]}>
-                {isOpen ? "Ouvert" : "Fermé"}
-              </Text>
-            </View>
           </View>
 
         </View>
@@ -525,17 +487,12 @@ const styles = StyleSheet.create({
   logoLetter: { fontSize: 19, fontFamily: "Inter_700Bold" },
   infoTextWrap: { flex: 1, gap: 1 },
   rName: { fontSize: 16, fontFamily: "Inter_700Bold" },
-  rTags: { fontSize: 11, fontFamily: "Inter_400Regular" },
   ratingRow: { flexDirection: "row", alignItems: "center", gap: 4, marginTop: 1 },
   ratingTxt: { fontSize: 12, fontFamily: "Inter_700Bold" },
   ratingCount: { fontSize: 11, fontFamily: "Inter_400Regular" },
-  rDesc: { fontSize: 14, fontFamily: "Inter_400Regular", lineHeight: 20 },
-  divider: { height: 1, marginVertical: 1 },
-  metaRow: { flexDirection: "row", alignItems: "center", gap: 8, flexWrap: "wrap" },
-  metaItem: { flexDirection: "row", alignItems: "center", gap: 4 },
-  metaText: { fontSize: 11, fontFamily: "Inter_600SemiBold" },
-  metaDot: { width: 3, height: 3, borderRadius: 1.5, backgroundColor: "#D1D5DB" },
+  openRow: { flexDirection: "row", alignItems: "center", gap: 5, marginTop: 3 },
   openDot: { width: 6, height: 6, borderRadius: 3 },
+  openTxt: { fontSize: 11, fontFamily: "Inter_700Bold" },
   warningBanner: {
     marginHorizontal: SIDE, marginTop: 14, padding: 10, borderRadius: 10, borderWidth: 1,
     flexDirection: "row", alignItems: "center", gap: 8,
