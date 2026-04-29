@@ -1,102 +1,95 @@
 modules = ["nodejs-24", "postgresql-16"]
 
-[deployment]
-router = "application"
-deploymentTarget = "autoscale"
-run = ["bash", "scripts/start-production.sh"]
-build = ["bash", "scripts/build-production.sh"]
+  [deployment]
+  router = "application"
+  deploymentTarget = "autoscale"
+  run = ["bash", "scripts/start-production.sh"]
+  build = ["bash", "scripts/build-production.sh"]
 
-[deployment.postBuild]
-args = ["pnpm", "store", "prune"]
-env = { "CI" = "true" }
+  [deployment.postBuild]
+  args = ["pnpm", "store", "prune"]
+  env = { "CI" = "true" }
 
-[workflows]
-runButton = "Project"
+  [workflows]
+  runButton = "Project"
 
-[[workflows.workflow]]
-name = "Project"
-mode = "parallel"
-author = "agent"
+  [[workflows.workflow]]
+  name = "Project"
+  mode = "parallel"
+  author = "agent"
 
-[[workflows.workflow.tasks]]
-task = "workflow.run"
-args = "Start application"
+  [[workflows.workflow.tasks]]
+  task = "workflow.run"
+  args = "Backend API"
 
-[[workflows.workflow.tasks]]
-task = "workflow.run"
-args = "Build Android APK (Dev)"
+  [[workflows.workflow.tasks]]
+  task = "workflow.run"
+  args = "Start application"
 
-[[workflows.workflow]]
-name = "Start application"
-author = "agent"
+  [[workflows.workflow]]
+  name = "Start application"
+  author = "agent"
 
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "PORT=5000 BASE_PATH=/ pnpm --filter @workspace/food-delivery run dev"
-waitForPort = 5000
+  [[workflows.workflow.tasks]]
+  task = "shell.exec"
+  args = "PORT=5000 BASE_PATH=/ pnpm --filter @workspace/food-delivery run dev"
+  waitForPort = 5000
 
-[workflows.workflow.metadata]
-outputType = "webview"
+  [workflows.workflow.metadata]
+  outputType = "webview"
 
-[[workflows.workflow]]
-name = "Build Android APK (Dev)"
-author = "agent"
+  [[workflows.workflow]]
+  name = "Build Android APK (Dev)"
+  author = "agent"
 
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "bash scripts/build-android-dev.sh"
+  [[workflows.workflow.tasks]]
+  task = "shell.exec"
+  args = "bash scripts/build-android-dev.sh"
 
-[workflows.workflow.metadata]
-outputType = "console"
+  [workflows.workflow.metadata]
+  outputType = "console"
 
-[agent]
-stack = "BEST_EFFORT_FALLBACK"
-expertMode = true
-integrations = ["twilio:1.0.0"]
+  [[workflows.workflow]]
+  name = "Backend API"
+  author = "agent"
 
-[postMerge]
-path = "scripts/post-merge.sh"
-timeoutMs = 20000
+  [[workflows.workflow.tasks]]
+  task = "shell.exec"
+  args = "PORT=8080 pnpm --filter @workspace/api-server run dev"
+  waitForPort = 8080
 
-[[ports]]
-localPort = 5000
-externalPort = 5000
+  [workflows.workflow.metadata]
+  outputType = "console"
 
-[[ports]]
-localPort = 8080
-externalPort = 8080
+  [agent]
+  stack = "BEST_EFFORT_FALLBACK"
+  expertMode = true
+  integrations = ["twilio:1.0.0"]
 
-[[ports]]
-localPort = 8081
-externalPort = 80
+  [postMerge]
+  path = "scripts/post-merge.sh"
+  timeoutMs = 20000
 
-[[ports]]
-localPort = 18244
-externalPort = 3001
+  [[ports]]
+  localPort = 8080
+  externalPort = 80
 
-[[ports]]
-localPort = 19167
-externalPort = 3002
+  [nix]
+  channel = "stable-25_05"
+  packages = ["eas-cli", "unzipNLS"]
 
-[[ports]]
-localPort = 25896
-externalPort = 3000
+  [userenv]
 
-[nix]
-channel = "stable-25_05"
-packages = ["eas-cli", "unzipNLS"]
+  [userenv.shared]
 
-[userenv]
+  [userenv.development]
+  INFOBIP_WA_SENDER = "+15072600620"
+  EXPO_PUBLIC_DOMAIN = "ma.jatek.app"
 
-[userenv.shared]
+  [userenv.production]
+  INFOBIP_WA_SENDER = "+15072600620"
+  EXPO_PUBLIC_DOMAIN = "ma.jatek.app"
 
-[userenv.development]
-INFOBIP_WA_SENDER = "+15072600620"
-EXPO_PUBLIC_DOMAIN = "ma.jatek.app"
-
-[userenv.production]
-INFOBIP_WA_SENDER = "+15072600620"
-EXPO_PUBLIC_DOMAIN = "ma.jatek.app"
-
-[objectStorage]
-defaultBucketID = "replit-objstore-da72a41c-10aa-4e77-9354-01883c790dff"
+  [objectStorage]
+  defaultBucketID = "replit-objstore-da72a41c-10aa-4e77-9354-01883c790dff"
+  
