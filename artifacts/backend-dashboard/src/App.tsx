@@ -19,13 +19,11 @@ import Customers from "@/pages/customers";
 import Staff from "@/pages/staff";
 import Deliverymen from "@/pages/deliverymen";
 import Roles from "@/pages/roles";
-import { 
-  SettingsPage, 
-  PromotionsPage, 
-  WalletsPage, 
-  NotificationsPage, 
-  ReportsPage 
-} from "@/pages/placeholders";
+import Promotions from "@/pages/promotions";
+import Wallets from "@/pages/wallets";
+import Notifications from "@/pages/notifications";
+import Reports from "@/pages/reports";
+import SettingsPage from "@/pages/settings";
 
 const queryClient = new QueryClient();
 
@@ -50,10 +48,10 @@ function Router() {
               <Route path="/deliverymen" component={Deliverymen} />
               <Route path="/roles" component={Roles} />
               <Route path="/settings" component={SettingsPage} />
-              <Route path="/promotions" component={PromotionsPage} />
-              <Route path="/wallets" component={WalletsPage} />
-              <Route path="/notifications" component={NotificationsPage} />
-              <Route path="/reports" component={ReportsPage} />
+              <Route path="/promotions" component={Promotions} />
+              <Route path="/wallets" component={Wallets} />
+              <Route path="/notifications" component={Notifications} />
+              <Route path="/reports" component={Reports} />
               <Route component={NotFound} />
             </Switch>
           </Layout>

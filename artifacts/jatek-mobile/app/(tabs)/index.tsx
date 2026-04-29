@@ -311,7 +311,6 @@ export default function HomeScreen() {
   // on every device (handles bottom safe-area / home indicator automatically).
   const tabBarHeight = useBottomTabBarHeight();
   const tabBarPad = tabBarHeight;
-  const fabBottom = insets.bottom + tabBarHeight + 16;
 
   return (
     <View style={s.root}>
@@ -443,7 +442,10 @@ export default function HomeScreen() {
 
         {/* ─── Découvrir en vidéo ─── */}
         <Animated.View entering={FadeInDown.delay(440).duration(500).springify()}>
-          <SectionHeader title="Decouvrir en video" />
+          <SectionHeader
+            title="Decouvrir en video"
+            onMore={() => { if (shorts.length > 0) { setInitialShort(0); setShortsVisible(true); } }}
+          />
         </Animated.View>
         <Animated.ScrollView
           entering={FadeInDown.delay(500).duration(550).springify()}
@@ -472,7 +474,10 @@ export default function HomeScreen() {
 
         {/* ─── Pres de chez vous (horizontal scroll) ─── */}
         <Animated.View entering={FadeInDown.delay(560).duration(500).springify()}>
-          <SectionHeader title="Pres de chez vous" />
+          <SectionHeader
+            title="Pres de chez vous"
+            onMore={() => router.push({ pathname: "/category/[slug]", params: { slug: "restauration" } })}
+          />
         </Animated.View>
         {isLoading ? (
           <ActivityIndicator color={PINK} style={{ marginVertical: 18 }} />
@@ -529,27 +534,22 @@ export default function HomeScreen() {
           )}
         </Animated.View>
       </ScrollView>
-      {/* ─── JATEK Ad floating trigger bar — glued to the top of the tab bar (Talabat-style) ─── */}
+      {/* ─── FAB Offres — pill flottant coin bas-droit ─── */}
       <Animated.View
         entering={FadeInUp.delay(900).duration(500).springify()}
-        style={[s.adTriggerWrap, { bottom: fabBottom }]}
+        style={[s.fab, { bottom: tabBarHeight + 16 }]}
         pointerEvents="box-none"
       >
         <TouchableOpacity
           onPress={() => setAdSheetVisible(true)}
           activeOpacity={0.85}
-          style={s.adTriggerBtn}
+          style={s.fabBtn}
         >
-          <View style={s.adTriggerIconWrap}>
-            <Ionicons name="bicycle" size={16} color="#fff" />
+          <View style={s.fabIconWrap}>
+            <Ionicons name="pricetag" size={15} color="#fff" />
           </View>
-          <View style={s.adTriggerTxtWrap}>
-            <View style={s.adTriggerHighlight}>
-              <Text style={s.adTriggerHighlightTxt}>OFFRES</Text>
-            </View>
-            <Text style={s.adTriggerTxt}> & Avantages Jatek</Text>
-          </View>
-          <Ionicons name="chevron-up" size={18} color="#06B6D4" />
+          <Text style={s.fabTxt}>Offres</Text>
+          <Ionicons name="chevron-up" size={15} color="rgba(255,255,255,0.8)" />
         </TouchableOpacity>
       </Animated.View>
 
@@ -1052,54 +1052,37 @@ const s = StyleSheet.create({
     gap: GRID_GAP,
   },
 
-  // ── Jatek Ad trigger bar (Talabat-style — solid pill glued above tab bar) ──
-  adTriggerWrap: {
+  // ── FAB Offres (pill flottant bas-droit) ──
+  fab: {
     position: "absolute",
-    left: 0,
-    right: 0,
+    right: 16,
   },
-  adTriggerBtn: {
+  fabBtn: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
-    backgroundColor: "#F0FCFD",
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-    borderTopWidth: 1,
-    borderTopColor: "#B2EBF2",
-    shadowColor: "#000",
-    shadowOpacity: 0.06,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: -2 },
+    gap: 8,
+    backgroundColor: PINK,
+    paddingVertical: 11,
+    paddingHorizontal: 16,
+    borderRadius: 28,
+    shadowColor: PINK,
+    shadowOpacity: 0.45,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 8,
   },
-  adTriggerIconWrap: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    backgroundColor: "#06B6D4",
+  fabIconWrap: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: "rgba(255,255,255,0.25)",
     alignItems: "center",
     justifyContent: "center",
   },
-  adTriggerTxtWrap: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  adTriggerHighlight: {
-    backgroundColor: "#D7F542",
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
-  },
-  adTriggerHighlightTxt: {
-    color: "#0A1B3D",
-    fontSize: 13,
-    fontFamily: "Inter_900Black",
-    letterSpacing: 0.4,
-  },
-  adTriggerTxt: {
-    color: "#0A1B3D",
+  fabTxt: {
+    color: "#fff",
     fontSize: 13,
     fontFamily: "Inter_700Bold",
+    letterSpacing: 0.2,
   },
 });

@@ -76,22 +76,22 @@ const navGroups: NavGroup[] = [
   {
     label: "Marketing",
     items: [
-      { href: "/promotions", label: "Promotions", icon: Tags, roles: ["super_admin", "admin", "manager"], hidden: true },
-      { href: "/notifications", label: "Notifications", icon: Bell, roles: ["super_admin", "admin", "manager"], hidden: true },
+      { href: "/promotions", label: "Promotions", icon: Tags, roles: ["super_admin", "admin", "manager"] },
+      { href: "/notifications", label: "Notifications", icon: Bell, roles: ["super_admin", "admin", "manager"] },
     ],
   },
   {
     label: "Finance",
     items: [
-      { href: "/wallets", label: "Wallets", icon: Wallet, roles: ["super_admin", "admin", "manager"], hidden: true },
-      { href: "/reports", label: "Reports", icon: BarChart3, roles: ["super_admin", "admin", "manager"], hidden: true },
+      { href: "/wallets", label: "Wallets", icon: Wallet, roles: ["super_admin", "admin", "manager"] },
+      { href: "/reports", label: "Reports", icon: BarChart3, roles: ["super_admin", "admin", "manager"] },
     ],
   },
   {
     label: "System",
     items: [
       { href: "/roles", label: "Roles", icon: Shield, roles: ["super_admin"] },
-      { href: "/settings", label: "Settings", icon: Settings, roles: ["super_admin", "admin"], hidden: true },
+      { href: "/settings", label: "Settings", icon: Settings, roles: ["super_admin", "admin"] },
     ],
   },
 ];

@@ -14,6 +14,7 @@ import {
 } from "@workspace/db";
 import { eq, inArray, count, sum, gte, ilike, and, or, desc, sql } from "drizzle-orm";
 import { requireAuth, type AuthedRequest } from "../middlewares/auth";
+import { sendOtpMessage } from "../lib/otpMessaging";
 
 const router: IRouter = Router();
 
@@ -618,6 +619,165 @@ router.delete("/backend/todos/:id", requireAuth, async (req: AuthedRequest, res)
   if (!ctx) return;
   await db.delete(dashboardTodosTable).where(and(eq(dashboardTodosTable.id, Number(req.params.id)), eq(dashboardTodosTable.userId, ctx.id)));
   res.status(204).end();
+});
+
+// ---------- Reports ----------
+router.get("/backend/reports", requireAuth, async (req: AuthedRequest, res): Promise<void> => {
+  const ctx = await requireBackendUser(req, res);
+  if (!ctx) return;
+  if (!["super_admin", "admin", "manager"].includes(ctx.role)) { res.status(403).json({ error: "Forbidden" }); return; }
+
+  const days = Math.min(Number(req.query.days ?? 30), 365);
+  const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+
+  const [totals] = await db.select({
+    totalRevenue: sum(ordersTable.total),
+    totalOrders: count(ordersTable.id),
+    deliveredOrders: sql<number>`count(*) filter (where ${ordersTable.status} = 'delivered')`,
+  }).from(ordersTable).where(gte(ordersTable.createdAt, since));
+
+  const byDay = await db.select({
+    day: sql<string>`date_trunc('day', ${ordersTable.createdAt})::date::text`,
+    orders: count(ordersTable.id),
+    revenue: sum(ordersTable.total),
+  }).from(ordersTable)
+    .where(gte(ordersTable.createdAt, since))
+    .groupBy(sql`date_trunc('day', ${ordersTable.createdAt})`)
+    .orderBy(sql`date_trunc('day', ${ordersTable.createdAt})`);
+
+  const topRestaurants = await db.select({
+    restaurantId: ordersTable.restaurantId,
+    restaurantName: ordersTable.restaurantName,
+    orders: count(ordersTable.id),
+    revenue: sum(ordersTable.total),
+  }).from(ordersTable)
+    .where(gte(ordersTable.createdAt, since))
+    .groupBy(ordersTable.restaurantId, ordersTable.restaurantName)
+    .orderBy(desc(count(ordersTable.id)))
+    .limit(10);
+
+  res.json({
+    totalRevenue: Number(totals?.totalRevenue ?? 0),
+    totalOrders: Number(totals?.totalOrders ?? 0),
+    deliveredOrders: Number(totals?.deliveredOrders ?? 0),
+    byDay: byDay.map((r) => ({ day: r.day, orders: Number(r.orders), revenue: Number(r.revenue ?? 0) })),
+    topRestaurants: topRestaurants.map((r) => ({
+      restaurantId: r.restaurantId,
+      restaurantName: r.restaurantName,
+      orders: Number(r.orders),
+      revenue: Number(r.revenue ?? 0),
+    })),
+  });
+});
+
+// ---------- Wallets ----------
+router.get("/backend/wallets", requireAuth, async (req: AuthedRequest, res): Promise<void> => {
+  const ctx = await requireBackendUser(req, res);
+  if (!ctx) return;
+  if (!["super_admin", "admin", "manager"].includes(ctx.role)) { res.status(403).json({ error: "Forbidden" }); return; }
+
+  const restaurantEarnings = await db.select({
+    restaurantId: ordersTable.restaurantId,
+    restaurantName: ordersTable.restaurantName,
+    totalOrders: count(ordersTable.id),
+    grossRevenue: sum(ordersTable.subtotal),
+    deliveryFees: sum(ordersTable.deliveryFee),
+    totalRevenue: sum(ordersTable.total),
+  }).from(ordersTable)
+    .where(eq(ordersTable.status, "delivered"))
+    .groupBy(ordersTable.restaurantId, ordersTable.restaurantName)
+    .orderBy(desc(sum(ordersTable.total)))
+    .limit(100);
+
+  const driverEarnings = await db.select({
+    driverId: ordersTable.driverId,
+    totalDeliveries: count(ordersTable.id),
+    totalEarnings: sum(ordersTable.deliveryFee),
+  }).from(ordersTable)
+    .where(and(eq(ordersTable.status, "delivered"), sql`${ordersTable.driverId} is not null`))
+    .groupBy(ordersTable.driverId)
+    .orderBy(desc(sum(ordersTable.deliveryFee)))
+    .limit(100);
+
+  const driverIds = driverEarnings.map((r) => r.driverId).filter(Boolean) as number[];
+  const driversInfo = driverIds.length
+    ? await db.select({ id: driversTable.id, name: driversTable.name, phone: driversTable.phone }).from(driversTable).where(inArray(driversTable.id, driverIds))
+    : [];
+  const driverMap = new Map(driversInfo.map((d) => [d.id, d]));
+
+  res.json({
+    restaurants: restaurantEarnings.map((r) => ({
+      restaurantId: r.restaurantId,
+      restaurantName: r.restaurantName,
+      totalOrders: Number(r.totalOrders),
+      grossRevenue: Number(r.grossRevenue ?? 0),
+      deliveryFees: Number(r.deliveryFees ?? 0),
+      totalRevenue: Number(r.totalRevenue ?? 0),
+    })),
+    drivers: driverEarnings.map((r) => {
+      const info = driverMap.get(r.driverId!);
+      return {
+        driverId: r.driverId,
+        driverName: info?.name ?? `Driver #${r.driverId}`,
+        driverPhone: info?.phone ?? null,
+        totalDeliveries: Number(r.totalDeliveries),
+        totalEarnings: Number(r.totalEarnings ?? 0),
+      };
+    }),
+  });
+});
+
+// ---------- Notifications (bulk SMS) ----------
+router.post("/backend/notifications/send", requireAuth, async (req: AuthedRequest, res): Promise<void> => {
+  const ctx = await requireBackendUser(req, res);
+  if (!ctx) return;
+  if (!["super_admin", "admin"].includes(ctx.role)) { res.status(403).json({ error: "Forbidden" }); return; }
+
+  const { target, message, phone } = req.body ?? {};
+  if (!message || typeof message !== "string" || !message.trim()) {
+    res.status(400).json({ error: "message required" }); return;
+  }
+
+  let phones: string[] = [];
+
+  if (target === "single") {
+    if (!phone) { res.status(400).json({ error: "phone required for single target" }); return; }
+    phones = [String(phone).trim()];
+  } else if (target === "customers") {
+    const users = await db.select({ phone: usersTable.phone }).from(usersTable)
+      .where(and(eq(usersTable.role, "customer"), eq(usersTable.isActive, true)));
+    phones = users.map((u) => u.phone).filter(Boolean) as string[];
+  } else if (target === "drivers") {
+    const drivers = await db.select({ phone: driversTable.phone }).from(driversTable)
+      .where(eq(driversTable.isActive, true));
+    phones = drivers.map((d) => d.phone).filter(Boolean) as string[];
+  } else if (target === "all") {
+    const users = await db.select({ phone: usersTable.phone }).from(usersTable)
+      .where(and(eq(usersTable.isActive, true), sql`${usersTable.role} in ('customer', 'driver')`));
+    phones = users.map((u) => u.phone).filter(Boolean) as string[];
+  } else {
+    res.status(400).json({ error: "target must be: single | customers | drivers | all" }); return;
+  }
+
+  if (phones.length === 0) {
+    res.json({ sent: 0, failed: 0, message: "No recipients found" }); return;
+  }
+
+  let sent = 0;
+  let failed = 0;
+  const errors: string[] = [];
+
+  for (const to of phones.slice(0, 200)) {
+    try {
+      await sendOtpMessage(to, message.trim());
+      sent++;
+    } catch (err: any) {
+      failed++;
+      if (errors.length < 5) errors.push(`${to}: ${err?.message ?? String(err)}`);
+    }
+  }
+
+  res.json({ sent, failed, total: phones.length, errors });
 });
 
 export default router;

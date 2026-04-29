@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef, useMemo } from "react";
 import {
   StyleSheet, Text, View, FlatList, TouchableOpacity,
-  Image, ActivityIndicator, Platform, ScrollView, Animated, Pressable, Dimensions,
+  Image, ActivityIndicator, Platform, ScrollView, Animated, Pressable, Dimensions, Modal,
 } from "react-native";
 import * as Haptics from "expo-haptics";
 import { router, useLocalSearchParams } from "expo-router";
@@ -30,6 +30,7 @@ export default function RestaurantScreen() {
   const restaurantId = parseInt(id, 10);
   const [activeCategory, setActiveCategory] = useState("Tous");
   const [selectedItem, setSelectedItem] = useState<any | null>(null);
+  const [infoModalOpen, setInfoModalOpen] = useState(false);
   const { items: cartItems, addItem, updateQuantity, restaurantId: cartRestaurantId, itemCount } = useCart();
   const { token } = useAuth();
   const [isFav, setIsFav] = useState(false);
@@ -148,7 +149,9 @@ export default function RestaurantScreen() {
                 )}
               </View>
             </View>
-            <Ionicons name="chevron-forward" size={22} color={colors.mutedForeground} />
+            <TouchableOpacity onPress={() => setInfoModalOpen(true)} hitSlop={12} activeOpacity={0.7}>
+              <Ionicons name="chevron-forward" size={22} color={colors.primary} />
+            </TouchableOpacity>
           </View>
 
           {restaurant.description ? (
@@ -308,6 +311,119 @@ export default function RestaurantScreen() {
           />
         </View>
       )}
+
+      {/* ─── Info modal : description, adresse, horaires ─── */}
+      <Modal
+        visible={infoModalOpen}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setInfoModalOpen(false)}
+      >
+        <Pressable style={styles.infoModalBackdrop} onPress={() => setInfoModalOpen(false)}>
+          <Pressable
+            style={[styles.infoModalSheet, { paddingBottom: insets.bottom + 24, backgroundColor: colors.background }]}
+            onPress={() => {}}
+          >
+            {/* Handle bar */}
+            <View style={[styles.infoModalHandle, { backgroundColor: colors.border }]} />
+
+            {/* Header */}
+            <View style={styles.infoModalHeader}>
+              <View style={[styles.infoModalLogoBox, { backgroundColor: colors.muted }]}>
+                {restaurant.logoUrl ? (
+                  <Image source={{ uri: restaurant.logoUrl }} style={styles.infoModalLogoImg} resizeMode="contain" />
+                ) : (
+                  <Text style={[styles.infoModalLogoLetter, { color: colors.primary }]}>
+                    {restaurant.name.charAt(0).toUpperCase()}
+                  </Text>
+                )}
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.infoModalName, { color: colors.foreground }]}>{restaurant.name}</Text>
+                {restaurant.category ? (
+                  <Text style={[styles.infoModalCategory, { color: colors.mutedForeground }]}>{restaurant.category}</Text>
+                ) : null}
+              </View>
+              <TouchableOpacity onPress={() => setInfoModalOpen(false)} hitSlop={12}>
+                <Ionicons name="close" size={22} color={colors.mutedForeground} />
+              </TouchableOpacity>
+            </View>
+
+            <View style={[styles.infoModalDivider, { backgroundColor: colors.border }]} />
+
+            {/* Status row */}
+            <View style={styles.infoModalRow}>
+              <View style={[styles.infoModalIconWrap, { backgroundColor: (isOpen ? "#D1FAE5" : "#F3F4F6") }]}>
+                <View style={[styles.openDot, { backgroundColor: isOpen ? colors.turquoise : "#9CA3AF" }]} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.infoModalRowLabel, { color: colors.mutedForeground }]}>Statut</Text>
+                <Text style={[styles.infoModalRowValue, { color: isOpen ? colors.turquoise : colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                  {isOpen ? "Ouvert maintenant" : "Fermé pour le moment"}
+                </Text>
+              </View>
+            </View>
+
+            {/* Description */}
+            {restaurant.description ? (
+              <View style={styles.infoModalRow}>
+                <View style={[styles.infoModalIconWrap, { backgroundColor: "#EDE9FE" }]}>
+                  <Ionicons name="document-text-outline" size={16} color="#7C3AED" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.infoModalRowLabel, { color: colors.mutedForeground }]}>Description</Text>
+                  <Text style={[styles.infoModalRowValue, { color: colors.foreground }]}>{restaurant.description}</Text>
+                </View>
+              </View>
+            ) : null}
+
+            {/* Address */}
+            {(restaurant as any).address ? (
+              <View style={styles.infoModalRow}>
+                <View style={[styles.infoModalIconWrap, { backgroundColor: "#FEE2E2" }]}>
+                  <Ionicons name="location-outline" size={16} color="#DC2626" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.infoModalRowLabel, { color: colors.mutedForeground }]}>Adresse</Text>
+                  <Text style={[styles.infoModalRowValue, { color: colors.foreground }]}>{(restaurant as any).address}</Text>
+                </View>
+              </View>
+            ) : null}
+
+            {/* Phone */}
+            {(restaurant as any).phone ? (
+              <View style={styles.infoModalRow}>
+                <View style={[styles.infoModalIconWrap, { backgroundColor: "#D1FAE5" }]}>
+                  <Ionicons name="call-outline" size={16} color="#059669" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.infoModalRowLabel, { color: colors.mutedForeground }]}>Téléphone</Text>
+                  <Text style={[styles.infoModalRowValue, { color: colors.foreground }]}>{(restaurant as any).phone}</Text>
+                </View>
+              </View>
+            ) : null}
+
+            {/* Delivery info */}
+            <View style={styles.infoModalRow}>
+              <View style={[styles.infoModalIconWrap, { backgroundColor: "#DBEAFE" }]}>
+                <Ionicons name="bicycle-outline" size={16} color="#2563EB" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.infoModalRowLabel, { color: colors.mutedForeground }]}>Livraison</Text>
+                <Text style={[styles.infoModalRowValue, { color: colors.foreground }]}>
+                  {restaurant.deliveryFee === 0
+                    ? "Gratuite"
+                    : restaurant.deliveryFee != null
+                    ? `${restaurant.deliveryFee} MAD`
+                    : "—"
+                  }
+                  {restaurant.deliveryTime != null ? `  ·  ${restaurant.deliveryTime}–${restaurant.deliveryTime + 10} min` : ""}
+                </Text>
+              </View>
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
 
       {/* Detail modal — keeps existing UX */}
       <MenuItemDetailModal
@@ -470,4 +586,36 @@ const styles = StyleSheet.create({
   },
   pillCartQtyText: { fontSize: 13, fontFamily: "Inter_700Bold" },
   pillCartLabel: { color: "#fff", fontSize: 14, fontFamily: "Inter_700Bold", textAlign: "center", letterSpacing: 0.2 },
+
+  // ─── Info modal ──────────────────────────────────────────────────────────
+  infoModalBackdrop: {
+    flex: 1, backgroundColor: "rgba(0,0,0,0.45)", justifyContent: "flex-end",
+  },
+  infoModalSheet: {
+    borderTopLeftRadius: 24, borderTopRightRadius: 24,
+    paddingHorizontal: 20, paddingTop: 12, gap: 0,
+  },
+  infoModalHandle: {
+    width: 40, height: 4, borderRadius: 2, alignSelf: "center", marginBottom: 16,
+  },
+  infoModalHeader: {
+    flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 14,
+  },
+  infoModalLogoBox: {
+    width: 52, height: 52, borderRadius: 14, alignItems: "center", justifyContent: "center", overflow: "hidden",
+  },
+  infoModalLogoImg: { width: 52, height: 52 },
+  infoModalLogoLetter: { fontSize: 22, fontFamily: "Inter_900Black" },
+  infoModalName: { fontSize: 17, fontFamily: "Inter_700Bold" },
+  infoModalCategory: { fontSize: 13, fontFamily: "Inter_400Regular", marginTop: 2 },
+  infoModalDivider: { height: 1, marginBottom: 8 },
+  infoModalRow: {
+    flexDirection: "row", alignItems: "flex-start", gap: 12, paddingVertical: 11,
+  },
+  infoModalIconWrap: {
+    width: 36, height: 36, borderRadius: 10, alignItems: "center", justifyContent: "center",
+  },
+  openDot: { width: 10, height: 10, borderRadius: 5 },
+  infoModalRowLabel: { fontSize: 11, fontFamily: "Inter_400Regular", marginBottom: 2 },
+  infoModalRowValue: { fontSize: 14, fontFamily: "Inter_400Regular", lineHeight: 20 },
 });
