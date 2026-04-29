@@ -1,7 +1,7 @@
 import { Tabs } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import React, { useEffect, useRef } from "react";
-import { Platform, StyleSheet, View, Text, Animated, Easing } from "react-native";
+import { Platform, StyleSheet, View, Text, Animated, Easing, Image } from "react-native";
 import { useListOrders } from "@workspace/api-client-react";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -37,9 +37,11 @@ function useActiveOrdersCount(): number {
 
 function JatekTabIcon({ focused }: { focused: boolean }) {
   return (
-    <View style={s.jWrap}>
-      <Text style={[s.jLetter, { color: focused ? PINK : INACTIVE }]}>J</Text>
-    </View>
+    <Image
+      source={require("@/assets/images/jatek-logo.png")}
+      style={[s.jLogo, { opacity: focused ? 1 : 0.38 }]}
+      resizeMode="contain"
+    />
   );
 }
 
@@ -112,6 +114,7 @@ export default function TabLayout() {
         name="index"
         options={{
           title: "Accueil",
+          tabBarLabel: () => null,
           tabBarIcon: ({ focused }) => <JatekTabIcon focused={focused} />,
         }}
       />
@@ -139,19 +142,9 @@ export default function TabLayout() {
 }
 
 const s = StyleSheet.create({
-  jWrap: {
-    width: 30,
-    height: 30,
-    borderRadius: 8,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  jLetter: {
-    fontFamily: "Inter_900Black",
-    fontSize: 24,
-    fontStyle: "italic",
-    letterSpacing: -1,
-    lineHeight: 28,
+  jLogo: {
+    width: 68,
+    height: 26,
   },
   iconWrap: {
     width: 36,

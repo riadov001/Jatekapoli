@@ -534,22 +534,18 @@ export default function HomeScreen() {
           )}
         </Animated.View>
       </ScrollView>
-      {/* ─── FAB Offres — pill flottant coin bas-droit ─── */}
+      {/* ─── Bande "Offres" collée juste au-dessus du menu ─── */}
       <Animated.View
-        entering={FadeInUp.delay(900).duration(500).springify()}
-        style={[s.fab, { bottom: tabBarHeight + 16 }]}
+        entering={FadeInUp.delay(900).duration(600)}
+        style={[s.fab, { bottom: tabBarHeight }]}
         pointerEvents="box-none"
       >
         <TouchableOpacity
           onPress={() => setAdSheetVisible(true)}
-          activeOpacity={0.85}
+          activeOpacity={0.7}
           style={s.fabBtn}
         >
-          <View style={s.fabIconWrap}>
-            <Ionicons name="pricetag" size={15} color="#fff" />
-          </View>
-          <Text style={s.fabTxt}>Offres</Text>
-          <Ionicons name="chevron-up" size={15} color="rgba(255,255,255,0.8)" />
+          <Ionicons name="chevron-up" size={17} color={PINK} />
         </TouchableOpacity>
       </Animated.View>
 
@@ -1052,37 +1048,18 @@ const s = StyleSheet.create({
     gap: GRID_GAP,
   },
 
-  // ── FAB Offres (pill flottant bas-droit) ──
+  // ── Bande "Offres" pleine largeur collée au menu ──
   fab: {
     position: "absolute",
-    right: 16,
+    left: 0,
+    right: 0,
   },
   fabBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    backgroundColor: PINK,
-    paddingVertical: 11,
-    paddingHorizontal: 16,
-    borderRadius: 28,
-    shadowColor: PINK,
-    shadowOpacity: 0.45,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 8,
-  },
-  fabIconWrap: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: "rgba(255,255,255,0.25)",
+    height: 26,
     alignItems: "center",
     justifyContent: "center",
-  },
-  fabTxt: {
-    color: "#fff",
-    fontSize: 13,
-    fontFamily: "Inter_700Bold",
-    letterSpacing: 0.2,
+    backgroundColor: "#FFF5F8",
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: "rgba(233, 30, 99, 0.22)",
   },
 });

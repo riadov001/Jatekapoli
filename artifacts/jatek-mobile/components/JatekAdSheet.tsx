@@ -122,28 +122,28 @@ export function JatekAdSheet({ visible, onClose }: Props) {
     Animated.parallel([
       Animated.timing(overlayOpacity, {
         toValue: 1,
-        duration: 280,
+        duration: 420,
         useNativeDriver: true,
       }),
       Animated.spring(slideY, {
         toValue: 0,
-        friction: 10,
-        tension: 75,
+        friction: 14,
+        tension: 50,
         useNativeDriver: true,
       }),
       Animated.stagger(
-        70,
+        90,
         contentAnims.map(({ opacity, translateY }) =>
           Animated.parallel([
             Animated.timing(opacity, {
               toValue: 1,
-              duration: 300,
+              duration: 400,
               useNativeDriver: true,
             }),
             Animated.spring(translateY, {
               toValue: 0,
-              friction: 9,
-              tension: 80,
+              friction: 12,
+              tension: 60,
               useNativeDriver: true,
             }),
           ])
@@ -151,36 +151,36 @@ export function JatekAdSheet({ visible, onClose }: Props) {
       ),
       // Cards converge into the fan, staggered
       Animated.stagger(
-        90,
+        110,
         cardAnims.map((a, i) =>
           Animated.parallel([
             Animated.timing(a.opacity, {
               toValue: 1,
-              duration: 240,
+              duration: 340,
               useNativeDriver: true,
             }),
             Animated.spring(a.translateX, {
               toValue: FAN[i].dx,
-              friction: 7,
-              tension: 65,
+              friction: 10,
+              tension: 50,
               useNativeDriver: true,
             }),
             Animated.spring(a.translateY, {
               toValue: 0,
-              friction: 7,
-              tension: 65,
+              friction: 10,
+              tension: 50,
               useNativeDriver: true,
             }),
             Animated.spring(a.rotate, {
               toValue: FAN[i].rot,
-              friction: 7,
-              tension: 65,
+              friction: 10,
+              tension: 50,
               useNativeDriver: true,
             }),
             Animated.spring(a.scale, {
               toValue: 1,
-              friction: 7,
-              tension: 75,
+              friction: 10,
+              tension: 50,
               useNativeDriver: true,
             }),
           ])
@@ -189,7 +189,7 @@ export function JatekAdSheet({ visible, onClose }: Props) {
     ]).start(() => {
       // Pop the sparkles after cards have settled
       Animated.stagger(
-        60,
+        80,
         sparkleAnims.map((s) =>
           Animated.parallel([
             Animated.timing(s.opacity, {
