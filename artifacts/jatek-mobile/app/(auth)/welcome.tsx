@@ -6,7 +6,6 @@ import {
   TouchableOpacity,
   Platform,
   ActivityIndicator,
-  Alert,
   TextInput,
   Pressable,
   FlatList,

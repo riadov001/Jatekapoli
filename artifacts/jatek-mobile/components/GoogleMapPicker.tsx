@@ -64,6 +64,7 @@ function buildGoogleHtml(lat: number, lng: number, pin: string, zone: string) {
     },200);
   }
   function initMap(){
+    if(fallbackUsed||googleReady)return;
     try{
       googleReady=true;
       var center={lat:${lat},lng:${lng}};

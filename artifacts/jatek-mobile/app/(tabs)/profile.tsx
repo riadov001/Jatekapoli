@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { StyleSheet, Text, View, TouchableOpacity, Alert, ScrollView, Platform, Modal, ActivityIndicator, TextInput } from "react-native";
+import { StyleSheet, Text, View, TouchableOpacity, ScrollView, Platform, Modal, ActivityIndicator, TextInput } from "react-native";
+import { useFriendlyAlert } from "@/components/FriendlyAlert";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import Animated, { FadeInDown } from "react-native-reanimated";
@@ -58,11 +59,20 @@ export default function ProfileScreen() {
   const [deleting, setDeleting] = useState(false);
   const [addressPickerOpen, setAddressPickerOpen] = useState(false);
 
+  const friendly = useFriendlyAlert();
+
   const handleLogout = () => {
-    Alert.alert("Déconnexion", "Êtes-vous sûr de vouloir vous déconnecter ?", [
-      { text: "Annuler", style: "cancel" },
-      { text: "Se déconnecter", style: "destructive", onPress: async () => { await logout(); router.replace("/(auth)/welcome"); } },
-    ]);
+    friendly.show({
+      tone: "info",
+      icon: "log-out-outline",
+      title: "Déconnexion",
+      message: "Êtes-vous sûr de vouloir vous déconnecter de votre compte ?",
+      primary: {
+        label: "Se déconnecter",
+        onPress: async () => { await logout(); router.replace("/(auth)/welcome"); },
+      },
+      secondary: { label: "Annuler" },
+    });
   };
 
   const handleDeleteAccount = async () => {
@@ -74,8 +84,26 @@ export default function ProfileScreen() {
         setDeleteModal(false);
         await logout();
         router.replace("/(auth)/welcome");
-      } else { Alert.alert("Erreur", "La suppression a échoué. Veuillez réessayer."); }
-    } catch { Alert.alert("Erreur", "Impossible de contacter le serveur."); }
+      } else {
+        friendly.show({
+          tone: "error",
+          icon: "alert-circle-outline",
+          title: "Suppression impossible",
+          message: "La suppression a échoué. Veuillez réessayer dans un instant.",
+          primary: { label: "OK" },
+          hideSecondary: true,
+        });
+      }
+    } catch {
+      friendly.show({
+        tone: "error",
+        icon: "cloud-offline-outline",
+        title: "Connexion perdue",
+        message: "Impossible de contacter le serveur. Vérifiez votre connexion Internet.",
+        primary: { label: "OK" },
+        hideSecondary: true,
+      });
+    }
     finally { setDeleting(false); }
   };
 
