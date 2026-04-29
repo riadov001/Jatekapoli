@@ -24,9 +24,43 @@ app.use(
 
 app.use(compression());
 
+// In production, restrict CORS to known origins. Set ALLOWED_ORIGINS as a
+// comma-separated list (e.g. "https://app.example.com,https://admin.example.com").
+// We also auto-allow Replit's hosted preview/deploy subdomains and same-origin
+// (no Origin header — typical for native mobile apps that just send a host).
+const isProd = process.env["NODE_ENV"] === "production";
+const allowedOrigins: string[] = (process.env["ALLOWED_ORIGINS"] ?? "")
+  .split(",")
+  .map((s) => s.trim())
+  .filter(Boolean);
+
+const corsOriginCheck: cors.CorsOptions["origin"] = (origin, callback) => {
+  // Same-origin / native mobile / curl — no Origin header at all.
+  if (!origin) return callback(null, true);
+  // Dev: open CORS to make local browsers + multiple ports painless.
+  if (!isProd) return callback(null, true);
+  // Explicit allow-list match.
+  if (allowedOrigins.includes(origin)) return callback(null, true);
+  // Auto-allow the production custom domain (configured via EXPO_PUBLIC_DOMAIN).
+  // Note: we deliberately do NOT wildcard *.replit.app / *.replit.dev — combined
+  // with `credentials: true` that would trust any tenant on the shared platform.
+  // For replit-hosted preview/deploy URLs, set ALLOWED_ORIGINS explicitly.
+  try {
+    const host = new URL(origin).hostname;
+    const customHost = (process.env["EXPO_PUBLIC_DOMAIN"] ?? "").trim();
+    if (customHost && host === customHost) {
+      return callback(null, true);
+    }
+  } catch {
+    // Fall through to reject below.
+  }
+  logger.warn({ origin }, "CORS: rejected origin");
+  return callback(new Error(`CORS: origin not allowed: ${origin}`));
+};
+
 app.use(
   cors({
-    origin: true,
+    origin: corsOriginCheck,
     credentials: true,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],

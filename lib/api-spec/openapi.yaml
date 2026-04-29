@@ -3769,6 +3769,7 @@ components:
             - preparing
             - ready
             - picked_up
+            - en_route
             - delivered
             - cancelled
         subtotal:
@@ -3859,6 +3860,7 @@ components:
             - preparing
             - ready
             - picked_up
+            - en_route
             - delivered
             - cancelled
         driverId:

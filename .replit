@@ -2,7 +2,7 @@ modules = ["nodejs-24", "postgresql-16"]
 
   [deployment]
   router = "application"
-  deploymentTarget = "autoscale"
+  deploymentTarget = "vm"
   run = ["bash", "scripts/start-production.sh"]
   build = ["bash", "scripts/build-production.sh"]
 
@@ -63,16 +63,36 @@ modules = ["nodejs-24", "postgresql-16"]
 
   [agent]
   stack = "BEST_EFFORT_FALLBACK"
-  expertMode = true
+expertMode = true
   integrations = ["twilio:1.0.0"]
 
   [postMerge]
   path = "scripts/post-merge.sh"
   timeoutMs = 20000
 
-  [[ports]]
-  localPort = 8080
-  externalPort = 80
+[[ports]]
+localPort = 5000
+externalPort = 5000
+
+[[ports]]
+localPort = 8080
+externalPort = 80
+
+[[ports]]
+localPort = 8081
+externalPort = 8081
+
+[[ports]]
+localPort = 18244
+externalPort = 3000
+
+[[ports]]
+localPort = 19167
+externalPort = 3001
+
+[[ports]]
+localPort = 25896
+externalPort = 3002
 
   [nix]
   channel = "stable-25_05"

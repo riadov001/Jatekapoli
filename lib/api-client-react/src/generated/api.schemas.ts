@@ -244,6 +244,7 @@ export const OrderStatus = {
   preparing: "preparing",
   ready: "ready",
   picked_up: "picked_up",
+  en_route: "en_route",
   delivered: "delivered",
   cancelled: "cancelled",
 } as const;
@@ -297,6 +298,7 @@ export const UpdateOrderStatusBodyStatus = {
   preparing: "preparing",
   ready: "ready",
   picked_up: "picked_up",
+  en_route: "en_route",
   delivered: "delivered",
   cancelled: "cancelled",
 } as const;
