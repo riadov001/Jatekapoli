@@ -18,6 +18,10 @@ echo "[3/3] Build backend-dashboard (SPA → dist/public)…"
 BASE_PATH=/admin/ pnpm --filter @workspace/backend-dashboard run build
 
 echo ""
+echo "[4/4] Push DB schema to production database…"
+NODE_ENV=production node artifacts/api-server/scripts/push-prod-schema.mjs
+
+echo ""
 echo "========================================"
 echo "  Build production terminé avec succès!"
 echo "========================================"
