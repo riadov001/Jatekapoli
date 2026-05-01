@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { useLocation } from "wouter";
 import { Search, ArrowLeft, X } from "lucide-react";
 import { motion } from "framer-motion";
 import { Input } from "@/components/ui/input";
@@ -21,7 +20,6 @@ function CardSkeleton() {
 }
 
 export default function SearchPage() {
-  const [, setLocation] = useLocation();
   const initialQuery = new URLSearchParams(window.location.search).get("q") ?? "";
 
   const [query, setQuery] = useState(initialQuery);
@@ -38,7 +36,7 @@ export default function SearchPage() {
   }, [debouncedQuery]);
 
   const { data: results, isLoading } = useListRestaurants(
-    debouncedQuery ? { search: debouncedQuery } : {} as any
+    debouncedQuery ? { search: debouncedQuery } : undefined
   );
 
   return (
@@ -49,7 +47,7 @@ export default function SearchPage() {
           variant="ghost"
           size="icon"
           className="shrink-0 rounded-xl"
-          onClick={() => setLocation(-1 as any)}
+          onClick={() => window.history.back()}
         >
           <ArrowLeft className="w-5 h-5" />
         </Button>

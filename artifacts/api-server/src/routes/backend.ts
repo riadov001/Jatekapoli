@@ -11,6 +11,7 @@ import {
   driversTable,
   reviewsTable,
   dashboardTodosTable,
+  categoriesTable,
 } from "@workspace/db";
 import { eq, inArray, count, sum, gte, ilike, and, or, desc, sql } from "drizzle-orm";
 import { requireAuth, type AuthedRequest } from "../middlewares/auth";
@@ -552,12 +553,16 @@ router.post("/backend/drivers", requireAuth, async (req: AuthedRequest, res): Pr
   const existingByPhone = await db.select({ id: usersTable.id }).from(usersTable).where(eq(usersTable.phone, phone.trim())).limit(1);
   if (existingByPhone.length > 0) { res.status(409).json({ error: "Un utilisateur avec ce numéro existe déjà" }); return; }
 
-  const password = await bcrypt.hash("jatek2024", 10);
+  // Generate a random 10-char temporary password (letters + digits)
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789";
+  const tempPassword = Array.from({ length: 10 }, () => chars[Math.floor(Math.random() * chars.length)]).join("");
+  const hashedPassword = await bcrypt.hash(tempPassword, 10);
+
   const [newUser] = await db.insert(usersTable).values({
     name: name.trim(),
     phone: phone.trim(),
     email: emailVal,
-    password,
+    password: hashedPassword,
     role: "driver",
     isActive: true,
   }).returning();
@@ -572,7 +577,8 @@ router.post("/backend/drivers", requireAuth, async (req: AuthedRequest, res): Pr
     licenseNumber: licenseNumber ?? null,
   }).returning();
 
-  res.status(201).json(driver);
+  // Return driver record + temporary password so admin can share it with the driver
+  res.status(201).json({ ...driver, tempPassword });
 });
 
 router.delete("/backend/drivers/:id", requireAuth, async (req: AuthedRequest, res): Promise<void> => {
@@ -637,19 +643,49 @@ router.get("/backend/reviews", requireAuth, async (req: AuthedRequest, res): Pro
 router.get("/backend/categories", requireAuth, async (req: AuthedRequest, res): Promise<void> => {
   const ctx = await requireBackendUser(req, res);
   if (!ctx) return;
-  const scoped = await getScopedShopIds(ctx.id, ctx.role, ctx.assignedShopId);
-  const baseQuery = db
-    .select({ name: restaurantsTable.category, count: count() })
+
+  // List from the real categoriesTable so empty categories can exist and be deleted
+  const cats = await db.select().from(categoriesTable).orderBy(categoriesTable.sortOrder, categoriesTable.name);
+
+  // Count how many restaurants use each category name
+  const usageRows = await db
+    .select({ name: restaurantsTable.category, cnt: count() })
     .from(restaurantsTable)
     .groupBy(restaurantsTable.category);
-  let rows;
-  if (scoped !== null) {
-    if (scoped.length === 0) { res.json([]); return; }
-    rows = await baseQuery.where(inArray(restaurantsTable.id, scoped));
-  } else {
-    rows = await baseQuery;
+  const usageMap = new Map(usageRows.map((r) => [r.name, Number(r.cnt)]));
+
+  res.json(cats.map((cat) => ({
+    id: cat.id,
+    name: cat.name,
+    slug: cat.slug,
+    icon: cat.icon,
+    accentColor: cat.accentColor,
+    isActive: cat.isActive,
+    count: usageMap.get(cat.name) ?? 0,
+  })));
+});
+
+router.post("/backend/categories", requireAuth, async (req: AuthedRequest, res): Promise<void> => {
+  const ctx = await requireBackendUser(req, res);
+  if (!ctx) return;
+  if (!["super_admin", "admin"].includes(ctx.role)) { res.status(403).json({ error: "Forbidden" }); return; }
+
+  const name = String(req.body?.name || "").trim();
+  const icon = String(req.body?.icon || "storefront").trim();
+  const accentColor = String(req.body?.accentColor || "#E91E63").trim();
+
+  if (!name) { res.status(400).json({ error: "Name required" }); return; }
+
+  // Auto-generate slug from name
+  const slug = name.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
+
+  try {
+    const [cat] = await db.insert(categoriesTable).values({ name, slug, icon, accentColor }).returning();
+    res.status(201).json({ id: cat.id, name: cat.name, slug: cat.slug, icon: cat.icon, accentColor: cat.accentColor, isActive: cat.isActive, count: 0 });
+  } catch (e: any) {
+    if (e.code === "23505") { res.status(409).json({ error: "Une catégorie avec ce nom existe déjà" }); return; }
+    throw e;
   }
-  res.json(rows.map((r) => ({ name: r.name, count: Number(r.count) })));
 });
 
 router.patch("/backend/categories/:name", requireAuth, async (req: AuthedRequest, res): Promise<void> => {
@@ -661,7 +697,12 @@ router.patch("/backend/categories/:name", requireAuth, async (req: AuthedRequest
   const newName = String(req.body?.name || "").trim();
   if (!newName) { res.status(400).json({ error: "New name required" }); return; }
 
+  const newSlug = newName.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
+
+  // Update categoriesTable entry AND all restaurants using this category name
+  await db.update(categoriesTable).set({ name: newName, slug: newSlug }).where(eq(categoriesTable.name, oldName));
   await db.update(restaurantsTable).set({ category: newName }).where(eq(restaurantsTable.category, oldName));
+
   res.json({ ok: true, renamed: oldName, to: newName });
 });
 
@@ -671,11 +712,15 @@ router.delete("/backend/categories/:name", requireAuth, async (req: AuthedReques
   if (!["super_admin", "admin"].includes(ctx.role)) { res.status(403).json({ error: "Forbidden" }); return; }
 
   const name = decodeURIComponent(req.params.name);
-  const rows = await db.select({ id: restaurantsTable.id }).from(restaurantsTable).where(eq(restaurantsTable.category, name));
-  if (rows.length > 0) {
-    res.status(409).json({ error: `Cette catégorie est utilisée par ${rows.length} restaurant(s). Réaffectez-les d'abord.` });
+
+  // Check if any restaurant is using this category
+  const inUse = await db.select({ id: restaurantsTable.id }).from(restaurantsTable).where(eq(restaurantsTable.category, name));
+  if (inUse.length > 0) {
+    res.status(409).json({ error: `Cette catégorie est utilisée par ${inUse.length} restaurant(s). Réaffectez-les d'abord.` });
     return;
   }
+
+  await db.delete(categoriesTable).where(eq(categoriesTable.name, name));
   res.status(204).end();
 });
 

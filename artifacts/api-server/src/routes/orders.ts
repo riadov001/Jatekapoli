@@ -115,6 +115,11 @@ router.post("/orders", requireAuth, async (req: AuthedRequest, res): Promise<voi
     return;
   }
 
+  if (!restaurant.isOpen) {
+    res.status(400).json({ error: "Ce restaurant est actuellement fermé et n'accepte pas de commandes." });
+    return;
+  }
+
   const [user] = await db.select().from(usersTable).where(eq(usersTable.id, userId)).limit(1);
 
   let subtotal = 0;

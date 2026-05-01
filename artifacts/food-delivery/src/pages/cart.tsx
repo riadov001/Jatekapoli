@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import { useCart } from "@/contexts/CartContext";
 import { useAuth } from "@/contexts/AuthContext";
-import { useCreateOrder } from "@workspace/api-client-react";
+import { useCreateOrder, useGetRestaurant } from "@workspace/api-client-react";
 import { useToast } from "@/hooks/use-toast";
 import { useTranslation } from "react-i18next";
 
@@ -34,6 +34,8 @@ export default function CartPage() {
   const { toast } = useToast();
   const { t } = useTranslation();
   const createOrder = useCreateOrder();
+  const { data: restaurantInfo } = useGetRestaurant(restaurantId ?? 0, { enabled: !!restaurantId });
+  const isClosed = restaurantInfo ? !restaurantInfo.isOpen : false;
   const [deliveryAddress, setDeliveryAddress] = useState((user as any)?.address || "");
   const [notes, setNotes] = useState("");
   const [locating, setLocating] = useState(false);
@@ -70,6 +72,10 @@ export default function CartPage() {
     if (!user) {
       toast({ title: "Please login first", variant: "destructive" });
       setLocation("/login");
+      return;
+    }
+    if (isClosed) {
+      toast({ title: "Restaurant fermé", description: "Ce restaurant n'accepte pas de commandes en ce moment.", variant: "destructive" });
       return;
     }
     if (!deliveryAddress.trim()) {
@@ -125,13 +131,25 @@ export default function CartPage() {
       <h1 className="font-display font-bold text-2xl">{t("cart.title")}</h1>
       <p className="text-sm text-muted-foreground -mt-4">{t("cart.from", { name: restaurantName })}</p>
 
+      {/* Closed restaurant banner */}
+      {isClosed && (
+        <div className="bg-destructive/10 border border-destructive/30 rounded-2xl px-4 py-3 flex items-center gap-3">
+          <span className="text-xl">🔒</span>
+          <p className="text-sm font-semibold text-destructive leading-tight">
+            Ce restaurant est actuellement fermé. Vous ne pouvez pas passer de commande.
+          </p>
+        </div>
+      )}
+
       {/* Promo banner */}
-      <div className="bg-brand-yellow text-brand-yellow-foreground rounded-2xl px-4 py-3 flex items-center gap-3">
-        <span className="text-xl">🎉</span>
-        <p className="text-sm font-semibold leading-tight">
-          Code <span className="font-bold">JATEK10</span> — livraison gratuite sur ta 1ère commande
-        </p>
-      </div>
+      {!isClosed && (
+        <div className="bg-brand-yellow text-brand-yellow-foreground rounded-2xl px-4 py-3 flex items-center gap-3">
+          <span className="text-xl">🎉</span>
+          <p className="text-sm font-semibold leading-tight">
+            Code <span className="font-bold">JATEK10</span> — livraison gratuite sur ta 1ère commande
+          </p>
+        </div>
+      )}
 
       {/* Items */}
       <div className="bg-card rounded-2xl border border-card-border overflow-hidden">
@@ -247,10 +265,10 @@ export default function CartPage() {
       <Button
         className="w-full h-12 text-base font-semibold rounded-xl"
         onClick={handlePlaceOrder}
-        disabled={createOrder.isPending}
+        disabled={createOrder.isPending || isClosed}
         data-testid="button-place-order"
       >
-        {createOrder.isPending ? t("cart.placingOrder") : t("cart.placeOrder")}
+        {createOrder.isPending ? t("cart.placingOrder") : isClosed ? "Restaurant fermé" : t("cart.placeOrder")}
       </Button>
     </div>
   );

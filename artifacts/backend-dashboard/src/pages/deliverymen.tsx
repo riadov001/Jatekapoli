@@ -42,6 +42,7 @@ export default function Deliverymen() {
   const [creating, setCreating] = useState(false);
   const [newForm, setNewForm] = useState(emptyNew);
   const [deleting, setDeleting] = useState<Driver | null>(null);
+  const [createdCreds, setCreatedCreds] = useState<{ name: string; phone: string; tempPassword: string } | null>(null);
 
   const invalidate = () => qc.invalidateQueries({ queryKey: getListBackendDeliverymenQueryKey() });
 
@@ -55,7 +56,16 @@ export default function Deliverymen() {
   const createMutation = useMutation({
     mutationFn: (data: typeof emptyNew) =>
       apiFetch("/api/backend/drivers", { method: "POST", body: JSON.stringify(data) }),
-    onSuccess: () => { invalidate(); setCreating(false); setNewForm(emptyNew); toast({ title: "Livreur créé" }); },
+    onSuccess: (result: any) => {
+      invalidate();
+      setCreating(false);
+      setNewForm(emptyNew);
+      if (result?.tempPassword) {
+        setCreatedCreds({ name: result.name ?? newForm.name, phone: result.phone ?? newForm.phone, tempPassword: result.tempPassword });
+      } else {
+        toast({ title: "Livreur créé" });
+      }
+    },
     onError: (e: any) => toast({ title: "Erreur", description: e?.message, variant: "destructive" }),
   });
 
@@ -198,7 +208,7 @@ export default function Deliverymen() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Nouveau livreur</DialogTitle>
-            <DialogDescription>Créez un compte livreur. Le mot de passe par défaut est "jatek2024".</DialogDescription>
+            <DialogDescription>Créez un compte livreur. Un mot de passe temporaire sera généré et vous sera affiché après la création.</DialogDescription>
           </DialogHeader>
           <form onSubmit={(e) => { e.preventDefault(); createMutation.mutate(newForm); }} className="space-y-3 pt-2">
             <div className="grid grid-cols-2 gap-3">
@@ -224,6 +234,29 @@ export default function Deliverymen() {
               </Button>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Credentials after creation */}
+      <Dialog open={!!createdCreds} onOpenChange={(o) => !o && setCreatedCreds(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Livreur créé ✓</DialogTitle>
+            <DialogDescription>
+              Partagez ces identifiants avec le livreur. Le mot de passe ne sera plus affiché.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <div className="rounded-lg bg-muted p-4 space-y-2 font-mono text-sm">
+              <div><span className="text-muted-foreground">Nom&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;: </span><span className="font-semibold">{createdCreds?.name}</span></div>
+              <div><span className="text-muted-foreground">Téléphone: </span><span className="font-semibold">{createdCreds?.phone}</span></div>
+              <div><span className="text-muted-foreground">Mot de passe temporaire: </span><span className="font-semibold text-primary">{createdCreds?.tempPassword}</span></div>
+            </div>
+            <p className="text-xs text-muted-foreground">Le livreur devra changer ce mot de passe à sa première connexion.</p>
+          </div>
+          <DialogFooter>
+            <Button onClick={() => setCreatedCreds(null)}>Fermer</Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
