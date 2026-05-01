@@ -549,36 +549,53 @@ router.post("/backend/drivers", requireAuth, async (req: AuthedRequest, res): Pr
   if (!name || typeof name !== "string" || !name.trim()) { res.status(400).json({ error: "name is required" }); return; }
   if (!phone || typeof phone !== "string" || !phone.trim()) { res.status(400).json({ error: "phone is required" }); return; }
 
-  const emailVal = email ? String(email).toLowerCase().trim() : null;
-  const existingByPhone = await db.select({ id: usersTable.id }).from(usersTable).where(eq(usersTable.phone, phone.trim())).limit(1);
+  const phoneTrimmed = phone.trim();
+
+  // email is UNIQUE NOT NULL in users table — generate a placeholder when not provided
+  const emailTrimmed = email ? String(email).toLowerCase().trim() : null;
+  const emailVal = emailTrimmed || `driver.${phoneTrimmed.replace(/\D/g, "")}@jatek.internal`;
+
+  // Pre-check for duplicate phone
+  const existingByPhone = await db.select({ id: usersTable.id }).from(usersTable).where(eq(usersTable.phone, phoneTrimmed)).limit(1);
   if (existingByPhone.length > 0) { res.status(409).json({ error: "Un utilisateur avec ce numéro existe déjà" }); return; }
 
-  // Generate a random 10-char temporary password (letters + digits)
+  // Pre-check for duplicate email (when explicitly provided)
+  if (emailTrimmed) {
+    const existingByEmail = await db.select({ id: usersTable.id }).from(usersTable).where(eq(usersTable.email, emailVal)).limit(1);
+    if (existingByEmail.length > 0) { res.status(409).json({ error: "Un utilisateur avec cet email existe déjà" }); return; }
+  }
+
+  // Generate a random 10-char temporary password (letters + digits, no ambiguous chars)
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789";
   const tempPassword = Array.from({ length: 10 }, () => chars[Math.floor(Math.random() * chars.length)]).join("");
   const hashedPassword = await bcrypt.hash(tempPassword, 10);
 
-  const [newUser] = await db.insert(usersTable).values({
-    name: name.trim(),
-    phone: phone.trim(),
-    email: emailVal,
-    password: hashedPassword,
-    role: "driver",
-    isActive: true,
-  }).returning();
+  try {
+    const [newUser] = await db.insert(usersTable).values({
+      name: name.trim(),
+      phone: phoneTrimmed,
+      email: emailVal,
+      password: hashedPassword,
+      role: "driver",
+      isActive: true,
+    }).returning();
 
-  const [driver] = await db.insert(driversTable).values({
-    userId: newUser.id,
-    name: name.trim(),
-    phone: phone.trim(),
-    vehicleType: vehicleType ?? null,
-    vehiclePlate: vehiclePlate ?? null,
-    nationalId: nationalId ?? null,
-    licenseNumber: licenseNumber ?? null,
-  }).returning();
+    const [driver] = await db.insert(driversTable).values({
+      userId: newUser.id,
+      name: name.trim(),
+      phone: phoneTrimmed,
+      vehicleType: vehicleType ?? null,
+      vehiclePlate: vehiclePlate ?? null,
+      nationalId: nationalId ?? null,
+      licenseNumber: licenseNumber ?? null,
+    }).returning();
 
-  // Return driver record + temporary password so admin can share it with the driver
-  res.status(201).json({ ...driver, tempPassword });
+    // Return driver record + temporary password so admin can share it with the driver
+    res.status(201).json({ ...driver, tempPassword });
+  } catch (e: any) {
+    if (e.code === "23505") { res.status(409).json({ error: "Un compte avec ces informations existe déjà" }); return; }
+    throw e;
+  }
 });
 
 router.delete("/backend/drivers/:id", requireAuth, async (req: AuthedRequest, res): Promise<void> => {
@@ -699,11 +716,22 @@ router.patch("/backend/categories/:name", requireAuth, async (req: AuthedRequest
 
   const newSlug = newName.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
 
-  // Update categoriesTable entry AND all restaurants using this category name
-  await db.update(categoriesTable).set({ name: newName, slug: newSlug }).where(eq(categoriesTable.name, oldName));
-  await db.update(restaurantsTable).set({ category: newName }).where(eq(restaurantsTable.category, oldName));
+  // Check for slug conflict before updating
+  const slugConflict = await db.select({ id: categoriesTable.id }).from(categoriesTable).where(eq(categoriesTable.slug, newSlug)).limit(1);
+  if (slugConflict.length > 0) {
+    const [existing] = await db.select({ name: categoriesTable.name }).from(categoriesTable).where(eq(categoriesTable.slug, newSlug)).limit(1);
+    if (existing.name !== oldName) { res.status(409).json({ error: `Le slug "${newSlug}" est déjà utilisé par une autre catégorie` }); return; }
+  }
 
-  res.json({ ok: true, renamed: oldName, to: newName });
+  try {
+    // Update categoriesTable entry AND all restaurants using this category name
+    await db.update(categoriesTable).set({ name: newName, slug: newSlug }).where(eq(categoriesTable.name, oldName));
+    await db.update(restaurantsTable).set({ category: newName }).where(eq(restaurantsTable.category, oldName));
+    res.json({ ok: true, renamed: oldName, to: newName });
+  } catch (e: any) {
+    if (e.code === "23505") { res.status(409).json({ error: "Ce nom de catégorie existe déjà" }); return; }
+    throw e;
+  }
 });
 
 router.delete("/backend/categories/:name", requireAuth, async (req: AuthedRequest, res): Promise<void> => {

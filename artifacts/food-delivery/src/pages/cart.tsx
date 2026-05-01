@@ -34,7 +34,7 @@ export default function CartPage() {
   const { toast } = useToast();
   const { t } = useTranslation();
   const createOrder = useCreateOrder();
-  const { data: restaurantInfo } = useGetRestaurant(restaurantId ?? 0, { enabled: !!restaurantId });
+  const { data: restaurantInfo } = useGetRestaurant(restaurantId ?? 0, { query: { enabled: !!restaurantId } });
   const isClosed = restaurantInfo ? !restaurantInfo.isOpen : false;
   const [deliveryAddress, setDeliveryAddress] = useState((user as any)?.address || "");
   const [notes, setNotes] = useState("");
