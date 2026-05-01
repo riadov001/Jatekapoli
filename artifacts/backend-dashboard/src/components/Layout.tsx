@@ -17,6 +17,7 @@ import {
   LogOut,
   Menu,
   ChevronDown,
+  Activity,
 } from "lucide-react";
 import { useBackendMe } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
@@ -53,7 +54,10 @@ type NavItem = {
 const navGroups: NavGroup[] = [
   {
     label: "Overview",
-    items: [{ href: "/", label: "Dashboard", icon: LayoutDashboard }],
+    items: [
+      { href: "/", label: "Dashboard", icon: LayoutDashboard },
+      { href: "/monitoring", label: "Monitoring", icon: Activity },
+    ],
   },
   {
     label: "Operations",

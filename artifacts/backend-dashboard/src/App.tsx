@@ -24,6 +24,7 @@ import Wallets from "@/pages/wallets";
 import Notifications from "@/pages/notifications";
 import Reports from "@/pages/reports";
 import SettingsPage from "@/pages/settings";
+import Monitoring from "@/pages/monitoring";
 
 const queryClient = new QueryClient();
 
@@ -52,6 +53,7 @@ function Router() {
               <Route path="/wallets" component={Wallets} />
               <Route path="/notifications" component={Notifications} />
               <Route path="/reports" component={Reports} />
+              <Route path="/monitoring" component={Monitoring} />
               <Route component={NotFound} />
             </Switch>
           </Layout>

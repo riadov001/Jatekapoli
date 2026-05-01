@@ -236,17 +236,20 @@ export default function HomePage() {
   const featured = useMemo(() => (allFeatured ?? []).filter((r) => r.isVerified || r.rating != null), [allFeatured]);
 
   // Factory so two portals can each render their own instance of the search input.
+  // Clicking navigates to the dedicated search page.
   const makeSearchInput = () => (
-    <div className="relative w-full">
-      <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-      <Input
-        placeholder={t("home.search")}
-        aria-label={t("home.search")}
-        className="pl-10 h-11 bg-white/85 dark:bg-black/30 border-transparent focus-visible:ring-primary/40 text-foreground placeholder:text-muted-foreground text-sm rounded-2xl shadow-sm"
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        data-testid="input-search"
-      />
+    <div
+      className="relative w-full cursor-pointer"
+      onClick={() => setLocation("/search")}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => e.key === "Enter" && setLocation("/search")}
+      data-testid="input-search"
+    >
+      <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none z-10" />
+      <div className="pl-10 h-11 bg-white/85 dark:bg-black/30 border border-transparent rounded-2xl shadow-sm flex items-center text-sm text-muted-foreground select-none">
+        {t("home.search")}
+      </div>
     </div>
   );
 

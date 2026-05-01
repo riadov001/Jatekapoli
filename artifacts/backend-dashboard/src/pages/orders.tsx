@@ -1,13 +1,11 @@
 import { useState } from "react";
-import { useListBackendOrders, useUpdateOrderStatus, getListBackendOrdersQueryKey, Order, UpdateOrderStatusBodyStatus } from "@workspace/api-client-react";
+import { useListBackendOrders, useUpdateOrderStatus, getListBackendOrdersQueryKey, Order, UpdateOrderStatusBodyStatus, customFetch } from "@workspace/api-client-react";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
 
-type OrderWithItems = Order & { items: Array<{ id: number; quantity: number; menuItemName: string; totalPrice: number }> };
+type OrderWithItems = Order & { items: Array<{ id: number; quantity: number; menuItemName: string; unitPrice: number; totalPrice: number }> };
 
 async function fetchOrderDetail(id: number): Promise<OrderWithItems> {
-  const res = await fetch(`/api/backend/orders/${id}`, { credentials: "include" });
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  return res.json();
+  return customFetch<OrderWithItems>(`/api/backend/orders/${id}`, { method: "GET" });
 }
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -63,7 +61,15 @@ export default function Orders() {
         setSelectedOrder({ ...selectedOrder, status: newStatus as any });
         toast({ title: "Statut mis à jour" });
       },
-      onError: (e: any) => toast({ title: "Erreur", description: e?.message, variant: "destructive" }),
+      onError: (e: any) => {
+        const msg = e?.message || "Erreur lors de la mise à jour";
+        const isProfile = msg?.includes("business profile") || msg?.includes("OWNER_PROFILE_INCOMPLETE");
+        toast({ 
+          title: isProfile ? "Profil business incomplet" : "Erreur",
+          description: isProfile ? "Le restaurant doit compléter son profil (nom légal + ICE) avant d'accepter des commandes." : msg,
+          variant: "destructive",
+        });
+      },
     });
   };
 
@@ -233,15 +239,20 @@ export default function Orders() {
                         <Loader2 className="h-4 w-4 animate-spin mr-2" /> Chargement…
                       </div>
                     ) : (orderDetail?.items?.length ?? 0) === 0 ? (
-                      <p className="text-sm text-muted-foreground">Aucun article.</p>
+                      <p className="text-sm text-muted-foreground italic">Aucun article trouvé.</p>
                     ) : (
                       orderDetail!.items.map((item) => (
-                        <div key={item.id} className="flex justify-between items-center text-sm p-3 border rounded-md">
-                          <div className="flex items-center space-x-3">
-                            <Badge variant="secondary">{item.quantity}x</Badge>
-                            <span>{item.menuItemName}</span>
+                        <div key={item.id} className="flex justify-between items-center text-sm p-3 border rounded-md bg-muted/30">
+                          <div className="flex items-center space-x-3 min-w-0">
+                            <Badge variant="secondary" className="shrink-0">{item.quantity}x</Badge>
+                            <span className="truncate font-medium">{item.menuItemName}</span>
                           </div>
-                          <span className="font-medium">{item.totalPrice} DH</span>
+                          <div className="text-right shrink-0 ml-3">
+                            <span className="font-semibold text-primary">{Number(item.totalPrice).toFixed(2)} DH</span>
+                            {item.quantity > 1 && (
+                              <p className="text-xs text-muted-foreground">{Number(item.unitPrice).toFixed(2)} / unité</p>
+                            )}
+                          </div>
                         </div>
                       ))
                     )}

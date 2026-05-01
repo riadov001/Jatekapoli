@@ -259,7 +259,8 @@ router.patch("/orders/:id/status", requireAuth, async (req: AuthedRequest, res):
       return;
     }
 
-    if (!restaurant.profileCompletedAt) {
+    // Admins can bypass the profile completeness requirement.
+    if (!restaurant.profileCompletedAt && req.userRole !== "admin" && req.userRole !== "super_admin" && req.userRole !== "manager") {
       res.status(412).json({
         error: "Complete your business profile (legal name + ICE) before accepting orders.",
         code: "OWNER_PROFILE_INCOMPLETE",

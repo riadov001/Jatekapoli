@@ -32,6 +32,7 @@ import { AdminRoute } from "@/components/AdminRoute";
 import RestaurantDashboardPage from "@/pages/restaurant-panel/dashboard";
 import RestaurantMenuPage from "@/pages/restaurant-panel/menu";
 import DriverDashboardPage from "@/pages/driver/dashboard";
+import SearchPage from "@/pages/search";
 import WelcomePage from "@/pages/welcome";
 import LegalPage from "@/pages/legal";
 import NotFound from "@/pages/not-found";
@@ -57,6 +58,7 @@ function Router() {
     <Layout>
       <Switch>
         <Route path="/" component={HomePage} />
+        <Route path="/search" component={SearchPage} />
         <Route path="/restaurants" component={HomePage} />
         <Route path="/restaurants/:id" component={RestaurantPage} />
         <Route path="/cart" component={CartPage} />

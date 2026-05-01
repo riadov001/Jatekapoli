@@ -94,6 +94,7 @@ users, restaurants, menuItems, orders, orderItems, drivers, reviews, categories,
 
 ### Frontend Routes (food-delivery)
 - `/` — Home (hero, category filter, Support Local, all restaurants)
+- `/search` — Dedicated search page with filters (Ouvert, Livraison gratuite, Mieux notés), debounced input, sorted results (open first)
 - `/restaurants` — Alias for home (same component, all restaurants)
 - `/restaurants/:id` — Restaurant detail + menu
 - `/cart` — Cart checkout
@@ -194,6 +195,7 @@ Staff/admin dashboard for Jatek with full RBAC (super_admin, admin, manager, res
 
 ### Backend Dashboard Routes
 - `/` — Dashboard (KPI stats, orders chart, todos)
+- `/monitoring` — Real-time monitoring (active orders table, driver availability, live KPIs, auto-refresh every 15s)
 - `/orders` — Orders management (all roles, scoped by role)
 - `/products` — Menu items / products management
 - `/categories` — Categories & sub-categories management

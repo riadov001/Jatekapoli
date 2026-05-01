@@ -52,8 +52,12 @@ export default function RestaurantPage() {
 
   const handleAddToCart = (item: NonNullable<typeof menuItems>[number]) => {
     if (!item) return;
+    if (!restaurant.isOpen) {
+      toast({ title: "Ce restaurant est actuellement fermé", variant: "destructive" });
+      return;
+    }
     if (!user) {
-      toast({ title: "Please login to add items to cart", variant: "destructive" });
+      toast({ title: "Connectez-vous pour ajouter des articles au panier", variant: "destructive" });
       setLocation("/login");
       return;
     }
@@ -68,7 +72,7 @@ export default function RestaurantPage() {
       deliveryFee: pricing.deliveryFee,
       freeDeliveryThreshold: pricing.freeDeliveryThreshold,
     });
-    toast({ title: `${item.name} added to cart` });
+    toast({ title: `${item.name} ajouté au panier` });
   };
 
   return (
@@ -139,6 +143,17 @@ export default function RestaurantPage() {
         </div>
       </div>
 
+      {/* Closed banner */}
+      {!restaurant.isOpen && (
+        <div className="flex items-center gap-3 bg-destructive/10 border border-destructive/20 rounded-xl px-4 py-3">
+          <span className="text-xl">🔒</span>
+          <div>
+            <p className="font-semibold text-destructive text-sm">Restaurant fermé</p>
+            <p className="text-xs text-muted-foreground">Ce restaurant n'accepte pas de commandes pour le moment</p>
+          </div>
+        </div>
+      )}
+
       {/* Description */}
       {restaurant.description && (
         <p className="text-muted-foreground text-sm">{restaurant.description}</p>
@@ -190,7 +205,11 @@ export default function RestaurantPage() {
                     {t("restaurant.popular")}
                   </span>
                 )}
-                {item.isAvailable ? (
+                {!restaurant.isOpen ? (
+                  <span className="absolute bottom-1.5 right-1.5 text-[10px] font-bold bg-black/60 text-white px-2 py-1 rounded-full">
+                    Fermé
+                  </span>
+                ) : item.isAvailable ? (
                   <button
                     onClick={() => handleAddToCart(item)}
                     aria-label={t("restaurant.add")}
