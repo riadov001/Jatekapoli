@@ -2,9 +2,9 @@ modules = ["nodejs-24", "postgresql-16", "python-3.11"]
 
   [deployment]
   router = "application"
-deploymentTarget = "cloudrun"
-  run = ["bash", "scripts/start-production.sh"]
-  build = ["bash", "scripts/build-production.sh"]
+deploymentTarget = "autoscale"
+run = ["bash", "scripts/start-production.sh"]
+build = ["bash", "scripts/build-production.sh"]
 
   [deployment.postBuild]
   args = ["pnpm", "store", "prune"]
