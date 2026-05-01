@@ -539,6 +539,84 @@ router.get("/backend/deliverymen", requireAuth, async (_req: AuthedRequest, res)
   res.json(rows);
 });
 
+router.post("/backend/drivers", requireAuth, async (req: AuthedRequest, res): Promise<void> => {
+  const ctx = await requireBackendUser(req, res);
+  if (!ctx) return;
+  if (!["super_admin", "admin"].includes(ctx.role)) { res.status(403).json({ error: "Forbidden" }); return; }
+
+  const { name, phone, email, vehicleType, vehiclePlate, nationalId, licenseNumber } = req.body ?? {};
+  if (!name || typeof name !== "string" || !name.trim()) { res.status(400).json({ error: "name is required" }); return; }
+  if (!phone || typeof phone !== "string" || !phone.trim()) { res.status(400).json({ error: "phone is required" }); return; }
+
+  const emailVal = email ? String(email).toLowerCase().trim() : null;
+  const existingByPhone = await db.select({ id: usersTable.id }).from(usersTable).where(eq(usersTable.phone, phone.trim())).limit(1);
+  if (existingByPhone.length > 0) { res.status(409).json({ error: "Un utilisateur avec ce numéro existe déjà" }); return; }
+
+  const password = await bcrypt.hash("jatek2024", 10);
+  const [newUser] = await db.insert(usersTable).values({
+    name: name.trim(),
+    phone: phone.trim(),
+    email: emailVal,
+    password,
+    role: "driver",
+    isActive: true,
+  }).returning();
+
+  const [driver] = await db.insert(driversTable).values({
+    userId: newUser.id,
+    name: name.trim(),
+    phone: phone.trim(),
+    vehicleType: vehicleType ?? null,
+    vehiclePlate: vehiclePlate ?? null,
+    nationalId: nationalId ?? null,
+    licenseNumber: licenseNumber ?? null,
+  }).returning();
+
+  res.status(201).json(driver);
+});
+
+router.delete("/backend/drivers/:id", requireAuth, async (req: AuthedRequest, res): Promise<void> => {
+  const ctx = await requireBackendUser(req, res);
+  if (!ctx) return;
+  if (!["super_admin", "admin"].includes(ctx.role)) { res.status(403).json({ error: "Forbidden" }); return; }
+
+  const id = Number(req.params.id);
+  if (!id) { res.status(400).json({ error: "Invalid id" }); return; }
+
+  const [driver] = await db.select().from(driversTable).where(eq(driversTable.id, id)).limit(1);
+  if (!driver) { res.status(404).json({ error: "Driver not found" }); return; }
+
+  await db.delete(driversTable).where(eq(driversTable.id, id));
+  await db.delete(usersTable).where(eq(usersTable.id, driver.userId));
+
+  res.status(204).end();
+});
+
+router.patch("/backend/drivers/:id", requireAuth, async (req: AuthedRequest, res): Promise<void> => {
+  const ctx = await requireBackendUser(req, res);
+  if (!ctx) return;
+  if (!["super_admin", "admin", "manager"].includes(ctx.role)) { res.status(403).json({ error: "Forbidden" }); return; }
+
+  const id = Number(req.params.id);
+  if (!id) { res.status(400).json({ error: "Invalid id" }); return; }
+
+  const [existing] = await db.select().from(driversTable).where(eq(driversTable.id, id)).limit(1);
+  if (!existing) { res.status(404).json({ error: "Driver not found" }); return; }
+
+  const { name, phone, vehicleType, vehiclePlate, nationalId, licenseNumber, isAvailable } = req.body ?? {};
+  const updates: Partial<typeof driversTable.$inferInsert> = {};
+  if (name !== undefined) updates.name = String(name).trim();
+  if (phone !== undefined) updates.phone = String(phone).trim();
+  if (vehicleType !== undefined) updates.vehicleType = vehicleType;
+  if (vehiclePlate !== undefined) updates.vehiclePlate = vehiclePlate;
+  if (nationalId !== undefined) updates.nationalId = nationalId;
+  if (licenseNumber !== undefined) updates.licenseNumber = licenseNumber;
+  if (isAvailable !== undefined) updates.isAvailable = Boolean(isAvailable);
+
+  const [driver] = await db.update(driversTable).set(updates).where(eq(driversTable.id, id)).returning();
+  res.json(driver);
+});
+
 // ---------- Reviews ----------
 router.get("/backend/reviews", requireAuth, async (req: AuthedRequest, res): Promise<void> => {
   const ctx = await requireBackendUser(req, res);
@@ -572,6 +650,33 @@ router.get("/backend/categories", requireAuth, async (req: AuthedRequest, res): 
     rows = await baseQuery;
   }
   res.json(rows.map((r) => ({ name: r.name, count: Number(r.count) })));
+});
+
+router.patch("/backend/categories/:name", requireAuth, async (req: AuthedRequest, res): Promise<void> => {
+  const ctx = await requireBackendUser(req, res);
+  if (!ctx) return;
+  if (!["super_admin", "admin"].includes(ctx.role)) { res.status(403).json({ error: "Forbidden" }); return; }
+
+  const oldName = decodeURIComponent(req.params.name);
+  const newName = String(req.body?.name || "").trim();
+  if (!newName) { res.status(400).json({ error: "New name required" }); return; }
+
+  await db.update(restaurantsTable).set({ category: newName }).where(eq(restaurantsTable.category, oldName));
+  res.json({ ok: true, renamed: oldName, to: newName });
+});
+
+router.delete("/backend/categories/:name", requireAuth, async (req: AuthedRequest, res): Promise<void> => {
+  const ctx = await requireBackendUser(req, res);
+  if (!ctx) return;
+  if (!["super_admin", "admin"].includes(ctx.role)) { res.status(403).json({ error: "Forbidden" }); return; }
+
+  const name = decodeURIComponent(req.params.name);
+  const rows = await db.select({ id: restaurantsTable.id }).from(restaurantsTable).where(eq(restaurantsTable.category, name));
+  if (rows.length > 0) {
+    res.status(409).json({ error: `Cette catégorie est utilisée par ${rows.length} restaurant(s). Réaffectez-les d'abord.` });
+    return;
+  }
+  res.status(204).end();
 });
 
 // ---------- Roles ----------
@@ -749,7 +854,7 @@ router.post("/backend/notifications/send", requireAuth, async (req: AuthedReques
     phones = users.map((u) => u.phone).filter(Boolean) as string[];
   } else if (target === "drivers") {
     const drivers = await db.select({ phone: driversTable.phone }).from(driversTable)
-      .where(eq(driversTable.isActive, true));
+      .where(eq(driversTable.isAvailable, true));
     phones = drivers.map((d) => d.phone).filter(Boolean) as string[];
   } else if (target === "all") {
     const users = await db.select({ phone: usersTable.phone }).from(usersTable)

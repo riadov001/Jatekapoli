@@ -245,6 +245,11 @@ export default function HomePage() {
         className="pl-10 h-11 bg-white/85 dark:bg-black/30 border-transparent focus-visible:ring-primary/40 text-foreground placeholder:text-muted-foreground text-sm rounded-2xl shadow-sm"
         value={search}
         onChange={(e) => setSearch(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" && search.trim()) {
+            setLocation(`/search?q=${encodeURIComponent(search.trim())}`);
+          }
+        }}
         data-testid="input-search"
       />
     </div>

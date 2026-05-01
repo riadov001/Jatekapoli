@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useRoute, useLocation } from "wouter";
-import { ArrowLeft, Star, Clock, Truck, Award, Plus, ShoppingBag } from "lucide-react";
+import { ArrowLeft, Star, Clock, Truck, Award, Plus, ShoppingBag, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -52,6 +52,10 @@ export default function RestaurantPage() {
 
   const handleAddToCart = (item: NonNullable<typeof menuItems>[number]) => {
     if (!item) return;
+    if (!restaurant.isOpen) {
+      toast({ title: "Restaurant fermé", description: "Ce restaurant est actuellement fermé. Vous ne pouvez pas passer de commande.", variant: "destructive" });
+      return;
+    }
     if (!user) {
       toast({ title: "Please login to add items to cart", variant: "destructive" });
       setLocation("/login");
@@ -78,6 +82,17 @@ export default function RestaurantPage() {
         <ArrowLeft className="w-4 h-4" />
         {t("restaurant.back")}
       </Button>
+
+      {/* Closed restaurant banner */}
+      {!restaurant.isOpen && (
+        <div className="flex items-center gap-3 rounded-2xl bg-gray-900/90 text-white px-4 py-3">
+          <AlertCircle className="w-5 h-5 text-gray-300 shrink-0" />
+          <div>
+            <p className="font-semibold text-sm">Ce restaurant est actuellement fermé</p>
+            <p className="text-xs text-gray-400 mt-0.5">Les commandes ne sont pas disponibles pour le moment. Revenez plus tard.</p>
+          </div>
+        </div>
+      )}
 
       {/* Cover image */}
       <div className="relative h-56 sm:h-72 rounded-2xl overflow-visible bg-muted">
@@ -190,7 +205,11 @@ export default function RestaurantPage() {
                     {t("restaurant.popular")}
                   </span>
                 )}
-                {item.isAvailable ? (
+                {!restaurant.isOpen ? (
+                  <span className="absolute bottom-1.5 right-1.5 text-[10px] font-bold bg-black/60 text-white px-2 py-1 rounded-full">
+                    Fermé
+                  </span>
+                ) : item.isAvailable ? (
                   <button
                     onClick={() => handleAddToCart(item)}
                     aria-label={t("restaurant.add")}
