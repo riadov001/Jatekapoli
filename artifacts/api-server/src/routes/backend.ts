@@ -609,8 +609,11 @@ router.delete("/backend/drivers/:id", requireAuth, async (req: AuthedRequest, re
   const [driver] = await db.select().from(driversTable).where(eq(driversTable.id, id)).limit(1);
   if (!driver) { res.status(404).json({ error: "Driver not found" }); return; }
 
-  await db.delete(driversTable).where(eq(driversTable.id, id));
-  await db.delete(usersTable).where(eq(usersTable.id, driver.userId));
+  // Delete both records in a transaction to prevent orphaned data
+  await db.transaction(async (tx) => {
+    await tx.delete(driversTable).where(eq(driversTable.id, id));
+    await tx.delete(usersTable).where(eq(usersTable.id, driver.userId));
+  });
 
   res.status(204).end();
 });
@@ -627,16 +630,24 @@ router.patch("/backend/drivers/:id", requireAuth, async (req: AuthedRequest, res
   if (!existing) { res.status(404).json({ error: "Driver not found" }); return; }
 
   const { name, phone, vehicleType, vehiclePlate, nationalId, licenseNumber, isAvailable } = req.body ?? {};
-  const updates: Partial<typeof driversTable.$inferInsert> = {};
-  if (name !== undefined) updates.name = String(name).trim();
-  if (phone !== undefined) updates.phone = String(phone).trim();
-  if (vehicleType !== undefined) updates.vehicleType = vehicleType;
-  if (vehiclePlate !== undefined) updates.vehiclePlate = vehiclePlate;
-  if (nationalId !== undefined) updates.nationalId = nationalId;
-  if (licenseNumber !== undefined) updates.licenseNumber = licenseNumber;
-  if (isAvailable !== undefined) updates.isAvailable = Boolean(isAvailable);
+  const driverUpdates: Partial<typeof driversTable.$inferInsert> = {};
+  if (name !== undefined) driverUpdates.name = String(name).trim();
+  if (phone !== undefined) driverUpdates.phone = String(phone).trim();
+  if (vehicleType !== undefined) driverUpdates.vehicleType = vehicleType;
+  if (vehiclePlate !== undefined) driverUpdates.vehiclePlate = vehiclePlate;
+  if (nationalId !== undefined) driverUpdates.nationalId = nationalId;
+  if (licenseNumber !== undefined) driverUpdates.licenseNumber = licenseNumber;
+  if (isAvailable !== undefined) driverUpdates.isAvailable = Boolean(isAvailable);
 
-  const [driver] = await db.update(driversTable).set(updates).where(eq(driversTable.id, id)).returning();
+  // Sync identity fields to usersTable to prevent divergence
+  const userUpdates: Partial<typeof usersTable.$inferInsert> = {};
+  if (driverUpdates.name !== undefined) userUpdates.name = driverUpdates.name;
+  if (driverUpdates.phone !== undefined) userUpdates.phone = driverUpdates.phone;
+
+  const [driver] = await db.update(driversTable).set(driverUpdates).where(eq(driversTable.id, id)).returning();
+  if (Object.keys(userUpdates).length > 0) {
+    await db.update(usersTable).set(userUpdates).where(eq(usersTable.id, existing.userId));
+  }
   res.json(driver);
 });
 
