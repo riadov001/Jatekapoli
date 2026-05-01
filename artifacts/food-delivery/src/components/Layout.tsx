@@ -7,6 +7,7 @@ import {
 import { useAuth } from "@/contexts/AuthContext";
 import { useCart } from "@/contexts/CartContext";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem,
   DropdownMenuSeparator, DropdownMenuTrigger,
@@ -24,6 +25,17 @@ export function Layout({ children }: LayoutProps) {
   const { t, i18n } = useTranslation();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
+  const [globalSearch, setGlobalSearch] = useState("");
+
+  const isHomePage = location === "/" || location === "/restaurants";
+
+  const handleGlobalSearch = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter" && globalSearch.trim()) {
+      setLocation(`/search?q=${encodeURIComponent(globalSearch.trim())}`);
+      setGlobalSearch("");
+      setMobileSearchOpen(false);
+    }
+  };
 
   const isCustomer = !user?.role || user.role === "customer";
   const isRTL = i18n.language === "ar";
@@ -196,8 +208,21 @@ export function Layout({ children }: LayoutProps) {
               </div>
               <span className="tracking-tighter italic text-foreground hidden xs:inline sm:inline">Jatek.</span>
             </Link>
-            {/* Desktop search slot — hidden on mobile */}
-            <div id="header-search-slot" className="flex-1 min-w-0 hidden sm:block" />
+            {/* Desktop search slot — home page injects here via portal; other pages show global search */}
+            <div id="header-search-slot" className="flex-1 min-w-0 hidden sm:block">
+              {!isHomePage && (
+                <div className="relative w-full">
+                  <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Rechercher un restaurant..."
+                    value={globalSearch}
+                    onChange={(e) => setGlobalSearch(e.target.value)}
+                    onKeyDown={handleGlobalSearch}
+                    className="pl-10 h-11 bg-white/85 dark:bg-black/30 border-transparent focus-visible:ring-primary/40 text-sm rounded-2xl shadow-sm"
+                  />
+                </div>
+              )}
+            </div>
             {/* Mobile search icon toggle */}
             <button
               className="sm:hidden ml-auto w-9 h-9 rounded-xl flex items-center justify-center bg-primary/10 hover:bg-primary/20 transition-colors text-primary"
@@ -220,7 +245,22 @@ export function Layout({ children }: LayoutProps) {
 
           {/* Mobile search slide panel — CSS-animated, appears below Row B */}
           <div className={`mobile-search-panel sm:hidden ${mobileSearchOpen ? "open" : "closed"}`}>
-            <div id="mobile-search-slot" className="pb-3" />
+            {/* Home page injects into this slot via portal; other pages show global search input */}
+            <div id="mobile-search-slot" className="pb-3">
+              {!isHomePage && mobileSearchOpen && (
+                <div className="relative w-full">
+                  <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    autoFocus
+                    placeholder="Rechercher un restaurant..."
+                    value={globalSearch}
+                    onChange={(e) => setGlobalSearch(e.target.value)}
+                    onKeyDown={handleGlobalSearch}
+                    className="pl-10 h-11 bg-white/85 dark:bg-black/30 border-transparent focus-visible:ring-primary/40 text-sm rounded-2xl shadow-sm"
+                  />
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </header>
