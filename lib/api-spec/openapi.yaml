@@ -3952,6 +3952,8 @@ components:
           type: number
         thisMonth:
           type: number
+        totalEarnings:
+          type: number
         totalDeliveries:
           type: integer
         completedToday:
@@ -3960,6 +3962,7 @@ components:
         - today
         - thisWeek
         - thisMonth
+        - totalEarnings
         - totalDeliveries
         - completedToday
     Review:

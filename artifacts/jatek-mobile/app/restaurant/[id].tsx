@@ -348,7 +348,7 @@ export default function RestaurantScreen() {
             {/* Status row */}
             <View style={styles.infoModalRow}>
               <View style={[styles.infoModalIconWrap, { backgroundColor: (isOpen ? "#D1FAE5" : "#F3F4F6") }]}>
-                <View style={[styles.openDot, { backgroundColor: isOpen ? colors.turquoise : "#9CA3AF" }]} />
+                <View style={[styles.infoModalOpenDot, { backgroundColor: isOpen ? colors.turquoise : "#9CA3AF" }]} />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={[styles.infoModalRowLabel, { color: colors.mutedForeground }]}>Statut</Text>
@@ -608,7 +608,7 @@ const styles = StyleSheet.create({
   infoModalIconWrap: {
     width: 36, height: 36, borderRadius: 10, alignItems: "center", justifyContent: "center",
   },
-  openDot: { width: 10, height: 10, borderRadius: 5 },
+  infoModalOpenDot: { width: 10, height: 10, borderRadius: 5 },
   infoModalRowLabel: { fontSize: 11, fontFamily: "Inter_400Regular", marginBottom: 2 },
   infoModalRowValue: { fontSize: 14, fontFamily: "Inter_400Regular", lineHeight: 20 },
 });

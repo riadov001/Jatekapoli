@@ -348,6 +348,7 @@ export interface DriverEarnings {
   today: number;
   thisWeek: number;
   thisMonth: number;
+  totalEarnings: number;
   totalDeliveries: number;
   completedToday: number;
 }

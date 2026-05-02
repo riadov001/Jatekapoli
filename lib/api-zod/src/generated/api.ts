@@ -997,6 +997,7 @@ export const GetDriverEarningsResponse = zod.object({
   today: zod.number(),
   thisWeek: zod.number(),
   thisMonth: zod.number(),
+  totalEarnings: zod.number(),
   totalDeliveries: zod.number(),
   completedToday: zod.number(),
 });
