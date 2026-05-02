@@ -435,15 +435,33 @@ export default function DeliverScreen() {
             <Text style={[styles.statValue, { color: colors.foreground }]}>
               {earnings?.completedToday ?? 0}
             </Text>
-            <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>Deliveries</Text>
+            <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>Livraisons</Text>
           </View>
           <View style={[styles.statBox, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <Text style={[styles.statValue, { color: colors.foreground }]}>
               {myDriver.rating?.toFixed(1) ?? "—"}
             </Text>
-            <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>Rating</Text>
+            <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>Note</Text>
           </View>
         </View>
+
+        {/* History link */}
+        <TouchableOpacity
+          onPress={() => { haptic("light"); router.push("/earnings-history"); }}
+          style={[styles.historyLink, { backgroundColor: colors.card, borderColor: colors.border }]}
+          activeOpacity={0.75}
+        >
+          <View style={[styles.historyLinkIcon, { backgroundColor: colors.primary + "18" }]}>
+            <Ionicons name="wallet-outline" size={18} color={colors.primary} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.historyLinkTitle, { color: colors.foreground }]}>Historique des revenus</Text>
+            <Text style={[styles.historyLinkSub, { color: colors.mutedForeground }]}>
+              Total · {earnings?.totalEarnings?.toFixed(0) ?? 0} MAD · {earnings?.totalDeliveries ?? 0} livraisons
+            </Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color={colors.mutedForeground} />
+        </TouchableOpacity>
 
         {/* Active delivery */}
         {activeDelivery && (
@@ -690,4 +708,12 @@ const styles = StyleSheet.create({
   availMetaText: { fontSize: 12, fontFamily: "Inter_500Medium" },
   acceptBtn: { marginLeft: "auto", flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 16, paddingVertical: 9, borderRadius: 10, minWidth: 92, justifyContent: "center" },
   acceptBtnText: { color: "#fff", fontFamily: "Inter_700Bold", fontSize: 13 },
+
+  historyLink: {
+    marginHorizontal: 16, marginBottom: 16, paddingHorizontal: 14, paddingVertical: 12,
+    borderRadius: 16, borderWidth: 1, flexDirection: "row", alignItems: "center", gap: 12,
+  },
+  historyLinkIcon: { width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center" },
+  historyLinkTitle: { fontSize: 14, fontFamily: "Inter_600SemiBold" },
+  historyLinkSub: { fontSize: 11, fontFamily: "Inter_400Regular", marginTop: 2 },
 });

@@ -107,6 +107,33 @@ export async function completeDriverProfile(driverId: number, data: DriverProfil
   });
 }
 
+export interface EarningHistoryItem {
+  id: number;
+  orderId: number;
+  orderReference: string | null;
+  restaurantName: string;
+  deliveryAddress: string;
+  amount: number;
+  type: string;
+  note: string | null;
+  createdAt: string;
+}
+
+export interface EarningsHistoryResponse {
+  summary: {
+    today: number;
+    thisWeek: number;
+    thisMonth: number;
+    totalEarnings: number;
+    totalDeliveries: number;
+  };
+  history: EarningHistoryItem[];
+}
+
+export async function fetchEarningsHistory(driverId: number): Promise<EarningsHistoryResponse> {
+  return jsonFetch(`/api/drivers/${driverId}/earnings/history`);
+}
+
 export async function updateDriverLocation(driverId: number, lat: number, lng: number): Promise<void> {
   await jsonFetch(`/api/drivers/${driverId}/location`, {
     method: "PATCH",

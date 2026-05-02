@@ -282,4 +282,80 @@ router.get("/drivers/:id/earnings", requireAuth, async (req: AuthedRequest, res)
   });
 });
 
+router.get("/drivers/:id/earnings/history", requireAuth, async (req: AuthedRequest, res): Promise<void> => {
+  const params = GetDriverEarningsParams.safeParse(req.params);
+  if (!params.success) {
+    res.status(400).json({ error: params.error.message });
+    return;
+  }
+
+  const driverId = params.data.id;
+  const [driver] = await db.select().from(driversTable).where(eq(driversTable.id, driverId)).limit(1);
+
+  if (!driver) {
+    res.status(404).json({ error: "Driver not found" });
+    return;
+  }
+  if (req.userRole !== "admin" && driver.userId !== req.userId) {
+    res.status(403).json({ error: "Forbidden" });
+    return;
+  }
+
+  // Fetch all earnings rows joined with order info
+  const rows = await db
+    .select({
+      id: driverEarningsTable.id,
+      amount: driverEarningsTable.amount,
+      type: driverEarningsTable.type,
+      note: driverEarningsTable.note,
+      createdAt: driverEarningsTable.createdAt,
+      orderId: driverEarningsTable.orderId,
+      restaurantName: ordersTable.restaurantName,
+      orderReference: ordersTable.reference,
+      orderTotal: ordersTable.total,
+      deliveryAddress: ordersTable.deliveryAddress,
+    })
+    .from(driverEarningsTable)
+    .leftJoin(ordersTable, eq(driverEarningsTable.orderId, ordersTable.id))
+    .where(eq(driverEarningsTable.driverId, driverId))
+    .orderBy(driverEarningsTable.createdAt);
+
+  // Build per-week grouped summary
+  const now = new Date();
+  const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const startOfWeek = new Date(now);
+  startOfWeek.setDate(now.getDate() - now.getDay());
+  startOfWeek.setHours(0, 0, 0, 0);
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+  let today = 0, thisWeek = 0, thisMonth = 0;
+  for (const r of rows) {
+    const d = new Date(r.createdAt);
+    if (d >= startOfDay) today += r.amount;
+    if (d >= startOfWeek) thisWeek += r.amount;
+    if (d >= startOfMonth) thisMonth += r.amount;
+  }
+
+  res.json({
+    summary: {
+      today: Math.round(today * 100) / 100,
+      thisWeek: Math.round(thisWeek * 100) / 100,
+      thisMonth: Math.round(thisMonth * 100) / 100,
+      totalEarnings: Math.round((driver.totalEarnings ?? 0) * 100) / 100,
+      totalDeliveries: driver.totalDeliveries ?? 0,
+    },
+    history: rows.map((r) => ({
+      id: r.id,
+      orderId: r.orderId,
+      orderReference: r.orderReference,
+      restaurantName: r.restaurantName ?? "Restaurant",
+      deliveryAddress: r.deliveryAddress ?? "",
+      amount: Math.round(r.amount * 100) / 100,
+      type: r.type,
+      note: r.note,
+      createdAt: r.createdAt,
+    })).reverse(), // most recent first
+  });
+});
+
 export default router;
