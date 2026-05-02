@@ -20,6 +20,8 @@ export const driversTable = pgTable("drivers", {
   profileCompletedAt: timestamp("profile_completed_at", { withTimezone: true }),
   isAvailable: boolean("is_available").notNull().default(true),
   totalDeliveries: integer("total_deliveries").notNull().default(0),
+  /** Cumulative earnings credited to the driver (MAD). Incremented on every confirmed delivery. */
+  totalEarnings: real("total_earnings").notNull().default(0),
   rating: real("rating"),
   latitude: real("latitude"),
   longitude: real("longitude"),

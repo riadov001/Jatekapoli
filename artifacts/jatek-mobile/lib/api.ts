@@ -85,11 +85,11 @@ export async function acceptDelivery(orderId: number, driverId: number): Promise
   });
 }
 
-/** Driver confirms delivery by entering the 4-digit code shown on the customer's phone. */
-export async function confirmDelivery(orderId: number, pickupCode: string): Promise<any> {
+/** Driver confirms delivery by entering the 6-digit OTP shown on the customer's phone. */
+export async function confirmDelivery(orderId: number, otp: string): Promise<any> {
   return jsonFetch(`/api/orders/${orderId}/confirm-delivery`, {
     method: "POST",
-    body: JSON.stringify({ pickupCode }),
+    body: JSON.stringify({ otp }),
   });
 }
 

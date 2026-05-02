@@ -7,6 +7,7 @@ import {
   restaurantsTable,
   usersTable,
   driversTable,
+  driverEarningsTable,
   generateUniqueOrderReference,
   generateKitchenCode,
   generatePickupCode,
@@ -514,8 +515,15 @@ router.post("/orders/:id/accept-delivery", requireAuth, async (req: AuthedReques
 });
 
 /**
- * Driver confirms hand-off by entering the 4-digit code shown on the
- * customer's screen. Only the assigned driver (or admin) may call this.
+ * Driver confirms delivery by entering the 6-digit OTP shown on the customer's
+ * phone. This is the single gate that:
+ *   1. Validates the OTP
+ *   2. Marks the order as "delivered"
+ *   3. Credits the driver (deliveryFee × 80%) and records the earning
+ *   4. Marks the driver as available again
+ *   5. Increments totalDeliveries
+ *   6. Pushes notifications to both customer and driver
+ *   7. Broadcasts SSE events to all relevant channels
  */
 router.post("/orders/:id/confirm-delivery", requireAuth, async (req: AuthedRequest, res): Promise<void> => {
   const orderId = parseInt(req.params.id, 10);
@@ -524,62 +532,107 @@ router.post("/orders/:id/confirm-delivery", requireAuth, async (req: AuthedReque
   const code = typeof req.body?.otp === "string" ? req.body.otp.trim()
     : typeof req.body?.pickupCode === "string" ? req.body.pickupCode.trim() : "";
   if (!/^\d{4,6}$/.test(code)) {
-    res.status(400).json({ error: "otp must be a 6-digit code" });
+    res.status(400).json({ error: "Veuillez saisir le code OTP à 6 chiffres" });
     return;
   }
 
   const [existing] = await db.select().from(ordersTable).where(eq(ordersTable.id, orderId)).limit(1);
-  if (!existing) { res.status(404).json({ error: "Order not found" }); return; }
-  // Drivers may confirm delivery from either picked_up (legacy direct flow)
-  // or en_route (new lifecycle: picked_up → en_route → delivered).
+  if (!existing) { res.status(404).json({ error: "Commande introuvable" }); return; }
+
   if (existing.status !== "picked_up" && existing.status !== "en_route") {
-    res.status(409).json({ error: "Order is not in transit" });
+    res.status(409).json({ error: "La commande n'est pas en cours de livraison" });
     return;
   }
 
-  // Authorization
+  // ── Authorization ──────────────────────────────────────────────────────
+  let driver: typeof driversTable.$inferSelect | null = null;
   if (req.userRole !== "admin") {
     if (!existing.driverId) {
-      res.status(403).json({ error: "Order has no assigned driver" });
+      res.status(403).json({ error: "Aucun livreur assigné à cette commande" });
       return;
     }
-    const [driver] = await db.select().from(driversTable).where(eq(driversTable.id, existing.driverId)).limit(1);
-    if (!driver || driver.userId !== req.userId) {
-      res.status(403).json({ error: "Only the assigned driver can confirm delivery" });
+    const [found] = await db.select().from(driversTable).where(eq(driversTable.id, existing.driverId)).limit(1);
+    if (!found || found.userId !== req.userId) {
+      res.status(403).json({ error: "Seul le livreur assigné peut confirmer la livraison" });
       return;
     }
+    driver = found;
+  } else if (existing.driverId) {
+    const [found] = await db.select().from(driversTable).where(eq(driversTable.id, existing.driverId)).limit(1);
+    driver = found ?? null;
   }
 
+  // ── OTP check ──────────────────────────────────────────────────────────
   if (!existing.pickupCode || existing.pickupCode !== code) {
-    res.status(400).json({ error: "Code OTP incorrect", code: "INVALID_OTP" });
+    res.status(400).json({ error: "Code OTP incorrect — demandez au client de relire son code", code: "INVALID_OTP" });
     return;
   }
 
+  // ── Mark order as delivered ────────────────────────────────────────────
   const [order] = await db
     .update(ordersTable)
     .set({ status: "delivered" })
     .where(eq(ordersTable.id, orderId))
     .returning();
 
-  // Bump the driver's totalDeliveries counter.
-  if (order.driverId) {
-    const [driver] = await db.select().from(driversTable).where(eq(driversTable.id, order.driverId)).limit(1);
-    if (driver) {
-      await db.update(driversTable).set({
-        totalDeliveries: driver.totalDeliveries + 1,
-      }).where(eq(driversTable.id, order.driverId));
-    }
+  // ── Driver post-delivery processing ────────────────────────────────────
+  const DRIVER_SHARE = 0.80; // 80% of delivery fee goes to the driver
+  const driverEarning = Math.round((order.deliveryFee ?? 0) * DRIVER_SHARE * 100) / 100;
+
+  if (driver) {
+    // 1. Increment deliveries, credit earnings, mark available
+    await db.update(driversTable).set({
+      totalDeliveries: driver.totalDeliveries + 1,
+      totalEarnings: (driver.totalEarnings ?? 0) + driverEarning,
+      isAvailable: true,
+    }).where(eq(driversTable.id, driver.id));
+
+    // 2. Insert earnings ledger row
+    await db.insert(driverEarningsTable).values({
+      driverId: driver.id,
+      orderId: order.id,
+      amount: driverEarning,
+      type: "delivery",
+      note: `Livraison #${order.reference ?? order.id} — ${order.restaurantName}`,
+    });
+
+    // 3. Notify the driver
+    await pushNotification(
+      driver.userId,
+      "earnings",
+      "Livraison confirmée ! 💰",
+      `+${driverEarning.toFixed(0)} MAD ajoutés à vos revenus. Vous êtes de nouveau disponible.`,
+      { orderId: order.id, amount: driverEarning },
+    );
+
+    // 4. Driver-specific SSE so the app updates earnings strip in real-time
+    publish(`driver:${driver.id}`, "delivery_completed", {
+      orderId: order.id,
+      earning: driverEarning,
+      totalEarnings: (driver.totalEarnings ?? 0) + driverEarning,
+      totalDeliveries: driver.totalDeliveries + 1,
+    });
   }
 
+  // ── Notify customer ────────────────────────────────────────────────────
+  await pushNotification(
+    order.userId,
+    "order_status",
+    "Commande livrée ! 🎉",
+    `Votre commande chez ${order.restaurantName} vient d'être remise. Bon appétit !`,
+    { orderId: order.id, status: "delivered" },
+  );
+
+  // ── Broadcast SSE to all channels ─────────────────────────────────────
   const orderWithItems = await getOrderWithItems(order.id);
   publish(`order:${order.id}`, "order_status", { orderId: order.id, status: "delivered", order: orderWithItems });
   publish(`restaurant:${order.restaurantId}`, "order_status", { orderId: order.id, status: "delivered" });
   publish("admin_tracking", "order_status", { orderId: order.id, status: "delivered", driverId: order.driverId });
 
-  // Stop fanning out live location updates for this completed order.
+  // ── Stop live GPS tracking ─────────────────────────────────────────────
   if (order.driverId) tracking.detachOrder(order.driverId, order.id);
 
-  res.json(orderWithItems);
+  res.json({ ...orderWithItems, driverEarning });
 });
 
 /**

@@ -92,7 +92,9 @@ export default function DeliverScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [accepting, setAccepting] = useState<number | null>(null);
   const [pickupModalOrderId, setPickupModalOrderId] = useState<number | null>(null);
+  const [pickupModalEarning, setPickupModalEarning] = useState<number | null>(null);
   const [confirmingPickup, setConfirmingPickup] = useState(false);
+  const [lastDeliveryEarning, setLastDeliveryEarning] = useState<number | null>(null);
   const watchRef = useRef<Location.LocationSubscription | null>(null);
 
   const isOnline = !!myDriver?.isAvailable;
@@ -229,6 +231,10 @@ export default function DeliverScreen() {
 
   const onMarkDelivered = (orderId: number) => {
     haptic("medium");
+    // Pre-compute the expected earning from the active delivery fee
+    const order = myOrders?.find((o) => o.id === orderId);
+    const estimated = order ? Math.round((order.deliveryFee ?? 0) * 0.80 * 100) / 100 : null;
+    setPickupModalEarning(estimated);
     setPickupModalOrderId(orderId);
   };
 
@@ -236,13 +242,29 @@ export default function DeliverScreen() {
     if (pickupModalOrderId == null) return;
     setConfirmingPickup(true);
     try {
-      await confirmDelivery(pickupModalOrderId, code);
+      const result = await confirmDelivery(pickupModalOrderId, code);
       haptic("success");
+      const earned = result?.driverEarning ?? pickupModalEarning ?? 0;
+      setLastDeliveryEarning(earned);
       setPickupModalOrderId(null);
+      setPickupModalEarning(null);
       refetchMyOrders();
+      // Force earnings refresh — small delay to let the DB write propagate
+      setTimeout(() => refetchDrivers(), 600);
+      if (earned > 0) {
+        Alert.alert(
+          "✅ Livraison confirmée !",
+          `+${earned.toFixed(0)} MAD ajoutés à vos revenus.\nVous êtes de nouveau disponible.`,
+          [{ text: "Super !", style: "default" }],
+        );
+      }
     } catch (e: any) {
       haptic("error");
-      Alert.alert("Wrong code", e?.message ?? "The code does not match. Ask the customer to read it again.");
+      Alert.alert(
+        "Code incorrect",
+        e?.message ?? "Ce code ne correspond pas. Demandez au client de relire son code.",
+        [{ text: "Réessayer", style: "default" }],
+      );
     } finally {
       setConfirmingPickup(false);
     }
@@ -300,7 +322,8 @@ export default function DeliverScreen() {
       <PickupCodeModal
         visible={pickupModalOrderId != null}
         loading={confirmingPickup}
-        onCancel={() => setPickupModalOrderId(null)}
+        lastEarning={pickupModalEarning}
+        onCancel={() => { setPickupModalOrderId(null); setPickupModalEarning(null); }}
         onSubmit={onConfirmPickupCode}
       />
       <ScrollView

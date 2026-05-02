@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { db, driversTable, ordersTable } from "@workspace/db";
+import { db, driversTable, ordersTable, driverEarningsTable } from "@workspace/db";
 import { eq, and, inArray } from "drizzle-orm";
 import { publish } from "../lib/sse";
 import * as tracking from "../lib/trackingService";
@@ -255,33 +255,28 @@ router.get("/drivers/:id/earnings", requireAuth, async (req: AuthedRequest, res)
   const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const startOfWeek = new Date(now);
   startOfWeek.setDate(now.getDate() - now.getDay());
+  startOfWeek.setHours(0, 0, 0, 0);
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
-  const deliveredOrders = await db
-    .select({ total: ordersTable.total, createdAt: ordersTable.createdAt })
-    .from(ordersTable)
-    .where(and(eq(ordersTable.driverId, driverId), eq(ordersTable.status, "delivered")));
-
-  const driverCommission = 0.15; // 15% commission for driver
+  const allEarnings = await db
+    .select({ amount: driverEarningsTable.amount, createdAt: driverEarningsTable.createdAt })
+    .from(driverEarningsTable)
+    .where(eq(driverEarningsTable.driverId, driverId));
 
   let today = 0, thisWeek = 0, thisMonth = 0, completedToday = 0;
 
-  for (const order of deliveredOrders) {
-    const orderDate = new Date(order.createdAt);
-    const earning = order.total * driverCommission;
-
-    if (orderDate >= startOfDay) {
-      today += earning;
-      completedToday++;
-    }
-    if (orderDate >= startOfWeek) thisWeek += earning;
-    if (orderDate >= startOfMonth) thisMonth += earning;
+  for (const row of allEarnings) {
+    const d = new Date(row.createdAt);
+    if (d >= startOfDay) { today += row.amount; completedToday++; }
+    if (d >= startOfWeek) thisWeek += row.amount;
+    if (d >= startOfMonth) thisMonth += row.amount;
   }
 
   res.json({
     today: Math.round(today * 100) / 100,
     thisWeek: Math.round(thisWeek * 100) / 100,
     thisMonth: Math.round(thisMonth * 100) / 100,
+    totalEarnings: Math.round((driver.totalEarnings ?? 0) * 100) / 100,
     totalDeliveries: driver.totalDeliveries,
     completedToday,
   });
