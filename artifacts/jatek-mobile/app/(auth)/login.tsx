@@ -146,9 +146,6 @@ export default function LoginScreen() {
         <View style={styles.logoWrap}>
           <SvgXml xml={JATEK_LOGO_SVG} width="100%" height="100%" />
         </View>
-        <Text style={[styles.subtitle, { color: colors.mutedForeground }]}>
-          {t("login_subtitle")}
-        </Text>
 
         <View style={styles.form}>
           {/* Mode selector — phone vs email */}
@@ -381,10 +378,7 @@ const styles = StyleSheet.create({
   logoWrap: {
     width: 160, height: 52,
     alignSelf: "center",
-    marginBottom: 4,
-  },
-  subtitle: {
-    fontSize: 14, fontFamily: "Inter_400Regular", marginTop: 4, marginBottom: 36,
+    marginBottom: 32,
   },
   form: { width: "100%", gap: 10 },
   label: { fontSize: 14, fontFamily: "Inter_500Medium", marginBottom: 2 },

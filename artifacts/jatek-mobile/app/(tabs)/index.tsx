@@ -534,20 +534,8 @@ export default function HomeScreen() {
           )}
         </Animated.View>
       </ScrollView>
-      {/* ─── Bande "Offres" collée juste au-dessus du menu ─── */}
-      <Animated.View
-        entering={FadeInUp.delay(900).duration(600)}
-        style={[s.fab, { bottom: tabBarHeight }]}
-        pointerEvents="box-none"
-      >
-        <TouchableOpacity
-          onPress={() => setAdSheetVisible(true)}
-          activeOpacity={0.7}
-          style={s.fabBtn}
-        >
-          <Ionicons name="chevron-up" size={17} color={PINK} />
-        </TouchableOpacity>
-      </Animated.View>
+      {/* Floating "Offres" handle hidden — to be redesigned. The AdSheet remains
+          available so we can re-enable the trigger later without losing state. */}
 
       <AddressQuickPicker visible={addressPickerOpen} onClose={() => setAddressPickerOpen(false)} />
       <JatekAdSheet visible={adSheetVisible} onClose={() => setAdSheetVisible(false)} />
