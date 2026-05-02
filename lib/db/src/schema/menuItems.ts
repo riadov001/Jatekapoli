@@ -12,6 +12,14 @@ export const menuItemsTable = pgTable("menu_items", {
   category: text("category").notNull().default("Main"),
   isAvailable: boolean("is_available").notNull().default(true),
   isPopular: boolean("is_popular").notNull().default(false),
+  /** Dietary tags: halal | vegetarian | vegan | spicy | gluten_free */
+  tags: text("tags").array(),
+  /** Free-text allergen list, e.g. "gluten, lactose, noix" */
+  allergens: text("allergens"),
+  /** Preparation time in minutes */
+  prepTimeMinutes: integer("prep_time_minutes"),
+  /** Calories (kcal) */
+  calories: integer("calories"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 });

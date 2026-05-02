@@ -40,7 +40,19 @@ See the `pnpm-workspace` skill for workspace structure, TypeScript setup, and pa
 - `lib/db` — Drizzle ORM schema + client
 
 ### DB Models
-users, restaurants, menuItems, orders, orderItems, drivers, reviews, categories, ads, shorts, addresses, favorites, otpCodes, userConsents, paymentMethods, supportTickets, quotes, notificationPrefs, dashboardTodos
+users, restaurants, menuItems, orders, orderItems, drivers, reviews, categories, ads, shorts, addresses, favorites, otpCodes, userConsents, paymentMethods, supportTickets, quotes, notificationPrefs, dashboardTodos, promoCodes, promoCodeUsages, chatMessages, notifications, referrals
+
+### Advanced Features (la total)
+- **Scheduled orders** — `deliveryType` (asap/scheduled) + `scheduledFor` timestamp on orders; UI in cart
+- **Contactless delivery** — `isContactless` flag + `proofPhotoUrl` on orders; toggle in cart UI
+- **Promo code engine** — `promo_codes` + `promo_code_usages` tables; `POST /api/promo-codes/validate`, cart UI with apply/remove, automatic discount at checkout (percentage, fixed MAD, free delivery)
+- **Two-way ratings** — `driverRating`/`driverRatingComment`/`customerRating` on orders; `POST /orders/:id/rate-driver`, `POST /orders/:id/rate-customer`; star modal in order detail
+- **In-app chat** — `chat_messages` table; `POST|GET /api/orders/:id/chat`; real-time via SSE fan-out; ChatPanel component in order detail
+- **In-app notification center** — `notifications` table; `GET /api/notifications`, `PATCH .../read`, `PATCH .../read-all`; NotificationBell component in Layout header with live badge
+- **Referral + wallet system** — `referrals` table; `walletBalance`/`referralCode`/`referredBy` on users; `GET /api/referrals/my-code`, `POST /api/referrals/apply`; referrer credited 20 MAD on first order of referred user; new user gets 10 MAD immediately; full UI in rewards page
+- **One-tap reorder** — `POST /orders/:id/reorder` clones items from any past order into new pending order; Recommander button in order detail
+- **Dietary tags on menu items** — `tags` (text[], halal/vegetarian/vegan/spicy/gluten_free), `allergens`, `calories`, `prepTimeMinutes` on menu items; colored badges in restaurant page
+- **pushNotification helper** — `notifications.ts` exports `pushNotification(userId, type, title, body, data)` used by orders route on: new order, referral completion
 
 ### Content Management (new)
 - `categories` — shop/restaurant categories with icon, accentColor, parentId (sub-categories), businessType, sortOrder

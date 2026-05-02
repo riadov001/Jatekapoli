@@ -1,4 +1,4 @@
-import { pgTable, text, serial, timestamp, boolean, integer, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, timestamp, boolean, integer, jsonb, real } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
@@ -24,6 +24,12 @@ export const usersTable = pgTable("users", {
   avatarUrl: text("avatar_url"),
   isActive: boolean("is_active").notNull().default(true),
   loyaltyPoints: integer("loyalty_points").notNull().default(0),
+  /** Platform wallet balance in MAD (credited via referrals, refunds, promotions). */
+  walletBalance: real("wallet_balance").notNull().default(0),
+  /** Unique referral code this user can share to earn credits. */
+  referralCode: text("referral_code").unique(),
+  /** The user who referred this user (userId of referrer). */
+  referredBy: integer("referred_by"),
   /** Set when role=employee — the shop they are assigned to. */
   assignedShopId: integer("assigned_shop_id"),
   /** Custom permissions, used when role === 'other'. Set by super_admin. */

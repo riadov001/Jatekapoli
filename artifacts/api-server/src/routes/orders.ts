@@ -10,6 +10,9 @@ import {
   generateUniqueOrderReference,
   generateKitchenCode,
   generatePickupCode,
+  promoCodesTable,
+  promoCodeUsagesTable,
+  referralsTable,
 } from "@workspace/db";
 import { eq, and, inArray, isNull } from "drizzle-orm";
 import { requireAuth, attachAuth, type AuthedRequest } from "../middlewares/auth";
@@ -22,6 +25,7 @@ import {
 } from "@workspace/api-zod";
 import { publish } from "../lib/sse";
 import * as tracking from "../lib/trackingService";
+import { pushNotification } from "./notifications";
 
 const router: IRouter = Router();
 
@@ -108,6 +112,12 @@ router.post("/orders", requireAuth, async (req: AuthedRequest, res): Promise<voi
 
   const { restaurantId, deliveryAddress, notes, items } = parsed.data;
   const userId = req.userId!;
+  const { promoCode, deliveryType, scheduledFor, isContactless } = req.body as {
+    promoCode?: string;
+    deliveryType?: string;
+    scheduledFor?: string;
+    isContactless?: boolean;
+  };
 
   const [restaurant] = await db.select().from(restaurantsTable).where(eq(restaurantsTable.id, restaurantId)).limit(1);
   if (!restaurant) {
@@ -142,9 +152,38 @@ router.post("/orders", requireAuth, async (req: AuthedRequest, res): Promise<voi
     });
   }
 
-  const deliveryFee = restaurant.deliveryFee || 0;
-  const total = subtotal + deliveryFee;
+  let deliveryFee = restaurant.deliveryFee || 0;
+  let discountAmount = 0;
+  let appliedPromoId: number | null = null;
 
+  // Apply promo code if provided
+  if (promoCode) {
+    const [promo] = await db
+      .select()
+      .from(promoCodesTable)
+      .where(eq(promoCodesTable.code, promoCode.toUpperCase().trim()))
+      .limit(1);
+
+    if (promo && promo.isActive && (!promo.expiresAt || new Date() <= promo.expiresAt)) {
+      if (promo.type === "percentage") {
+        discountAmount = Math.min(subtotal, (subtotal * promo.value) / 100);
+      } else if (promo.type === "fixed") {
+        discountAmount = Math.min(subtotal, promo.value);
+      } else if (promo.type === "free_delivery") {
+        discountAmount = deliveryFee;
+        deliveryFee = 0;
+      }
+      discountAmount = Math.round(discountAmount * 100) / 100;
+      appliedPromoId = promo.id;
+
+      // Increment usage count
+      await db.update(promoCodesTable)
+        .set({ usedCount: promo.usedCount + 1 })
+        .where(eq(promoCodesTable.id, promo.id));
+    }
+  }
+
+  const total = Math.max(0, subtotal + deliveryFee - discountAmount);
   const reference = await generateUniqueOrderReference();
 
   const [order] = await db.insert(ordersTable).values({
@@ -156,17 +195,32 @@ router.post("/orders", requireAuth, async (req: AuthedRequest, res): Promise<voi
     status: "pending",
     subtotal,
     deliveryFee,
+    discountAmount,
     total,
     deliveryAddress,
     notes: notes ?? null,
     estimatedDeliveryTime: restaurant.deliveryTime || 30,
+    deliveryType: deliveryType ?? "asap",
+    scheduledFor: scheduledFor ? new Date(scheduledFor) : null,
+    isContactless: isContactless ?? false,
+    promoCode: promoCode ? promoCode.toUpperCase().trim() : null,
   }).returning();
 
   await db.insert(orderItemsTable).values(
     orderItemsData.map((i) => ({ ...i, orderId: order.id }))
   );
 
-  // Award loyalty points
+  // Record promo code usage
+  if (appliedPromoId) {
+    await db.insert(promoCodeUsagesTable).values({
+      promoCodeId: appliedPromoId,
+      userId,
+      orderId: order.id,
+      discountAmount,
+    });
+  }
+
+  // Award loyalty points (based on amount paid after discount)
   const pointsEarned = Math.floor(total / 10);
   if (pointsEarned > 0) {
     await db.update(usersTable).set({
@@ -174,10 +228,42 @@ router.post("/orders", requireAuth, async (req: AuthedRequest, res): Promise<voi
     }).where(eq(usersTable.id, userId));
   }
 
+  // Credit referrer if this is the user's first completed order path
+  const allUserOrders = await db.select({ id: ordersTable.id }).from(ordersTable).where(eq(ordersTable.userId, userId));
+  if (allUserOrders.length === 1 && user?.referredBy) {
+    const [referral] = await db
+      .select()
+      .from(referralsTable)
+      .where(and(eq(referralsTable.referrerId, user.referredBy), eq(referralsTable.referredId, userId)))
+      .limit(1);
+    if (referral && referral.status === "pending") {
+      const [referrer] = await db.select().from(usersTable).where(eq(usersTable.id, user.referredBy)).limit(1);
+      if (referrer) {
+        await db.update(usersTable).set({
+          walletBalance: referrer.walletBalance + referral.creditAmount,
+        }).where(eq(usersTable.id, referrer.id));
+        await db.update(referralsTable).set({
+          status: "completed",
+          completedAt: new Date(),
+        }).where(eq(referralsTable.id, referral.id));
+        await pushNotification(
+          referrer.id,
+          "referral",
+          "Parrainage réussi ! 🎉",
+          `Votre ami ${user.name} a passé sa première commande. ${referral.creditAmount} MAD ont été ajoutés à votre portefeuille !`,
+          { creditAmount: referral.creditAmount },
+        );
+      }
+    }
+  }
+
   const orderWithItems = await getOrderWithItems(order.id);
 
   // Push real-time event to restaurant
   publish(`restaurant:${restaurantId}`, "order_new", orderWithItems);
+
+  // Push notification to customer
+  await pushNotification(userId, "order_status", "Commande reçue !", `Votre commande chez ${restaurant.name} a bien été reçue.`, { orderId: order.id, status: "pending" });
 
   res.status(201).json(orderWithItems);
 });
@@ -574,6 +660,158 @@ router.get("/orders/:id/receipt", requireAuth, async (req: AuthedRequest, res): 
   res.setHeader("Content-Type", "text/html; charset=utf-8");
   res.setHeader("Cache-Control", "no-store");
   res.send(html);
+});
+
+/** Customer rates their driver after delivery */
+router.post("/orders/:id/rate-driver", requireAuth, async (req: AuthedRequest, res): Promise<void> => {
+  const orderId = parseInt(req.params.id, 10);
+  if (isNaN(orderId)) { res.status(400).json({ error: "Invalid order id" }); return; }
+
+  const { rating, comment } = req.body;
+  if (!rating || typeof rating !== "number" || rating < 1 || rating > 5) {
+    res.status(400).json({ error: "Rating must be 1-5" });
+    return;
+  }
+
+  const [order] = await db.select().from(ordersTable).where(and(eq(ordersTable.id, orderId), eq(ordersTable.userId, req.userId!))).limit(1);
+  if (!order) { res.status(404).json({ error: "Order not found" }); return; }
+  if (order.status !== "delivered") { res.status(400).json({ error: "Order must be delivered to rate" }); return; }
+  if (order.driverRating !== null) { res.status(400).json({ error: "Vous avez déjà évalué ce livreur" }); return; }
+
+  const [updated] = await db.update(ordersTable)
+    .set({ driverRating: Math.round(rating), driverRatingComment: comment ?? null })
+    .where(eq(ordersTable.id, orderId))
+    .returning();
+
+  // Notify driver
+  if (order.driverId) {
+    const [drv] = await db.select().from(driversTable).where(eq(driversTable.id, order.driverId)).limit(1);
+    if (drv?.userId) {
+      await pushNotification(
+        drv.userId,
+        "system",
+        "Nouvelle évaluation",
+        `Vous avez reçu ${Math.round(rating)}/5 étoiles pour la commande ${order.reference ?? `#${order.id}`}.`,
+        { orderId, rating },
+      );
+    }
+  }
+
+  res.json(updated);
+});
+
+/** Driver rates customer */
+router.post("/orders/:id/rate-customer", requireAuth, async (req: AuthedRequest, res): Promise<void> => {
+  const orderId = parseInt(req.params.id, 10);
+  if (isNaN(orderId)) { res.status(400).json({ error: "Invalid order id" }); return; }
+
+  const { rating } = req.body;
+  if (!rating || typeof rating !== "number" || rating < 1 || rating > 5) {
+    res.status(400).json({ error: "Rating must be 1-5" });
+    return;
+  }
+
+  const [order] = await db.select().from(ordersTable).where(eq(ordersTable.id, orderId)).limit(1);
+  if (!order) { res.status(404).json({ error: "Order not found" }); return; }
+  if (order.status !== "delivered") { res.status(400).json({ error: "Order must be delivered to rate" }); return; }
+
+  // Verify caller is the assigned driver
+  if (order.driverId) {
+    const [drv] = await db.select().from(driversTable).where(eq(driversTable.id, order.driverId)).limit(1);
+    if (drv?.userId !== req.userId) { res.status(403).json({ error: "Forbidden" }); return; }
+  } else {
+    res.status(403).json({ error: "Forbidden" }); return;
+  }
+
+  if (order.customerRating !== null) { res.status(400).json({ error: "Vous avez déjà évalué ce client" }); return; }
+
+  const [updated] = await db.update(ordersTable)
+    .set({ customerRating: Math.round(rating) })
+    .where(eq(ordersTable.id, orderId))
+    .returning();
+
+  res.json(updated);
+});
+
+/** Reorder — clone items from a previous order into a new pending order */
+router.post("/orders/:id/reorder", requireAuth, async (req: AuthedRequest, res): Promise<void> => {
+  const orderId = parseInt(req.params.id, 10);
+  if (isNaN(orderId)) { res.status(400).json({ error: "Invalid order id" }); return; }
+
+  const userId = req.userId!;
+
+  const [order] = await db.select().from(ordersTable).where(and(eq(ordersTable.id, orderId), eq(ordersTable.userId, userId))).limit(1);
+  if (!order) { res.status(404).json({ error: "Order not found" }); return; }
+
+  const [restaurant] = await db.select().from(restaurantsTable).where(eq(restaurantsTable.id, order.restaurantId)).limit(1);
+  if (!restaurant) { res.status(404).json({ error: "Restaurant not found" }); return; }
+  if (!restaurant.isOpen) { res.status(400).json({ error: "Ce restaurant est actuellement fermé." }); return; }
+
+  const oldItems = await db.select().from(orderItemsTable).where(eq(orderItemsTable.orderId, orderId));
+  if (oldItems.length === 0) { res.status(400).json({ error: "No items found in original order" }); return; }
+
+  const [user] = await db.select().from(usersTable).where(eq(usersTable.id, userId)).limit(1);
+
+  let subtotal = 0;
+  const newOrderItems: { menuItemId: number; menuItemName: string; quantity: number; unitPrice: number; totalPrice: number }[] = [];
+
+  for (const item of oldItems) {
+    const [menuItem] = await db.select().from(menuItemsTable).where(eq(menuItemsTable.id, item.menuItemId)).limit(1);
+    if (!menuItem || !menuItem.isAvailable) continue;
+    const unitPrice = menuItem.price;
+    const itemTotal = unitPrice * item.quantity;
+    subtotal += itemTotal;
+    newOrderItems.push({
+      menuItemId: menuItem.id,
+      menuItemName: menuItem.name,
+      quantity: item.quantity,
+      unitPrice,
+      totalPrice: itemTotal,
+    });
+  }
+
+  if (newOrderItems.length === 0) {
+    res.status(400).json({ error: "Aucun article disponible dans cette commande" });
+    return;
+  }
+
+  const deliveryFee = restaurant.deliveryFee || 0;
+  const total = subtotal + deliveryFee;
+  const reference = await generateUniqueOrderReference();
+
+  const [newOrder] = await db.insert(ordersTable).values({
+    reference,
+    userId,
+    restaurantId: order.restaurantId,
+    restaurantName: restaurant.name,
+    userName: user?.name || "Customer",
+    status: "pending",
+    subtotal,
+    deliveryFee,
+    total,
+    deliveryAddress: order.deliveryAddress,
+    notes: order.notes,
+    estimatedDeliveryTime: restaurant.deliveryTime || 30,
+    deliveryType: "asap",
+    isContactless: false,
+  }).returning();
+
+  await db.insert(orderItemsTable).values(
+    newOrderItems.map((i) => ({ ...i, orderId: newOrder.id }))
+  );
+
+  const pointsEarned = Math.floor(total / 10);
+  if (pointsEarned > 0) {
+    await db.update(usersTable).set({
+      loyaltyPoints: (user?.loyaltyPoints || 0) + pointsEarned,
+    }).where(eq(usersTable.id, userId));
+  }
+
+  const newOrderWithItems = await getOrderWithItems(newOrder.id);
+  publish(`restaurant:${order.restaurantId}`, "order_new", newOrderWithItems);
+  await pushNotification(userId, "order_status", "Commande relancée !", `Votre commande chez ${restaurant.name} a bien été reçue.`, { orderId: newOrder.id, status: "pending" });
+
+  res.status(201).json(newOrderWithItems);
 });
 
 export default router;

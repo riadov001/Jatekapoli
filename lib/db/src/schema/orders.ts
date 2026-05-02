@@ -1,4 +1,4 @@
-import { pgTable, text, serial, timestamp, integer, real } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, timestamp, integer, real, boolean } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
@@ -13,6 +13,8 @@ export const ordersTable = pgTable("orders", {
   status: text("status").notNull().default("pending"),
   subtotal: real("subtotal").notNull(),
   deliveryFee: real("delivery_fee").notNull().default(0),
+  /** Discount applied via promo code (MAD amount). */
+  discountAmount: real("discount_amount").notNull().default(0),
   total: real("total").notNull(),
   deliveryAddress: text("delivery_address").notNull(),
   notes: text("notes"),
@@ -22,6 +24,21 @@ export const ordersTable = pgTable("orders", {
   /** 4-digit numeric code shown to the customer at order acceptance; the driver
    *  must enter or scan it to confirm hand-off (a la Uber Eats / Glovo). */
   pickupCode: text("pickup_code"),
+  /** "asap" (default) or "scheduled" */
+  deliveryType: text("delivery_type").notNull().default("asap"),
+  /** When deliveryType="scheduled", the requested delivery timestamp. */
+  scheduledFor: timestamp("scheduled_for", { withTimezone: true }),
+  /** Customer opted for contactless (leave-at-door) delivery. */
+  isContactless: boolean("is_contactless").notNull().default(false),
+  /** Photo URL uploaded by driver as proof-of-delivery for contactless orders. */
+  proofPhotoUrl: text("proof_photo_url"),
+  /** Applied promo code string (stored for reference). */
+  promoCode: text("promo_code"),
+  /** 1-5 star rating the customer gives the driver after delivery. */
+  driverRating: integer("driver_rating"),
+  driverRatingComment: text("driver_rating_comment"),
+  /** 1-5 star rating the driver gives the customer. */
+  customerRating: integer("customer_rating"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 });

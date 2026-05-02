@@ -1,13 +1,16 @@
 import { useEffect, useState } from "react";
 import { useRoute, useLocation } from "wouter";
-import { ArrowLeft, CheckCircle, Clock, Package, Truck, MapPin } from "lucide-react";
+import { ArrowLeft, CheckCircle, Clock, Package, Truck, MapPin, MessageSquare, Star, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 import { useGetOrder } from "@workspace/api-client-react";
 import { DeliveryMap } from "@/components/DeliveryMap";
+import { ChatPanel } from "@/components/ChatPanel";
+import { OrderRatingModal } from "@/components/OrderRatingModal";
 import { useTranslation } from "react-i18next";
+import { useToast } from "@/hooks/use-toast";
 
 const statusOrder = ["pending", "accepted", "preparing", "ready", "picked_up", "delivered"];
 
@@ -22,16 +25,23 @@ export default function OrderDetailPage() {
   const [match, params] = useRoute("/orders/:id");
   const [_, setLocation] = useLocation();
   const { t } = useTranslation();
+  const { toast } = useToast();
   const id = match ? parseInt(params!.id, 10) : 0;
 
   const { data: order, isLoading, refetch } = useGetOrder(id, { query: { enabled: !!id, refetchInterval: 20000 } });
 
   const [driverLocation, setDriverLocation] = useState<DriverLocation | null>(null);
+  const [chatOpen, setChatOpen] = useState(false);
+  const [ratingOpen, setRatingOpen] = useState(false);
+  const [reordering, setReordering] = useState(false);
 
-  // Real-time updates via SSE: order_status (re-fetches order) + driver_location
+  const base = import.meta.env.BASE_URL?.replace(/\/$/, "") || "";
+  const token = localStorage.getItem("jatek_token");
+  const authHeaders = token ? { Authorization: `Bearer ${token}`, "Content-Type": "application/json" } : { "Content-Type": "application/json" };
+
+  // Real-time updates via SSE
   useEffect(() => {
     if (!id) return;
-    const base = import.meta.env.BASE_URL?.replace(/\/$/, "") || "";
     const channels = [`order:${id}`, order?.driverId ? `driver:${order.driverId}` : ""].filter(Boolean).join(",");
     const url = `${base}/api/events?channels=${encodeURIComponent(channels)}`;
     const es = new EventSource(url);
@@ -47,13 +57,9 @@ export default function OrderDetailPage() {
             name: prev?.name,
           }));
         }
-      } catch (err) {
-        console.warn("[order-detail] failed to parse driver_location event", err);
-      }
+      } catch {}
     });
-    es.onerror = (err) => {
-      console.warn("[order-detail] SSE error; polling will continue as fallback", err);
-    };
+    es.onerror = () => {};
     return () => { es.close(); };
   }, [id, order?.driverId, refetch]);
 
@@ -71,25 +77,52 @@ export default function OrderDetailPage() {
       setDriverLocation(null);
       return;
     }
-
     const fetchLocation = async () => {
       try {
-        const base = import.meta.env.BASE_URL?.replace(/\/$/, "") || "";
-        const token = localStorage.getItem("jatek_token");
         const res = await fetch(`${base}/api/drivers/${order.driverId}/location`, {
           headers: token ? { Authorization: `Bearer ${token}` } : {},
         });
-        if (res.ok) {
-          const data = await res.json();
-          setDriverLocation(data);
-        }
+        if (res.ok) setDriverLocation(await res.json());
       } catch {}
     };
-
     fetchLocation();
     const interval = setInterval(fetchLocation, 10000);
     return () => clearInterval(interval);
   }, [order?.driverId, order?.status]);
+
+  const handleRateDriver = async (rating: number, comment: string) => {
+    const res = await fetch(`${base}/api/orders/${id}/rate-driver`, {
+      method: "POST",
+      headers: authHeaders,
+      body: JSON.stringify({ rating, comment }),
+    });
+    if (!res.ok) {
+      const data = await res.json();
+      throw new Error(data.error ?? "Erreur");
+    }
+    refetch();
+  };
+
+  const handleReorder = async () => {
+    setReordering(true);
+    try {
+      const res = await fetch(`${base}/api/orders/${id}/reorder`, {
+        method: "POST",
+        headers: authHeaders,
+      });
+      const data = await res.json();
+      if (res.ok) {
+        toast({ title: "Commande relancée !", description: "Votre nouvelle commande a bien été passée." });
+        setLocation(`/orders/${data.id}`);
+      } else {
+        toast({ title: data.error ?? "Impossible de relancer la commande", variant: "destructive" });
+      }
+    } catch {
+      toast({ title: "Erreur réseau", variant: "destructive" });
+    } finally {
+      setReordering(false);
+    }
+  };
 
   if (!match) return <div>{t("orderDetail.notFound")}</div>;
 
@@ -105,11 +138,12 @@ export default function OrderDetailPage() {
 
   if (!order) return <div>{t("orderDetail.notFound")}</div>;
 
-  const currentStepIndex = order.status === "cancelled"
-    ? -1
-    : statusOrder.indexOf(order.status);
-
+  const currentStepIndex = order.status === "cancelled" ? -1 : statusOrder.indexOf(order.status);
   const showMap = ["picked_up"].includes(order.status) && !!order.driverId;
+  const isDelivered = order.status === "delivered";
+  const isActive = !["delivered", "cancelled"].includes(order.status);
+  const canRate = isDelivered && !!(order as any).driverId && !(order as any).driverRating;
+  const canChat = !["delivered", "cancelled"].includes(order.status) && !!(order as any).driverId;
 
   return (
     <div className="max-w-2xl mx-auto space-y-6 pb-6">
@@ -128,12 +162,72 @@ export default function OrderDetailPage() {
         ) : null}
       </div>
 
-      {/* Pickup code — shown to the customer to read out to the driver. */}
-      {(order as any).pickupCode && !["delivered", "cancelled"].includes(order.status) && (
-        <div
-          className="bg-gradient-to-br from-primary via-primary to-brand-turquoise text-primary-foreground rounded-2xl p-5 text-center shadow-md"
-          data-testid="card-pickup-code"
-        >
+      {/* Action buttons — chat, rate, reorder */}
+      <div className="flex flex-wrap gap-2">
+        {canChat && (
+          <Button variant="outline" size="sm" className="gap-2 rounded-xl" onClick={() => setChatOpen(true)}>
+            <MessageSquare className="w-4 h-4 text-primary" />
+            Chat livreur
+          </Button>
+        )}
+        {canRate && (
+          <Button variant="outline" size="sm" className="gap-2 rounded-xl" onClick={() => setRatingOpen(true)}>
+            <Star className="w-4 h-4 text-yellow-500" />
+            Évaluer
+          </Button>
+        )}
+        {isDelivered && (
+          <Button variant="outline" size="sm" className="gap-2 rounded-xl" onClick={handleReorder} disabled={reordering}>
+            <RotateCcw className={`w-4 h-4 text-brand-turquoise ${reordering ? "animate-spin" : ""}`} />
+            {reordering ? "..." : "Recommander"}
+          </Button>
+        )}
+      </div>
+
+      {/* Driver rating already done */}
+      {isDelivered && (order as any).driverRating && (
+        <div className="flex items-center gap-2 p-3 bg-yellow-50 dark:bg-yellow-950/30 border border-yellow-200 dark:border-yellow-800 rounded-xl">
+          <div className="flex">
+            {[1,2,3,4,5].map((s) => (
+              <Star key={s} className={`w-4 h-4 ${s <= (order as any).driverRating ? "fill-yellow-400 text-yellow-400" : "text-muted-foreground/30"}`} />
+            ))}
+          </div>
+          <span className="text-sm text-muted-foreground">Votre avis a été envoyé</span>
+        </div>
+      )}
+
+      {/* Scheduled delivery badge */}
+      {(order as any).deliveryType === "scheduled" && (order as any).scheduledFor && (
+        <div className="flex items-center gap-2 p-3 bg-brand-turquoise-soft border border-brand-turquoise/30 rounded-xl">
+          <Clock className="w-4 h-4 text-brand-turquoise shrink-0" />
+          <div>
+            <p className="text-sm font-semibold text-brand-turquoise">Livraison programmée</p>
+            <p className="text-xs text-muted-foreground">
+              {new Date((order as any).scheduledFor).toLocaleString("fr-FR", { weekday: "short", day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Contactless badge */}
+      {(order as any).isContactless && (
+        <div className="flex items-center gap-2 p-3 bg-muted rounded-xl text-sm text-muted-foreground">
+          <span>🚪</span>
+          <span>Livraison sans contact — le livreur déposera votre commande à la porte</span>
+        </div>
+      )}
+
+      {/* Proof photo */}
+      {(order as any).proofPhotoUrl && (
+        <div className="bg-card rounded-2xl border border-card-border overflow-hidden">
+          <p className="text-xs font-semibold text-muted-foreground px-4 pt-3 pb-2">📸 Photo de livraison</p>
+          <img src={(order as any).proofPhotoUrl} alt="Preuve de livraison" className="w-full max-h-60 object-cover" />
+        </div>
+      )}
+
+      {/* Pickup code */}
+      {(order as any).pickupCode && isActive && (
+        <div className="bg-gradient-to-br from-primary via-primary to-brand-turquoise text-primary-foreground rounded-2xl p-5 text-center shadow-md" data-testid="card-pickup-code">
           <p className="text-xs uppercase tracking-wider opacity-90 font-semibold">{t("orderDetail.pickupCodeTitle", { defaultValue: "Hand-off code" })}</p>
           <p className="font-mono font-bold text-5xl tracking-[0.5rem] mt-2" data-testid="text-pickup-code">{(order as any).pickupCode}</p>
           <p className="text-xs mt-2 opacity-90">{t("orderDetail.pickupCodeHelp", { defaultValue: "Show this 4-digit code to your driver to confirm delivery." })}</p>
@@ -148,7 +242,7 @@ export default function OrderDetailPage() {
             <p className="text-sm font-semibold">{t("orderDetail.driverOnWay")}</p>
             {driverLocation?.locationUpdatedAt && (
               <span className="text-xs text-muted-foreground ml-auto">
-                Updated {new Date(driverLocation.locationUpdatedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                Mis à jour {new Date(driverLocation.locationUpdatedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
               </span>
             )}
           </div>
@@ -180,9 +274,7 @@ export default function OrderDetailPage() {
                     <Icon className="w-4 h-4" />
                   </div>
                   <div className="flex-1 pt-1">
-                    <p className={`text-sm font-medium ${isCompleted ? "text-foreground" : "text-muted-foreground"}`}>
-                      {step.label}
-                    </p>
+                    <p className={`text-sm font-medium ${isCompleted ? "text-foreground" : "text-muted-foreground"}`}>{step.label}</p>
                     {isCurrent && order.estimatedDeliveryTime && (
                       <p className="text-xs text-brand-turquoise mt-0.5 font-semibold">{t("orderDetail.estRemaining", { time: order.estimatedDeliveryTime })}</p>
                     )}
@@ -213,9 +305,7 @@ export default function OrderDetailPage() {
         {order.items.map((item, idx) => (
           <div key={item.id}>
             <div className="flex justify-between items-center px-4 py-3" data-testid={`order-item-${item.id}`}>
-              <div>
-                <span className="text-sm font-medium">{item.quantity}x {item.menuItemName}</span>
-              </div>
+              <span className="text-sm font-medium">{item.quantity}x {item.menuItemName}</span>
               <span className="text-sm font-semibold text-primary">{item.totalPrice.toFixed(0)} MAD</span>
             </div>
             {idx < order.items.length - 1 && <Separator />}
@@ -231,6 +321,12 @@ export default function OrderDetailPage() {
             <span>{t("orderDetail.deliveryFee")}</span>
             <span>{order.deliveryFee.toFixed(0)} MAD</span>
           </div>
+          {(order as any).discountAmount > 0 && (
+            <div className="flex justify-between text-sm text-green-600 dark:text-green-400">
+              <span>Réduction {(order as any).promoCode && <span className="font-mono text-xs">({(order as any).promoCode})</span>}</span>
+              <span>-{((order as any).discountAmount as number).toFixed(0)} MAD</span>
+            </div>
+          )}
           <Separator />
           <div className="flex justify-between font-bold text-base">
             <span>{t("orderDetail.total")}</span>
@@ -245,6 +341,17 @@ export default function OrderDetailPage() {
           <p className="text-sm text-muted-foreground">{order.notes}</p>
         </div>
       )}
+
+      {/* Chat panel */}
+      <ChatPanel orderId={id} open={chatOpen} onClose={() => setChatOpen(false)} />
+
+      {/* Rating modal */}
+      <OrderRatingModal
+        open={ratingOpen}
+        orderId={id}
+        onClose={() => setRatingOpen(false)}
+        onSubmit={handleRateDriver}
+      />
     </div>
   );
 }

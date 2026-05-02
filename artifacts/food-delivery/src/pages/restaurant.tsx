@@ -227,10 +227,41 @@ export default function RestaurantPage() {
               <div className="flex-1 min-w-0 py-1">
                 <h3 className="font-semibold text-sm sm:text-base leading-tight">{item.name}</h3>
                 {item.description && (
-                  <p className="text-xs text-muted-foreground mt-1 line-clamp-3">{item.description}</p>
+                  <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{item.description}</p>
                 )}
-                <div className="mt-2">
+                {/* Dietary tags */}
+                {(item as any).tags && (item as any).tags.length > 0 && (
+                  <div className="flex flex-wrap gap-1 mt-1.5">
+                    {((item as any).tags as string[]).map((tag: string) => {
+                      const tagConfig: Record<string, { label: string; className: string }> = {
+                        halal: { label: "حلال", className: "bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-400" },
+                        vegetarian: { label: "Végétarien", className: "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400" },
+                        vegan: { label: "Vegan", className: "bg-lime-100 text-lime-700 dark:bg-lime-950 dark:text-lime-400" },
+                        spicy: { label: "🌶 Épicé", className: "bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-400" },
+                        gluten_free: { label: "Sans gluten", className: "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-400" },
+                      };
+                      const cfg = tagConfig[tag];
+                      if (!cfg) return null;
+                      return (
+                        <span key={tag} className={`inline-block text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${cfg.className}`}>
+                          {cfg.label}
+                        </span>
+                      );
+                    })}
+                  </div>
+                )}
+                {/* Allergens & meta */}
+                {(item as any).allergens && (
+                  <p className="text-[10px] text-muted-foreground/70 mt-0.5">⚠️ {(item as any).allergens}</p>
+                )}
+                <div className="mt-2 flex items-center gap-3">
                   <span className="font-bold text-base text-primary" data-testid={`text-price-${item.id}`}>{item.price} MAD</span>
+                  {(item as any).calories && (
+                    <span className="text-xs text-muted-foreground">{(item as any).calories} kcal</span>
+                  )}
+                  {(item as any).prepTimeMinutes && (
+                    <span className="text-xs text-muted-foreground">~{(item as any).prepTimeMinutes} min</span>
+                  )}
                 </div>
               </div>
             </div>

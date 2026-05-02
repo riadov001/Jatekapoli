@@ -19,6 +19,10 @@ import userConsentsRouter from "./userConsents";
 import quotesRouter from "./quotes";
 import backendRouter from "./backend";
 import contentRouter from "./content";
+import promoCodesRouter from "./promoCodes";
+import chatRouter from "./chat";
+import notificationsRouter from "./notifications";
+import referralsRouter from "./referrals";
 import { subscribe } from "../lib/sse";
 import { requireAuth } from "../middlewares/auth";
 
@@ -44,6 +48,10 @@ router.use(userConsentsRouter);
 router.use(quotesRouter);
 router.use(backendRouter);
 router.use(contentRouter);
+router.use(promoCodesRouter);
+router.use(chatRouter);
+router.use(notificationsRouter);
+router.use(referralsRouter);
 
 /**
  * SSE endpoint — clients subscribe to one or more channels:

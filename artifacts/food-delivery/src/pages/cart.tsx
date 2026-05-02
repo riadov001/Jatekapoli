@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
-import { ArrowLeft, Trash2, Plus, Minus, ShoppingBag, MapPin, Loader2 } from "lucide-react";
+import { ArrowLeft, Trash2, Plus, Minus, ShoppingBag, MapPin, Loader2, Tag, X, Clock, DoorClosed, CalendarClock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -27,6 +27,16 @@ async function reverseGeocode(lat: number, lng: number): Promise<string> {
   return parts.join(", ") || data.display_name || `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
 }
 
+interface PromoResult {
+  valid: boolean;
+  type: string;
+  value: number;
+  discountAmount: number;
+  description?: string;
+  code?: string;
+  error?: string;
+}
+
 export default function CartPage() {
   const [_, setLocation] = useLocation();
   const { items, restaurantId, restaurantName, removeItem, updateQuantity, clearCart, subtotal, total, deliveryFee, freeDeliveryThreshold } = useCart();
@@ -36,10 +46,32 @@ export default function CartPage() {
   const createOrder = useCreateOrder();
   const { data: restaurantInfo } = useGetRestaurant(restaurantId ?? 0, { query: { enabled: !!restaurantId } });
   const isClosed = restaurantInfo ? !restaurantInfo.isOpen : false;
+
   const [deliveryAddress, setDeliveryAddress] = useState((user as any)?.address || "");
   const [notes, setNotes] = useState("");
   const [locating, setLocating] = useState(false);
+
+  // Promo code
+  const [promoInput, setPromoInput] = useState("");
+  const [promoResult, setPromoResult] = useState<PromoResult | null>(null);
+  const [promoLoading, setPromoLoading] = useState(false);
+
+  // Scheduled delivery
+  const [deliveryType, setDeliveryType] = useState<"asap" | "scheduled">("asap");
+  const [scheduledFor, setScheduledFor] = useState("");
+
+  // Contactless
+  const [isContactless, setIsContactless] = useState(false);
+
   const effectiveDeliveryFee = subtotal >= freeDeliveryThreshold ? 0 : deliveryFee;
+  const discountAmount = promoResult?.valid
+    ? (promoResult.type === "free_delivery" ? effectiveDeliveryFee : promoResult.discountAmount)
+    : 0;
+  const finalDeliveryFee = promoResult?.valid && promoResult.type === "free_delivery" ? 0 : effectiveDeliveryFee;
+  const finalTotal = Math.max(0, subtotal + finalDeliveryFee - (promoResult?.type !== "free_delivery" ? discountAmount : 0));
+
+  const base = import.meta.env.BASE_URL?.replace(/\/$/, "") || "";
+  const token = localStorage.getItem("jatek_token");
 
   const handleDetectLocation = () => {
     if (!("geolocation" in navigator)) {
@@ -68,6 +100,38 @@ export default function CartPage() {
     );
   };
 
+  const handleApplyPromo = async () => {
+    if (!promoInput.trim()) return;
+    setPromoLoading(true);
+    try {
+      const res = await fetch(`${base}/api/promo-codes/validate`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ code: promoInput.trim(), restaurantId, subtotal }),
+      });
+      const data = await res.json();
+      if (res.ok && data.valid) {
+        setPromoResult({ ...data, code: promoInput.trim().toUpperCase() });
+        toast({ title: "Code promo appliqué !", description: data.description ?? `Réduction de ${data.discountAmount.toFixed(0)} MAD` });
+      } else {
+        setPromoResult(null);
+        toast({ title: data.error ?? "Code invalide", variant: "destructive" });
+      }
+    } catch {
+      toast({ title: "Erreur lors de la validation", variant: "destructive" });
+    } finally {
+      setPromoLoading(false);
+    }
+  };
+
+  const handleRemovePromo = () => {
+    setPromoResult(null);
+    setPromoInput("");
+  };
+
   const handlePlaceOrder = async () => {
     if (!user) {
       toast({ title: "Please login first", variant: "destructive" });
@@ -86,22 +150,30 @@ export default function CartPage() {
       toast({ title: t("cart.empty"), variant: "destructive" });
       return;
     }
+    if (deliveryType === "scheduled" && !scheduledFor) {
+      toast({ title: "Veuillez choisir une heure de livraison programmée", variant: "destructive" });
+      return;
+    }
 
-    createOrder.mutate({
-      data: {
-        restaurantId: restaurantId!,
-        deliveryAddress,
-        notes: notes || undefined,
-        items: items.map((i) => ({ menuItemId: i.menuItemId, quantity: i.quantity })),
-      },
-    }, {
+    const body: Record<string, unknown> = {
+      restaurantId: restaurantId!,
+      deliveryAddress,
+      notes: notes || undefined,
+      items: items.map((i) => ({ menuItemId: i.menuItemId, quantity: i.quantity })),
+      deliveryType,
+      isContactless,
+    };
+    if (promoResult?.valid && promoResult.code) body.promoCode = promoResult.code;
+    if (deliveryType === "scheduled" && scheduledFor) body.scheduledFor = scheduledFor;
+
+    createOrder.mutate({ data: body as any }, {
       onSuccess: (order) => {
         clearCart();
-        toast({ title: "Order placed successfully!" });
+        toast({ title: "Commande passée avec succès !" });
         setLocation(`/orders/${order.id}`);
       },
       onError: () => {
-        toast({ title: "Failed to place order. Please try again.", variant: "destructive" });
+        toast({ title: "Impossible de passer la commande. Réessayez.", variant: "destructive" });
       },
     });
   };
@@ -141,16 +213,6 @@ export default function CartPage() {
         </div>
       )}
 
-      {/* Promo banner */}
-      {!isClosed && (
-        <div className="bg-brand-yellow text-brand-yellow-foreground rounded-2xl px-4 py-3 flex items-center gap-3">
-          <span className="text-xl">🎉</span>
-          <p className="text-sm font-semibold leading-tight">
-            Code <span className="font-bold">JATEK10</span> — livraison gratuite sur ta 1ère commande
-          </p>
-        </div>
-      )}
-
       {/* Items */}
       <div className="bg-card rounded-2xl border border-card-border overflow-hidden">
         {items.map((item, idx) => (
@@ -160,40 +222,19 @@ export default function CartPage() {
                 <p className="font-semibold text-sm" data-testid={`text-cart-item-name-${item.menuItemId}`}>{item.name}</p>
                 <p className="text-xs text-muted-foreground">{t("cart.each", { price: item.price })}</p>
               </div>
-
               <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="w-7 h-7 rounded-full"
-                  onClick={() => updateQuantity(item.menuItemId, item.quantity - 1)}
-                  data-testid={`button-decrease-${item.menuItemId}`}
-                >
+                <Button variant="outline" size="icon" className="w-7 h-7 rounded-full" onClick={() => updateQuantity(item.menuItemId, item.quantity - 1)} data-testid={`button-decrease-${item.menuItemId}`}>
                   <Minus className="w-3 h-3" />
                 </Button>
                 <span className="w-6 text-center text-sm font-semibold" data-testid={`text-quantity-${item.menuItemId}`}>{item.quantity}</span>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="w-7 h-7 rounded-full"
-                  onClick={() => updateQuantity(item.menuItemId, item.quantity + 1)}
-                  data-testid={`button-increase-${item.menuItemId}`}
-                >
+                <Button variant="outline" size="icon" className="w-7 h-7 rounded-full" onClick={() => updateQuantity(item.menuItemId, item.quantity + 1)} data-testid={`button-increase-${item.menuItemId}`}>
                   <Plus className="w-3 h-3" />
                 </Button>
               </div>
-
               <div className="w-20 text-right">
                 <p className="font-semibold text-sm text-primary">{(item.price * item.quantity).toFixed(0)} MAD</p>
               </div>
-
-              <Button
-                variant="ghost"
-                size="icon"
-                className="w-7 h-7 text-destructive hover:bg-destructive/10"
-                onClick={() => removeItem(item.menuItemId)}
-                data-testid={`button-remove-${item.menuItemId}`}
-              >
+              <Button variant="ghost" size="icon" className="w-7 h-7 text-destructive hover:bg-destructive/10" onClick={() => removeItem(item.menuItemId)} data-testid={`button-remove-${item.menuItemId}`}>
                 <Trash2 className="w-3.5 h-3.5" />
               </Button>
             </div>
@@ -206,40 +247,104 @@ export default function CartPage() {
       <div className="space-y-2">
         <div className="flex items-center justify-between">
           <Label htmlFor="address" className="text-sm font-semibold">{t("cart.deliveryAddress")}</Label>
-          <button
-            type="button"
-            onClick={handleDetectLocation}
-            disabled={locating}
-            className="flex items-center gap-1.5 text-xs text-brand-turquoise font-medium hover:underline disabled:opacity-60"
-          >
-            {locating ? (
-              <><Loader2 className="w-3 h-3 animate-spin" /> {t("cart.detecting")}</>
-            ) : (
-              <><MapPin className="w-3 h-3" /> {t("cart.useMyLocation")}</>
-            )}
+          <button type="button" onClick={handleDetectLocation} disabled={locating} className="flex items-center gap-1.5 text-xs text-brand-turquoise font-medium hover:underline disabled:opacity-60">
+            {locating ? <><Loader2 className="w-3 h-3 animate-spin" /> {t("cart.detecting")}</> : <><MapPin className="w-3 h-3" /> {t("cart.useMyLocation")}</>}
           </button>
         </div>
-        <Input
-          id="address"
-          placeholder={t("cart.enterAddress")}
-          value={deliveryAddress}
-          onChange={(e) => setDeliveryAddress(e.target.value)}
-          className="h-11"
-          data-testid="input-delivery-address"
-        />
+        <Input id="address" placeholder={t("cart.enterAddress")} value={deliveryAddress} onChange={(e) => setDeliveryAddress(e.target.value)} className="h-11" data-testid="input-delivery-address" />
       </div>
 
       {/* Notes */}
       <div className="space-y-2">
         <Label htmlFor="notes" className="text-sm font-semibold">{t("cart.orderNotes")}</Label>
-        <Textarea
-          id="notes"
-          placeholder={t("cart.specialInstructions")}
-          value={notes}
-          onChange={(e) => setNotes(e.target.value)}
-          rows={2}
-          data-testid="textarea-notes"
-        />
+        <Textarea id="notes" placeholder={t("cart.specialInstructions")} value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} data-testid="textarea-notes" />
+      </div>
+
+      {/* Delivery options */}
+      <div className="bg-card rounded-2xl border border-card-border p-4 space-y-4">
+        <h3 className="font-semibold text-sm">Options de livraison</h3>
+
+        {/* ASAP vs Scheduled */}
+        <div className="grid grid-cols-2 gap-2">
+          <button
+            onClick={() => setDeliveryType("asap")}
+            className={`flex items-center gap-2 px-3 py-3 rounded-xl border text-sm font-medium transition-all ${deliveryType === "asap" ? "border-primary bg-primary/5 text-primary" : "border-border text-muted-foreground"}`}
+          >
+            <Clock className="w-4 h-4 shrink-0" />
+            <span>Dès que possible</span>
+          </button>
+          <button
+            onClick={() => setDeliveryType("scheduled")}
+            className={`flex items-center gap-2 px-3 py-3 rounded-xl border text-sm font-medium transition-all ${deliveryType === "scheduled" ? "border-primary bg-primary/5 text-primary" : "border-border text-muted-foreground"}`}
+          >
+            <CalendarClock className="w-4 h-4 shrink-0" />
+            <span>Programmer</span>
+          </button>
+        </div>
+
+        {deliveryType === "scheduled" && (
+          <div>
+            <Label className="text-xs font-medium text-muted-foreground mb-1.5 block">Heure de livraison souhaitée</Label>
+            <Input
+              type="datetime-local"
+              value={scheduledFor}
+              onChange={(e) => setScheduledFor(e.target.value)}
+              min={new Date(Date.now() + 30 * 60 * 1000).toISOString().slice(0, 16)}
+              className="h-11"
+            />
+          </div>
+        )}
+
+        {/* Contactless toggle */}
+        <button
+          onClick={() => setIsContactless((v) => !v)}
+          className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl border text-sm font-medium transition-all ${isContactless ? "border-primary bg-primary/5 text-primary" : "border-border text-foreground"}`}
+        >
+          <DoorClosed className="w-4 h-4 shrink-0" />
+          <div className="flex-1 text-left">
+            <span>Livraison sans contact</span>
+            <p className="text-xs font-normal text-muted-foreground leading-tight">Le livreur déposera votre commande à la porte</p>
+          </div>
+          <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${isContactless ? "border-primary bg-primary" : "border-muted-foreground"}`}>
+            {isContactless && <div className="w-2.5 h-2.5 rounded-full bg-white" />}
+          </div>
+        </button>
+      </div>
+
+      {/* Promo code */}
+      <div className="space-y-2">
+        <Label className="text-sm font-semibold flex items-center gap-1.5">
+          <Tag className="w-3.5 h-3.5 text-primary" />
+          Code promo
+        </Label>
+        {promoResult?.valid ? (
+          <div className="flex items-center gap-2 p-3 bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 rounded-xl">
+            <Tag className="w-4 h-4 text-green-600 shrink-0" />
+            <div className="flex-1">
+              <p className="text-sm font-semibold text-green-700 dark:text-green-400">{promoResult.code}</p>
+              <p className="text-xs text-green-600 dark:text-green-500">
+                {promoResult.type === "free_delivery" ? "Livraison gratuite !" : `-${promoResult.discountAmount.toFixed(0)} MAD de réduction`}
+              </p>
+            </div>
+            <button onClick={handleRemovePromo} className="text-muted-foreground hover:text-foreground">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        ) : (
+          <div className="flex gap-2">
+            <Input
+              placeholder="Ex : JATEK10"
+              value={promoInput}
+              onChange={(e) => setPromoInput(e.target.value.toUpperCase())}
+              onKeyDown={(e) => e.key === "Enter" && handleApplyPromo()}
+              className="h-11 uppercase"
+              data-testid="input-promo-code"
+            />
+            <Button variant="outline" onClick={handleApplyPromo} disabled={promoLoading || !promoInput.trim()} className="h-11 shrink-0" data-testid="button-apply-promo">
+              {promoLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Appliquer"}
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* Summary */}
@@ -251,14 +356,20 @@ export default function CartPage() {
         </div>
         <div className="flex justify-between text-sm">
           <span className="text-muted-foreground">{t("cart.deliveryFee")}</span>
-          <span className="text-brand-turquoise font-semibold">
-            {effectiveDeliveryFee === 0 ? "Offerte" : `${effectiveDeliveryFee} MAD`}
+          <span className={finalDeliveryFee === 0 ? "text-brand-turquoise font-semibold" : ""}>
+            {finalDeliveryFee === 0 ? "Offerte" : `${finalDeliveryFee} MAD`}
           </span>
         </div>
+        {discountAmount > 0 && promoResult?.type !== "free_delivery" && (
+          <div className="flex justify-between text-sm text-green-600 dark:text-green-400">
+            <span>Réduction promo</span>
+            <span>-{discountAmount.toFixed(0)} MAD</span>
+          </div>
+        )}
         <Separator />
         <div className="flex justify-between font-bold text-base">
           <span>{t("cart.total")}</span>
-          <span className="text-primary" data-testid="text-order-total">{total.toFixed(0)} MAD</span>
+          <span className="text-primary" data-testid="text-order-total">{finalTotal.toFixed(0)} MAD</span>
         </div>
       </div>
 

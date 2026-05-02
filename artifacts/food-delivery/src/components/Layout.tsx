@@ -15,6 +15,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { ReactNode, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { NotificationBell } from "@/components/NotificationBell";
 
 interface LayoutProps { children: ReactNode; }
 
@@ -127,6 +128,9 @@ export function Layout({ children }: LayoutProps) {
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
+
+              {/* Notification bell */}
+              {isAuthenticated && <NotificationBell />}
 
               {/* Cart button */}
               {isAuthenticated && isCustomer && (

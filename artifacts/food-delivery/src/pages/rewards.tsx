@@ -1,11 +1,15 @@
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
-import { Gift, Award, TrendingUp } from "lucide-react";
+import { Gift, Award, TrendingUp, Users, Copy, Check, Wallet } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Input } from "@/components/ui/input";
+import { Separator } from "@/components/ui/separator";
 import { useGetMyRewards } from "@workspace/api-client-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTranslation } from "react-i18next";
+import { useToast } from "@/hooks/use-toast";
 
 const tierConfig = {
   Bronze: { color: "text-brand-yellow-foreground", bg: "bg-brand-yellow-soft", icon: "🥉" },
@@ -20,12 +24,78 @@ const DISCOUNTS = [
   { points: 500, en: "20% off any order", fr: "20% de réduction sur tout", ar: "خصم 20% على أي طلب", days: null },
 ];
 
+interface ReferralInfo {
+  referralCode: string;
+  shareUrl: string;
+  referrals: number;
+  completedReferrals: number;
+  totalEarned: number;
+  walletBalance: number;
+}
+
 export default function RewardsPage() {
   const { user } = useAuth();
   const [_, setLocation] = useLocation();
   const { t, i18n } = useTranslation();
+  const { toast } = useToast();
 
   const { data: rewards, isLoading } = useGetMyRewards({ query: { enabled: !!user } });
+
+  const [referralInfo, setReferralInfo] = useState<ReferralInfo | null>(null);
+  const [referralLoading, setReferralLoading] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [referralInputCode, setReferralInputCode] = useState("");
+  const [applyingCode, setApplyingCode] = useState(false);
+
+  const base = import.meta.env.BASE_URL?.replace(/\/$/, "") || "";
+  const token = localStorage.getItem("jatek_token");
+  const authHeaders = { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) };
+
+  useEffect(() => {
+    if (!user) return;
+    setReferralLoading(true);
+    fetch(`${base}/api/referrals/my-code`, { headers: authHeaders })
+      .then((r) => r.json())
+      .then((data) => { if (data.referralCode) setReferralInfo(data); })
+      .catch(() => {})
+      .finally(() => setReferralLoading(false));
+  }, [user]);
+
+  const handleCopyCode = () => {
+    if (!referralInfo?.referralCode) return;
+    navigator.clipboard.writeText(referralInfo.referralCode).then(() => {
+      setCopied(true);
+      toast({ title: "Code copié !", description: "Partagez-le avec vos amis." });
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
+
+  const handleApplyReferralCode = async () => {
+    if (!referralInputCode.trim()) return;
+    setApplyingCode(true);
+    try {
+      const res = await fetch(`${base}/api/referrals/apply`, {
+        method: "POST",
+        headers: authHeaders,
+        body: JSON.stringify({ code: referralInputCode.trim() }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        toast({ title: data.message ?? "Code appliqué !" });
+        setReferralInputCode("");
+        // Refresh referral info
+        fetch(`${base}/api/referrals/my-code`, { headers: authHeaders })
+          .then((r) => r.json())
+          .then((d) => { if (d.referralCode) setReferralInfo(d); });
+      } else {
+        toast({ title: data.error ?? "Code invalide", variant: "destructive" });
+      }
+    } catch {
+      toast({ title: "Erreur réseau", variant: "destructive" });
+    } finally {
+      setApplyingCode(false);
+    }
+  };
 
   if (!user) {
     return (
@@ -78,6 +148,18 @@ export default function RewardsPage() {
         </div>
       </div>
 
+      {/* Wallet balance */}
+      {referralInfo && referralInfo.walletBalance > 0 && (
+        <div className="bg-gradient-to-br from-brand-turquoise to-emerald-500 text-white rounded-2xl p-5">
+          <div className="flex items-center gap-2 mb-1">
+            <Wallet className="w-5 h-5" />
+            <span className="text-white/80 text-sm font-medium">Portefeuille Jatek</span>
+          </div>
+          <p className="font-display font-bold text-3xl">{referralInfo.walletBalance.toFixed(0)} MAD</p>
+          <p className="text-white/70 text-xs mt-0.5">Crédits utilisables sur votre prochaine commande</p>
+        </div>
+      )}
+
       {/* Tier status */}
       <div className={`rounded-2xl border border-card-border p-5 ${tierInfo.bg}`}>
         <div className="flex items-center justify-between mb-3">
@@ -106,6 +188,73 @@ export default function RewardsPage() {
         )}
       </div>
 
+      {/* Referral section */}
+      <div className="bg-card rounded-2xl border border-card-border overflow-hidden">
+        <div className="p-5 border-b border-border">
+          <div className="flex items-center gap-2 mb-1">
+            <Users className="w-5 h-5 text-primary" />
+            <h2 className="font-semibold">Parrainage</h2>
+          </div>
+          <p className="text-xs text-muted-foreground">Gagnez 20 MAD pour chaque ami parrainé. Votre ami reçoit 10 MAD.</p>
+        </div>
+        <div className="p-5 space-y-4">
+          {referralLoading ? (
+            <Skeleton className="h-12 w-full rounded-xl" />
+          ) : referralInfo ? (
+            <>
+              {/* Stats */}
+              <div className="grid grid-cols-3 gap-3">
+                <div className="text-center p-3 bg-muted/50 rounded-xl">
+                  <p className="font-bold text-lg text-primary">{referralInfo.referrals}</p>
+                  <p className="text-xs text-muted-foreground">Invitations</p>
+                </div>
+                <div className="text-center p-3 bg-muted/50 rounded-xl">
+                  <p className="font-bold text-lg text-brand-turquoise">{referralInfo.completedReferrals}</p>
+                  <p className="text-xs text-muted-foreground">Complétés</p>
+                </div>
+                <div className="text-center p-3 bg-muted/50 rounded-xl">
+                  <p className="font-bold text-lg text-green-600">{referralInfo.totalEarned.toFixed(0)}</p>
+                  <p className="text-xs text-muted-foreground">MAD gagnés</p>
+                </div>
+              </div>
+
+              {/* Code share */}
+              <div>
+                <p className="text-xs font-semibold text-muted-foreground mb-2">Votre code de parrainage</p>
+                <div className="flex gap-2">
+                  <div className="flex-1 flex items-center justify-center bg-muted rounded-xl h-11 font-mono font-bold text-lg tracking-widest text-primary">
+                    {referralInfo.referralCode}
+                  </div>
+                  <Button variant="outline" size="icon" className="h-11 w-11 rounded-xl shrink-0" onClick={handleCopyCode}>
+                    {copied ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
+                  </Button>
+                </div>
+              </div>
+            </>
+          ) : (
+            <p className="text-sm text-muted-foreground text-center py-2">Impossible de charger le code de parrainage</p>
+          )}
+
+          <Separator />
+
+          {/* Apply a referral code */}
+          <div>
+            <p className="text-xs font-semibold text-muted-foreground mb-2">Vous avez un code de parrainage ?</p>
+            <div className="flex gap-2">
+              <Input
+                placeholder="Entrez le code d'un ami"
+                value={referralInputCode}
+                onChange={(e) => setReferralInputCode(e.target.value.toUpperCase())}
+                className="h-11 uppercase font-mono"
+              />
+              <Button variant="outline" onClick={handleApplyReferralCode} disabled={applyingCode || !referralInputCode.trim()} className="h-11 shrink-0">
+                {applyingCode ? "..." : "Appliquer"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* How to earn */}
       <div className="bg-card rounded-2xl border border-card-border p-5">
         <div className="flex items-center gap-2 mb-3">
@@ -124,6 +273,10 @@ export default function RewardsPage() {
           <div className="flex justify-between text-sm">
             <span className="text-muted-foreground">{t("rewards.leaveReview")}</span>
             <span className="font-semibold text-primary">+10 {t("rewards.pts")}</span>
+          </div>
+          <div className="flex justify-between text-sm">
+            <span className="text-muted-foreground">Parrainage réussi</span>
+            <span className="font-semibold text-green-600">+20 MAD portefeuille</span>
           </div>
         </div>
       </div>
