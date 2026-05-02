@@ -179,14 +179,20 @@ router.post("/auth/send-otp", async (req, res): Promise<void> => {
 
 // ─── Verify OTP ───────────────────────────────────────────────────────────────
 router.post("/auth/verify-otp", async (req, res): Promise<void> => {
-  const { phone, code, name, role } = req.body;
+  const { phone, email, code, name, role } = req.body;
 
-  if (!phone || !code) {
-    res.status(400).json({ error: "Numéro de téléphone et code requis" });
+  if ((!phone && !email) || !code) {
+    res.status(400).json({ error: "Numéro de téléphone (ou email) et code requis" });
     return;
   }
 
-  const normalizedPhone = normalizePhone(phone.trim());
+  // Support both phone OTP and email OTP — normalise the identifier the same
+  // way send-otp did so the DB lookup finds the right record.
+  const isEmailMode = !phone && email && typeof email === "string" && email.includes("@");
+  const normalizedPhone = isEmailMode
+    ? email.trim().toLowerCase()
+    : normalizePhone((phone as string).trim());
+
   const now = new Date();
 
   const [otpRecord] = await db
@@ -445,12 +451,26 @@ router.post("/auth/reset-password", async (req, res): Promise<void> => {
     .where(eq(usersTable.email, normalizedEmail))
     .limit(1);
 
-  if (!user || !user.phone) {
+  if (!user) {
     res.status(400).json({ error: "Code invalide ou expiré" });
     return;
   }
 
-  const normalizedPhone = normalizePhone(user.phone);
+  // Look up the OTP using the same identifier that forgot-password stored it
+  // under: phone (normalised) when available, otherwise the user's real email.
+  const isRealEmail = normalizedEmail && !normalizedEmail.endsWith("@jatek.local");
+  const hasPhone = !!user.phone;
+  const otpIdentifier = hasPhone
+    ? normalizePhone(user.phone!)
+    : isRealEmail
+      ? normalizedEmail
+      : null;
+
+  if (!otpIdentifier) {
+    res.status(400).json({ error: "Code invalide ou expiré" });
+    return;
+  }
+
   const now = new Date();
 
   const [otpRecord] = await db
@@ -458,7 +478,7 @@ router.post("/auth/reset-password", async (req, res): Promise<void> => {
     .from(otpCodesTable)
     .where(
       and(
-        eq(otpCodesTable.phone, normalizedPhone),
+        eq(otpCodesTable.phone, otpIdentifier),
         eq(otpCodesTable.used, false),
         gt(otpCodesTable.expiresAt, now)
       )
