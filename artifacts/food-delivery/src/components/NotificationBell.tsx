@@ -35,7 +35,7 @@ export function NotificationBell() {
 
   const base = import.meta.env.BASE_URL?.replace(/\/$/, "") || "";
   const token = localStorage.getItem("jatek_token");
-  const headers = token ? { Authorization: `Bearer ${token}` } : {};
+  const headers: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {};
 
   const fetchNotifications = async () => {
     if (!user) return;

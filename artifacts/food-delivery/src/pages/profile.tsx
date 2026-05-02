@@ -3,7 +3,7 @@ import { User, Phone, MapPin, LogOut, Package, Gift, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
-import { useListOrders } from "@workspace/api-client-react";
+import { useListOrders, getListOrdersQueryKey } from "@workspace/api-client-react";
 import { useTranslation } from "react-i18next";
 
 export default function ProfilePage() {
@@ -13,7 +13,7 @@ export default function ProfilePage() {
 
   const { data: orders } = useListOrders(
     user ? { userId: user.id } : undefined,
-    { query: { enabled: !!user } }
+    { query: { queryKey: getListOrdersQueryKey(user ? { userId: user.id } : undefined), enabled: !!user } }
   );
 
   if (!user) {

@@ -46,7 +46,7 @@ router.get("/shorts", async (_req, res): Promise<void> => {
 
 async function requireAdmin(req: AuthedRequest, res: any): Promise<boolean> {
   const roles = ["super_admin", "admin", "manager"];
-  if (!req.user || !roles.includes(req.user.role)) {
+  if (!req.userRole || !roles.includes(req.userRole)) {
     res.status(403).json({ error: "Forbidden" });
     return false;
   }

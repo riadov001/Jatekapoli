@@ -152,7 +152,7 @@ export default function AdminPromotionsPage() {
 
   const toggleActive = async (ad: Ad) => {
     try {
-      await updateAd.mutateAsync({ id: ad.id, data: { isActive: !ad.isActive } });
+      await updateAd.mutateAsync({ id: ad.id, data: { title: ad.title, isActive: !ad.isActive } });
       invalidate();
     } catch (e: any) {
       toast({ title: "Erreur", description: e?.message, variant: "destructive" });

@@ -56,6 +56,7 @@ export default function ForgotPasswordPage() {
       const t = setTimeout(() => setCountdown((c) => c - 1), 1000);
       return () => clearTimeout(t);
     }
+    return undefined;
   }, [countdown]);
 
   const requestCode = async (targetEmail: string) => {

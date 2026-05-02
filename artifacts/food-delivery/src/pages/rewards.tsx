@@ -6,7 +6,7 @@ import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
-import { useGetMyRewards } from "@workspace/api-client-react";
+import { useGetMyRewards, getGetMyRewardsQueryKey } from "@workspace/api-client-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTranslation } from "react-i18next";
 import { useToast } from "@/hooks/use-toast";
@@ -39,7 +39,7 @@ export default function RewardsPage() {
   const { t, i18n } = useTranslation();
   const { toast } = useToast();
 
-  const { data: rewards, isLoading } = useGetMyRewards({ query: { enabled: !!user } });
+  const { data: rewards, isLoading } = useGetMyRewards({ query: { queryKey: getGetMyRewardsQueryKey(), enabled: !!user } });
 
   const [referralInfo, setReferralInfo] = useState<ReferralInfo | null>(null);
   const [referralLoading, setReferralLoading] = useState(false);

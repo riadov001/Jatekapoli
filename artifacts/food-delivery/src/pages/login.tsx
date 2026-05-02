@@ -135,6 +135,7 @@ export default function LoginPage() {
       const t = setTimeout(() => setCountdown(c => c - 1), 1000);
       return () => clearTimeout(t);
     }
+    return undefined;
   }, [countdown]);
 
   const handleSendOtp = (rawPhone: string) => {

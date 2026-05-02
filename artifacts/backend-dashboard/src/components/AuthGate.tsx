@@ -1,6 +1,6 @@
 import { useLocation } from "wouter";
 import { useEffect, useState } from "react";
-import { useBackendMe } from "@workspace/api-client-react";
+import { useBackendMe, getBackendMeQueryKey } from "@workspace/api-client-react";
 import { Loader2 } from "lucide-react";
 
 export function AuthGate({ children }: { children: React.ReactNode }) {
@@ -17,6 +17,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
 
   const { data: me, isLoading, error } = useBackendMe({
     query: {
+      queryKey: getBackendMeQueryKey(),
       enabled: tokenChecked && !!localStorage.getItem("jatek_backend_token"),
       retry: false,
     },

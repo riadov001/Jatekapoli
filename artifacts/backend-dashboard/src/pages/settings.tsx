@@ -92,7 +92,7 @@ export default function SettingsPage() {
     setTimeout(() => setSaved(false), 3000);
   };
 
-  const isAdmin = me?.role === "super_admin" || me?.role === "admin";
+  const isAdmin = me?.user?.role === "super_admin" || me?.user?.role === "admin";
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">

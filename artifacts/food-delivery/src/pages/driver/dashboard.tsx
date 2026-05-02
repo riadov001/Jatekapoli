@@ -7,6 +7,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import {
   useListDrivers, useUpdateDriver, useGetDriverEarnings, useListOrders, useUpdateOrderStatus,
+  getGetDriverEarningsQueryKey, getListOrdersQueryKey,
 } from "@workspace/api-client-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
@@ -41,12 +42,12 @@ export default function DriverDashboardPage() {
 
   const { data: earnings, isLoading: earningsLoading } = useGetDriverEarnings(
     myDriver?.id ?? 0,
-    { query: { enabled: !!myDriver } }
+    { query: { queryKey: getGetDriverEarningsQueryKey(myDriver?.id ?? 0), enabled: !!myDriver } }
   );
 
   const { data: orders, isLoading: ordersLoading, refetch: refetchOrders } = useListOrders(
     myDriver ? { driverId: myDriver.id } : undefined,
-    { query: { enabled: !!myDriver } }
+    { query: { queryKey: getListOrdersQueryKey(myDriver ? { driverId: myDriver.id } : undefined), enabled: !!myDriver } }
   );
 
   const updateDriver = useUpdateDriver();

@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dialog";
 import {
   useListRestaurants, useListMenuItems, useCreateMenuItem, useUpdateMenuItem, useDeleteMenuItem,
+  getListMenuItemsQueryKey,
 } from "@workspace/api-client-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
@@ -29,7 +30,7 @@ export default function RestaurantMenuPage() {
 
   const { data: menuItems, isLoading, refetch } = useListMenuItems(
     myRestaurant?.id ?? 0, undefined,
-    { query: { enabled: !!myRestaurant } }
+    { query: { queryKey: getListMenuItemsQueryKey(myRestaurant?.id ?? 0, undefined), enabled: !!myRestaurant } }
   );
 
   const createItem = useCreateMenuItem();
@@ -53,7 +54,7 @@ export default function RestaurantMenuPage() {
     const data = { name: form.name, description: form.description, price: parseFloat(form.price), category: form.category, isAvailable: form.isAvailable };
 
     if (editItem) {
-      updateItem.mutate({ restaurantId: myRestaurant.id, id: editItem.id, data }, {
+      updateItem.mutate({ id: editItem.id, data }, {
         onSuccess: () => { toast({ title: "Item updated" }); refetch(); setDialogOpen(false); },
         onError: () => toast({ title: "Failed to update item", variant: "destructive" }),
       });
@@ -67,14 +68,14 @@ export default function RestaurantMenuPage() {
 
   const handleDelete = (id: number) => {
     if (!myRestaurant) return;
-    deleteItem.mutate({ restaurantId: myRestaurant.id, id }, {
+    deleteItem.mutate({ id }, {
       onSuccess: () => { toast({ title: "Item deleted" }); refetch(); },
     });
   };
 
   const toggleAvailable = (item: any) => {
     if (!myRestaurant) return;
-    updateItem.mutate({ restaurantId: myRestaurant.id, id: item.id, data: { isAvailable: !item.isAvailable } }, {
+    updateItem.mutate({ id: item.id, data: { isAvailable: !item.isAvailable } }, {
       onSuccess: () => refetch(),
     });
   };

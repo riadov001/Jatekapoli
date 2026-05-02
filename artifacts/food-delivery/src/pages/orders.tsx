@@ -2,7 +2,7 @@ import { useLocation } from "wouter";
 import { Package, ChevronRight, Clock } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useListOrders } from "@workspace/api-client-react";
+import { useListOrders, getListOrdersQueryKey } from "@workspace/api-client-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { formatDistanceToNow } from "date-fns";
@@ -25,7 +25,7 @@ export default function OrdersPage() {
 
   const { data: orders, isLoading } = useListOrders(
     user ? { userId: user.id } : undefined,
-    { query: { enabled: !!user } }
+    { query: { queryKey: getListOrdersQueryKey(user ? { userId: user.id } : undefined), enabled: !!user } }
   );
 
   if (!user) {

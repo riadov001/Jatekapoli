@@ -181,8 +181,8 @@ export default function WelcomePage() {
                 </div>
                 <div className="p-3">
                   <h3 className="font-semibold text-sm text-foreground truncate">{r.name}</h3>
-                  {r.cuisineType && (
-                    <p className="text-xs text-muted-foreground truncate">{r.cuisineType}</p>
+                  {r.category && (
+                    <p className="text-xs text-muted-foreground truncate">{r.category}</p>
                   )}
                   <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
                     {r.rating && (

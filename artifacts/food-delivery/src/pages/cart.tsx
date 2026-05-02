@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import { useCart } from "@/contexts/CartContext";
 import { useAuth } from "@/contexts/AuthContext";
-import { useCreateOrder, useGetRestaurant } from "@workspace/api-client-react";
+import { useCreateOrder, useGetRestaurant, getGetRestaurantQueryKey } from "@workspace/api-client-react";
 import { useToast } from "@/hooks/use-toast";
 import { useTranslation } from "react-i18next";
 
@@ -44,7 +44,7 @@ export default function CartPage() {
   const { toast } = useToast();
   const { t } = useTranslation();
   const createOrder = useCreateOrder();
-  const { data: restaurantInfo } = useGetRestaurant(restaurantId ?? 0, { query: { enabled: !!restaurantId } });
+  const { data: restaurantInfo } = useGetRestaurant(restaurantId ?? 0, { query: { queryKey: getGetRestaurantQueryKey(restaurantId ?? 0), enabled: !!restaurantId } });
   const isClosed = restaurantInfo ? !restaurantInfo.isOpen : false;
 
   const [deliveryAddress, setDeliveryAddress] = useState((user as any)?.address || "");

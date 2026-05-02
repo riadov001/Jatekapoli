@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
-import { useGetOrder } from "@workspace/api-client-react";
+import { useGetOrder, getGetOrderQueryKey } from "@workspace/api-client-react";
 import { DeliveryMap } from "@/components/DeliveryMap";
 import { ChatPanel } from "@/components/ChatPanel";
 import { OrderRatingModal } from "@/components/OrderRatingModal";
@@ -28,7 +28,7 @@ export default function OrderDetailPage() {
   const { toast } = useToast();
   const id = match ? parseInt(params!.id, 10) : 0;
 
-  const { data: order, isLoading, refetch } = useGetOrder(id, { query: { enabled: !!id, refetchInterval: 20000 } });
+  const { data: order, isLoading, refetch } = useGetOrder(id, { query: { queryKey: getGetOrderQueryKey(id), enabled: !!id, refetchInterval: 20000 } });
 
   const [driverLocation, setDriverLocation] = useState<DriverLocation | null>(null);
   const [chatOpen, setChatOpen] = useState(false);
@@ -37,7 +37,7 @@ export default function OrderDetailPage() {
 
   const base = import.meta.env.BASE_URL?.replace(/\/$/, "") || "";
   const token = localStorage.getItem("jatek_token");
-  const authHeaders = token ? { Authorization: `Bearer ${token}`, "Content-Type": "application/json" } : { "Content-Type": "application/json" };
+  const authHeaders: Record<string, string> = token ? { Authorization: `Bearer ${token}`, "Content-Type": "application/json" } : { "Content-Type": "application/json" };
 
   // Real-time updates via SSE
   useEffect(() => {

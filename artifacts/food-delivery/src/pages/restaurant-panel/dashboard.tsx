@@ -13,7 +13,7 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { useListRestaurants, useListOrders, useUpdateOrderStatus, useUpdateRestaurant } from "@workspace/api-client-react";
+import { useListRestaurants, useListOrders, useUpdateOrderStatus, useUpdateRestaurant, getListOrdersQueryKey } from "@workspace/api-client-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { useTranslation } from "react-i18next";
@@ -166,7 +166,7 @@ export default function RestaurantDashboardPage() {
 
   const { data: orders, isLoading, refetch } = useListOrders(
     myRestaurant ? { restaurantId: myRestaurant.id } : undefined,
-    { query: { enabled: !!myRestaurant, refetchInterval: 20000 } }
+    { query: { queryKey: getListOrdersQueryKey(myRestaurant ? { restaurantId: myRestaurant.id } : undefined), enabled: !!myRestaurant, refetchInterval: 20000 } }
   );
 
   const updateStatus = useUpdateOrderStatus();

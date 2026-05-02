@@ -125,7 +125,7 @@ export default function AdminSettingsPage() {
   const [saved, setSaved] = useState(false);
   const { toast } = useToast();
 
-  const isAdmin = me?.role === "super_admin" || me?.role === "admin";
+  const isAdmin = me?.user?.role === "super_admin" || me?.user?.role === "admin";
 
   const set = (k: keyof PlatformSettings) => (v: string | boolean) =>
     setSettings((p) => ({ ...p, [k]: v }));
@@ -293,7 +293,7 @@ export default function AdminSettingsPage() {
               <Badge variant="outline">Oujda, Maroc</Badge>
               {me && (
                 <Badge variant="outline" className="capitalize">
-                  {me.role?.replace("_", " ")}
+                  {me.user?.role?.replace("_", " ")}
                 </Badge>
               )}
             </div>

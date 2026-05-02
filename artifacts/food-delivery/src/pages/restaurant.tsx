@@ -4,7 +4,7 @@ import { ArrowLeft, Star, Clock, Truck, Award, Plus, ShoppingBag, AlertCircle } 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useGetRestaurant, useListMenuItems, useListReviews } from "@workspace/api-client-react";
+import { useGetRestaurant, useListMenuItems, useListReviews, getGetRestaurantQueryKey, getListMenuItemsQueryKey } from "@workspace/api-client-react";
 import { useCart } from "@/contexts/CartContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
@@ -22,10 +22,10 @@ export default function RestaurantPage() {
   const id = match ? parseInt(params!.id, 10) : 0;
 
   const { data: restaurant, isLoading: restLoading } = useGetRestaurant(id, {
-    query: { enabled: !!id },
+    query: { queryKey: getGetRestaurantQueryKey(id), enabled: !!id },
   });
   const { data: menuItems, isLoading: menuLoading } = useListMenuItems(id, undefined, {
-    query: { enabled: !!id },
+    query: { queryKey: getListMenuItemsQueryKey(id, undefined), enabled: !!id },
   });
   const { data: reviews } = useListReviews({ restaurantId: id });
 
