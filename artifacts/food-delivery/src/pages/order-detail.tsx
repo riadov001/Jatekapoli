@@ -217,20 +217,16 @@ export default function OrderDetailPage() {
         </div>
       )}
 
-      {/* Proof photo */}
-      {(order as any).proofPhotoUrl && (
-        <div className="bg-card rounded-2xl border border-card-border overflow-hidden">
-          <p className="text-xs font-semibold text-muted-foreground px-4 pt-3 pb-2">📸 Photo de livraison</p>
-          <img src={(order as any).proofPhotoUrl} alt="Preuve de livraison" className="w-full max-h-60 object-cover" />
-        </div>
-      )}
-
-      {/* Pickup code */}
+      {/* Delivery OTP — shown to customer as soon as the order is placed */}
       {(order as any).pickupCode && isActive && (
-        <div className="bg-gradient-to-br from-primary via-primary to-brand-turquoise text-primary-foreground rounded-2xl p-5 text-center shadow-md" data-testid="card-pickup-code">
-          <p className="text-xs uppercase tracking-wider opacity-90 font-semibold">{t("orderDetail.pickupCodeTitle", { defaultValue: "Hand-off code" })}</p>
-          <p className="font-mono font-bold text-5xl tracking-[0.5rem] mt-2" data-testid="text-pickup-code">{(order as any).pickupCode}</p>
-          <p className="text-xs mt-2 opacity-90">{t("orderDetail.pickupCodeHelp", { defaultValue: "Show this 4-digit code to your driver to confirm delivery." })}</p>
+        <div className="bg-gradient-to-br from-primary via-primary to-brand-turquoise text-primary-foreground rounded-2xl p-5 text-center shadow-lg" data-testid="card-pickup-code">
+          <p className="text-xs uppercase tracking-widest opacity-80 font-semibold mb-1">Code de remise</p>
+          <p className="font-mono font-bold text-5xl tracking-[0.6rem] mt-2 drop-shadow" data-testid="text-pickup-code">
+            {(order as any).pickupCode}
+          </p>
+          <p className="text-xs mt-3 opacity-85 leading-relaxed max-w-xs mx-auto">
+            Communiquez ce code à votre livreur au moment de la remise de votre commande.
+          </p>
         </div>
       )}
 

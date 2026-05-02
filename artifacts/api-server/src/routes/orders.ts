@@ -200,6 +200,8 @@ router.post("/orders", requireAuth, async (req: AuthedRequest, res): Promise<voi
     deliveryAddress,
     notes: notes ?? null,
     estimatedDeliveryTime: restaurant.deliveryTime || 30,
+    kitchenCode: generateKitchenCode(),
+    pickupCode: generatePickupCode(),
     deliveryType: deliveryType ?? "asap",
     scheduledFor: scheduledFor ? new Date(scheduledFor) : null,
     isContactless: isContactless ?? false,
@@ -359,7 +361,6 @@ router.patch("/orders/:id/status", requireAuth, async (req: AuthedRequest, res):
     }
 
     if (!existing.kitchenCode) updateData.kitchenCode = generateKitchenCode();
-    if (!existing.pickupCode) updateData.pickupCode = generatePickupCode();
   }
 
   const [order] = await db
@@ -520,9 +521,10 @@ router.post("/orders/:id/confirm-delivery", requireAuth, async (req: AuthedReque
   const orderId = parseInt(req.params.id, 10);
   if (isNaN(orderId)) { res.status(400).json({ error: "Invalid order id" }); return; }
 
-  const code = typeof req.body?.pickupCode === "string" ? req.body.pickupCode.trim() : "";
-  if (!/^\d{4}$/.test(code)) {
-    res.status(400).json({ error: "pickupCode must be a 4-digit string" });
+  const code = typeof req.body?.otp === "string" ? req.body.otp.trim()
+    : typeof req.body?.pickupCode === "string" ? req.body.pickupCode.trim() : "";
+  if (!/^\d{4,6}$/.test(code)) {
+    res.status(400).json({ error: "otp must be a 6-digit code" });
     return;
   }
 
@@ -549,7 +551,7 @@ router.post("/orders/:id/confirm-delivery", requireAuth, async (req: AuthedReque
   }
 
   if (!existing.pickupCode || existing.pickupCode !== code) {
-    res.status(400).json({ error: "Incorrect pickup code", code: "INVALID_PICKUP_CODE" });
+    res.status(400).json({ error: "Code OTP incorrect", code: "INVALID_OTP" });
     return;
   }
 

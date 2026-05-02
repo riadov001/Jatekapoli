@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
-import { ArrowLeft, Trash2, Plus, Minus, ShoppingBag, MapPin, Loader2, Tag, X, Clock, DoorClosed, CalendarClock } from "lucide-react";
+import { ArrowLeft, Trash2, Plus, Minus, ShoppingBag, MapPin, Loader2, Tag, X, Clock, CalendarClock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -59,9 +59,6 @@ export default function CartPage() {
   // Scheduled delivery
   const [deliveryType, setDeliveryType] = useState<"asap" | "scheduled">("asap");
   const [scheduledFor, setScheduledFor] = useState("");
-
-  // Contactless
-  const [isContactless, setIsContactless] = useState(false);
 
   const effectiveDeliveryFee = subtotal >= freeDeliveryThreshold ? 0 : deliveryFee;
   const discountAmount = promoResult?.valid
@@ -161,7 +158,6 @@ export default function CartPage() {
       notes: notes || undefined,
       items: items.map((i) => ({ menuItemId: i.menuItemId, quantity: i.quantity })),
       deliveryType,
-      isContactless,
     };
     if (promoResult?.valid && promoResult.code) body.promoCode = promoResult.code;
     if (deliveryType === "scheduled" && scheduledFor) body.scheduledFor = scheduledFor;
@@ -295,20 +291,6 @@ export default function CartPage() {
           </div>
         )}
 
-        {/* Contactless toggle */}
-        <button
-          onClick={() => setIsContactless((v) => !v)}
-          className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl border text-sm font-medium transition-all ${isContactless ? "border-primary bg-primary/5 text-primary" : "border-border text-foreground"}`}
-        >
-          <DoorClosed className="w-4 h-4 shrink-0" />
-          <div className="flex-1 text-left">
-            <span>Livraison sans contact</span>
-            <p className="text-xs font-normal text-muted-foreground leading-tight">Le livreur déposera votre commande à la porte</p>
-          </div>
-          <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${isContactless ? "border-primary bg-primary" : "border-muted-foreground"}`}>
-            {isContactless && <div className="w-2.5 h-2.5 rounded-full bg-white" />}
-          </div>
-        </button>
       </div>
 
       {/* Promo code */}

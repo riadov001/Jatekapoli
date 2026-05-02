@@ -1,12 +1,13 @@
 /**
  * Generators for order references and codes.
  *
- * - reference: human-friendly, monthly-prefixed unique key (e.g. JTK-2604-A8K3F2).
- *              Excludes confusing chars (0/O, 1/I/L) so it's safe to read aloud.
+ * - reference:   human-friendly, monthly-prefixed unique key (e.g. JTK-2604-A8K3F2).
+ *                Excludes confusing chars (0/O, 1/I/L) so it's safe to read aloud.
  * - kitchenCode: 3-digit numeric, used by the in-store counter when calling out
  *                ready orders. Not unique long-term, but unique within "active".
- * - pickupCode: 4-digit numeric handed to the customer at acceptance — the driver
- *               must enter this code at delivery to confirm hand-off.
+ * - pickupCode:  6-digit OTP generated when the customer places the order and shown
+ *                in their order detail. The driver asks the customer for it at the
+ *                doorstep and enters it to confirm delivery hand-off.
  */
 import { db, ordersTable } from "./index";
 import { eq } from "drizzle-orm";
@@ -55,5 +56,5 @@ export function generateKitchenCode(): string {
 }
 
 export function generatePickupCode(): string {
-  return randomDigits(4);
+  return randomDigits(6);
 }
