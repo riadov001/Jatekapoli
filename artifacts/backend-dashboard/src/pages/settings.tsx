@@ -171,7 +171,7 @@ export default function SettingsPage() {
           <div className="space-y-1.5">
             <div className="text-sm font-medium">Environnement</div>
             <div className="flex flex-wrap gap-2 text-xs">
-              <Badge variant="outline">Node.js {process.versions?.node ?? "—"}</Badge>
+              <Badge variant="outline">Node.js 24</Badge>
               <Badge variant="secondary">API v1</Badge>
               <Badge variant="outline">Oujda, Maroc</Badge>
             </div>
