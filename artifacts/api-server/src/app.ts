@@ -134,8 +134,8 @@ if (process.env.NODE_ENV === "production") {
 
   if (existsSync(dashboardDir)) {
     app.use("/admin", express.static(dashboardDir, { index: "index.html" }));
-    // SPA fallback for /admin/* routes
-    app.get("/admin/*", (_req, res) => {
+    // SPA fallback — app.use (prefix match) avoids path-to-regexp wildcard issues in Express 5
+    app.use("/admin", (_req, res) => {
       res.sendFile(path.join(dashboardDir, "index.html"));
     });
     logger.info("Serving backend-dashboard static files from " + dashboardDir);
@@ -145,8 +145,8 @@ if (process.env.NODE_ENV === "production") {
 
   if (existsSync(webDir)) {
     app.use("/", express.static(webDir, { index: "index.html" }));
-    // SPA fallback for all non-API routes
-    app.get("*", (_req, res) => {
+    // SPA fallback — catch-all via app.use, no wildcard pattern needed
+    app.use((_req, res) => {
       res.sendFile(path.join(webDir, "index.html"));
     });
     logger.info("Serving food-delivery static files from " + webDir);
