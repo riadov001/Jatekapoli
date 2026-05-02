@@ -91,7 +91,9 @@ app.use(
 app.use(express.json({ limit: "1mb" }));
 app.use(express.urlencoded({ extended: true, limit: "1mb" }));
 
-app.get("/health", (_req, res) => {
+// Health check — must respond 200 before Cloud Run / autoscale probe times out.
+// Handles both /health (explicit) and / (the default autoscale startup probe).
+app.get(["/health", "/healthz"], (_req, res) => {
   res.json({ status: "ok" });
 });
 
