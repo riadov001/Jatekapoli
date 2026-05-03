@@ -6,7 +6,7 @@ import {
 import * as Haptics from "expo-haptics";
 import { router, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { useGetRestaurant, useListMenuItems } from "@workspace/api-client-react";
+import { useGetRestaurant, useListMenuItems, getGetRestaurantQueryKey, getListMenuItemsQueryKey } from "@workspace/api-client-react";
 import { useColors } from "@/hooks/useColors";
 import { useCart } from "@/contexts/CartContext";
 import { useAuth } from "@/contexts/AuthContext";
@@ -27,7 +27,9 @@ export default function RestaurantScreen() {
   const insets = useSafeAreaInsets();
   const t = useT();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const restaurantId = parseInt(id, 10);
+  const parsedId = parseInt(String(id ?? ""), 10);
+  const restaurantId = Number.isFinite(parsedId) && parsedId > 0 ? parsedId : 0;
+  const idValid = restaurantId > 0;
   const [activeCategory, setActiveCategory] = useState("Tous");
   const [selectedItem, setSelectedItem] = useState<any | null>(null);
   const [infoModalOpen, setInfoModalOpen] = useState(false);
@@ -50,8 +52,12 @@ export default function RestaurantScreen() {
     } catch { setIsFav(!next); }
   };
 
-  const { data: restaurant, isLoading: rLoading } = useGetRestaurant(restaurantId);
-  const { data: menuItems, isLoading: mLoading } = useListMenuItems(restaurantId);
+  const { data: restaurant, isLoading: rLoading } = useGetRestaurant(restaurantId, {
+    query: { queryKey: getGetRestaurantQueryKey(restaurantId), enabled: idValid },
+  });
+  const { data: menuItems, isLoading: mLoading } = useListMenuItems(restaurantId, undefined, {
+    query: { queryKey: getListMenuItemsQueryKey(restaurantId, undefined), enabled: idValid },
+  });
 
   const categories = useMemo(
     () => ["Tous", ...Array.from(new Set((menuItems ?? []).map((m: any) => m.category).filter(Boolean) as string[]))],
