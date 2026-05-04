@@ -1,17 +1,35 @@
 {
   "expo": {
-    "extra": {
-      "eas": {
-        "projectId": "7238a1da-1b03-4fbb-b61a-ffdb22d9a1e1"
+    "name": "Jatek Driver",
+    "slug": "jatek-driver",
+    "version": "1.0.0",
+    "owner": "myjantes",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "icon": "./artifacts/jatek-mobile/assets/images/icon.png",
+    "splash": {
+      "image": "./artifacts/jatek-mobile/assets/images/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#FCB2D3"
+    },
+    "ios": {
+      "bundleIdentifier": "ma.jatek.driver",
+      "supportsTablet": false,
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
-      "package": "ma.jatek.app"
+      "package": "ma.jatek.driver",
+      "adaptiveIcon": {
+        "foregroundImage": "./artifacts/jatek-mobile/assets/images/adaptive-icon.png",
+        "backgroundColor": "#FCB2D3"
+      }
     },
-    "ios": {
-      "bundleIdentifier": "ma.jatek.app",
-      "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+    "extra": {
+      "eas": {
+        "projectId": "7238a1da-1b03-4fbb-b61a-ffdb22d9a1e1"
       }
     }
   }
