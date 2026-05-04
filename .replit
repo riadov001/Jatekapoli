@@ -31,7 +31,7 @@ outputType = "webview"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "PORT=8080 pnpm --filter @workspace/api-server run dev & PORT=5000 BASE_PATH=/ pnpm --filter @workspace/food-delivery run dev"
+args = "PORT=5000 BASE_PATH=/ pnpm --filter @workspace/food-delivery run dev"
 waitForPort = 5000
 
   [[workflows.workflow]]
@@ -56,10 +56,6 @@ expertMode = true
 
 [[ports]]
 localPort = 5000
-externalPort = 80
-
-[[ports]]
-localPort = 8080
 externalPort = 80
 
 [[ports]]
