@@ -20,6 +20,7 @@ import Animated, { FadeInDown, FadeInUp } from "react-native-reanimated";
 import {
   useListRestaurants,
   useGetFeaturedRestaurants,
+  useListOrders,
   type Restaurant,
   type ListRestaurantsParams,
 } from "@workspace/api-client-react";
@@ -262,6 +263,13 @@ export default function HomeScreen() {
   const [adSheetVisible, setAdSheetVisible] = useState(false);
   const [cartSheetVisible, setCartSheetVisible] = useState(false);
 
+  const ACTIVE_STATUSES = ["pending", "accepted", "preparing", "ready", "picked_up"];
+  const { data: userOrders } = useListOrders(
+    user ? { userId: user.id } : undefined,
+    { query: { enabled: !!user, refetchInterval: 30_000 } },
+  );
+  const activeOrder = userOrders?.find((o) => ACTIVE_STATUSES.includes(o.status ?? ""));
+
   const params = useMemo<ListRestaurantsParams>(() => {
     const p: ListRestaurantsParams = { businessType: activeBusinessType };
     if (activeCat) p.category = activeCat;
@@ -378,6 +386,34 @@ export default function HomeScreen() {
           {/* Wavy bottom edge — extends the pink down with an organic curve */}
           <WaveEdge color={PINK} height={28} />
         </View>
+
+        {/* ─── Active order banner ─── */}
+        {activeOrder && (
+          <Animated.View entering={FadeInDown.duration(350)} style={s.activeBanner}>
+            <Pressable
+              onPress={() => router.push({ pathname: "/order/[id]", params: { id: String(activeOrder.id) } })}
+              style={({ pressed }) => [s.activeBannerInner, pressed && { opacity: 0.88 }]}
+            >
+              <View style={s.activeBannerLeft}>
+                <View style={s.activeDot} />
+                <View style={{ flex: 1 }}>
+                  <Text style={s.activeBannerTitle} numberOfLines={1}>
+                    Commande en cours · {activeOrder.restaurantName ?? `#${activeOrder.id}`}
+                  </Text>
+                  <Text style={s.activeBannerSub} numberOfLines={1}>
+                    {activeOrder.status === "pending" ? "En attente de confirmation..." :
+                     activeOrder.status === "accepted" ? "Commande acceptée" :
+                     activeOrder.status === "preparing" ? "En préparation..." :
+                     activeOrder.status === "ready" ? "Prête à être récupérée" :
+                     activeOrder.status === "picked_up" ? "En route vers vous 🛵" :
+                     "En cours..."}
+                  </Text>
+                </View>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color={PINK} />
+            </Pressable>
+          </Animated.View>
+        )}
 
         {/* ─── Shop categories horizontal slider ─── */}
         <Animated.Text entering={FadeInDown.delay(80).duration(450).springify()} style={s.sliderSectionTitle}>Explorer</Animated.Text>
@@ -653,6 +689,51 @@ const s = StyleSheet.create({
     fontFamily: "Inter_400Regular",
     height: 44,
     padding: 0,
+  },
+  // ── Active order banner ──
+  activeBanner: {
+    marginHorizontal: 16,
+    marginTop: 12,
+    marginBottom: 4,
+    borderRadius: 14,
+    backgroundColor: "#FFF0F8",
+    borderWidth: 1,
+    borderColor: "#FFD0E8",
+    shadowColor: "#E91E63",
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
+    overflow: "hidden",
+  },
+  activeBannerInner: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 12,
+    gap: 10,
+  },
+  activeBannerLeft: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  activeDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: "#E91E63",
+  },
+  activeBannerTitle: {
+    fontSize: 13,
+    fontFamily: "Inter_700Bold",
+    color: "#0A1B3D",
+  },
+  activeBannerSub: {
+    fontSize: 12,
+    fontFamily: "Inter_400Regular",
+    color: "#6B7280",
+    marginTop: 2,
   },
   // ── Shop categories horizontal slider ──
   sliderSectionTitle: {

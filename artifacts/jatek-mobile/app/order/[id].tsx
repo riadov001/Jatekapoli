@@ -29,6 +29,7 @@ import { useColors } from "@/hooks/useColors";
 import { useSSE } from "@/hooks/useSSE";
 import { scheduleOrderStatusNotification } from "@/hooks/usePushNotifications";
 import { DriverMap } from "@/components/DriverMap";
+import { DeliveryRatingModal } from "@/components/DeliveryRatingModal";
 import { apiBase, geocodeAddress, getDriverLocation, getAuthToken } from "@/lib/api";
 import { useT, useLang } from "@/contexts/LanguageContext";
 import type { TKey } from "@/lib/translations";
@@ -192,6 +193,16 @@ export default function OrderDetailScreen() {
 
   return (
     <View style={[styles.flex, { backgroundColor: colors.background }]}>
+      {/* Post-delivery rating modal — auto-shows once per order */}
+      {isCompleted && order.restaurantId && (
+        <DeliveryRatingModal
+          orderId={order.id}
+          restaurantId={order.restaurantId}
+          restaurantName={order.restaurantName ?? "le restaurant"}
+          onClose={() => {}}
+        />
+      )}
+
       {/* Header */}
       <View style={[styles.header, {
         paddingTop: insets.top + (Platform.OS === "web" ? 67 : 16) + 8,

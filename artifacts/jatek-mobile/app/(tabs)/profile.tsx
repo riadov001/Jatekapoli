@@ -240,6 +240,7 @@ export default function ProfileScreen() {
           <Row icon="heart-outline" label="Mes favoris" subtitle="Restos et produits sauvegardés" onPress={() => router.push("/profile/favorites" as any)} />
           <Row icon="repeat-outline" label="Recommander" subtitle="Refaire une commande passée" onPress={() => router.push("/profile/reorder" as any)} />
           <Row icon="star-outline" label="Mes avis" onPress={() => router.push("/profile/reviews" as any)} />
+          <Row icon="gift-outline" label="Parrainage & Wallet" subtitle="Partagez votre code et gagnez des crédits" onPress={() => router.push("/profile/referral" as any)} />
         </View>
       </Animated.View>
 

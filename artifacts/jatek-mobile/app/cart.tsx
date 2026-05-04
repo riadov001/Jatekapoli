@@ -43,6 +43,9 @@ export default function CartScreen() {
   const friendly = useFriendlyAlert();
   const address = selectedAddress;
   const [paymentMethod, setPaymentMethod] = useState<"cash" | "card" | null>(null);
+  const [contactless, setContactless] = useState(false);
+  const [scheduledFor, setScheduledFor] = useState<Date | null>(null);
+  const [showScheduler, setShowScheduler] = useState(false);
 
   const handlePlaceOrder = () => {
     if (!token) {
@@ -92,7 +95,11 @@ export default function CartScreen() {
     const couponNote = appliedCoupon
       ? `Code promo : ${appliedCoupon.code} (${appliedCoupon.label})`
       : "";
-    const combinedNotes = [notes.trim(), couponNote].filter(Boolean).join(" — ");
+    const contactlessNote = contactless ? "Livraison sans contact (déposez à la porte)" : "";
+    const scheduledNote = scheduledFor
+      ? `Programmée pour : ${scheduledFor.toLocaleString("fr-FR", { weekday: "short", day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}`
+      : "";
+    const combinedNotes = [notes.trim(), couponNote, contactlessNote, scheduledNote].filter(Boolean).join(" — ");
     createOrder.mutate({
       data: {
         restaurantId: restaurantId!,
@@ -320,6 +327,70 @@ export default function CartScreen() {
             onChangeText={setNotes}
             multiline
           />
+        </View>
+
+        {/* Delivery options */}
+        <Text style={[styles.sectionLabel, { color: colors.foreground }]}>Options de livraison</Text>
+        <View style={[styles.section, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          {/* Contactless toggle */}
+          <View style={styles.optionRow}>
+            <View style={[styles.optionIcon, { backgroundColor: contactless ? "#E8F5E9" : colors.muted }]}>
+              <Ionicons name="hand-left-outline" size={20} color={contactless ? "#2E7D32" : colors.mutedForeground} />
+            </View>
+            <View style={{ flex: 1, gap: 2 }}>
+              <Text style={[styles.optionLabel, { color: colors.foreground }]}>Livraison sans contact</Text>
+              <Text style={[styles.optionSub, { color: colors.mutedForeground }]}>Le livreur dépose votre commande à la porte</Text>
+            </View>
+            <Pressable
+              onPress={() => setContactless((v) => !v)}
+              style={[styles.toggle, { backgroundColor: contactless ? PINK : colors.border }]}
+            >
+              <View style={[styles.toggleKnob, { transform: [{ translateX: contactless ? 18 : 2 }] }]} />
+            </Pressable>
+          </View>
+
+          <View style={[styles.optionDivider, { backgroundColor: colors.border }]} />
+
+          {/* Scheduled delivery */}
+          <TouchableOpacity
+            onPress={() => setShowScheduler((v) => !v)}
+            activeOpacity={0.7}
+            style={styles.optionRow}
+          >
+            <View style={[styles.optionIcon, { backgroundColor: scheduledFor ? "#EDE7F6" : colors.muted }]}>
+              <Ionicons name="calendar-outline" size={20} color={scheduledFor ? "#6A1B9A" : colors.mutedForeground} />
+            </View>
+            <View style={{ flex: 1, gap: 2 }}>
+              <Text style={[styles.optionLabel, { color: colors.foreground }]}>Programmer pour plus tard</Text>
+              <Text style={[styles.optionSub, { color: scheduledFor ? "#6A1B9A" : colors.mutedForeground }]} numberOfLines={1}>
+                {scheduledFor
+                  ? scheduledFor.toLocaleString("fr-FR", { weekday: "short", day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })
+                  : "Livraison dès que possible"}
+              </Text>
+            </View>
+            <Ionicons name={showScheduler ? "chevron-up" : "chevron-down"} size={18} color={colors.mutedForeground} />
+          </TouchableOpacity>
+
+          {showScheduler && (
+            <View style={styles.schedulerWrap}>
+              {[30, 60, 90, 120].map((mins) => {
+                const date = new Date(Date.now() + mins * 60_000);
+                const label = date.toLocaleString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+                const isSelected = scheduledFor && Math.abs(scheduledFor.getTime() - date.getTime()) < 60_000;
+                return (
+                  <TouchableOpacity
+                    key={mins}
+                    onPress={() => setScheduledFor(isSelected ? null : date)}
+                    activeOpacity={0.75}
+                    style={[styles.schedPill, { borderColor: isSelected ? PINK : colors.border, backgroundColor: isSelected ? "#FFE3EF" : colors.muted }]}
+                  >
+                    <Text style={[styles.schedPillTop, { color: isSelected ? PINK : colors.foreground }]}>{label}</Text>
+                    <Text style={[styles.schedPillSub, { color: isSelected ? PINK : colors.mutedForeground }]}>+{mins} min</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          )}
         </View>
 
         {/* Free-delivery threshold */}
@@ -557,6 +628,17 @@ const styles = StyleSheet.create({
   headerIcon: { width: 34, height: 34, alignItems: "center", justifyContent: "center" },
   fromText: { fontSize: 13, fontFamily: "Inter_500Medium", paddingHorizontal: 16, paddingVertical: 10 },
   section: { marginHorizontal: 16, borderRadius: 14, borderWidth: 1, overflow: "hidden", marginBottom: 16 },
+  optionRow: { flexDirection: "row", alignItems: "center", gap: 12, padding: 14 },
+  optionIcon: { width: 40, height: 40, borderRadius: 20, alignItems: "center", justifyContent: "center" },
+  optionLabel: { fontSize: 14, fontFamily: "Inter_600SemiBold" },
+  optionSub: { fontSize: 12, fontFamily: "Inter_400Regular" },
+  optionDivider: { height: StyleSheet.hairlineWidth, marginHorizontal: 14 },
+  toggle: { width: 44, height: 26, borderRadius: 13, justifyContent: "center" },
+  toggleKnob: { width: 22, height: 22, borderRadius: 11, backgroundColor: "#fff", shadowColor: "#000", shadowOpacity: 0.15, shadowRadius: 3, shadowOffset: { width: 0, height: 1 }, elevation: 2 },
+  schedulerWrap: { flexDirection: "row", flexWrap: "wrap", gap: 10, padding: 14, paddingTop: 4 },
+  schedPill: { flex: 1, minWidth: 72, alignItems: "center", paddingVertical: 10, borderRadius: 12, borderWidth: 1.5 },
+  schedPillTop: { fontSize: 14, fontFamily: "Inter_700Bold" },
+  schedPillSub: { fontSize: 11, fontFamily: "Inter_400Regular", marginTop: 2 },
   cartItem: { flexDirection: "row", alignItems: "center", gap: 10, padding: 14 },
   cartItemInfo: { flex: 1, gap: 3 },
   cartItemName: { fontSize: 14, fontFamily: "Inter_500Medium" },

@@ -33,12 +33,15 @@ The project is structured as a pnpm monorepo using Node.js 24 and TypeScript 5.9
 - **User Management**: Comprehensive user roles (customer, driver, admin, owner, employee, super_admin, manager).
 - **Order Management**: Scheduled orders, contactless delivery, one-tap reorder.
 - **Promotion Engine**: Flexible promo code system with various discount types.
-- **Ratings**: Two-way rating system for drivers and customers.
+- **Ratings**: Two-way rating system for drivers and customers. Post-delivery rating modal (DeliveryRatingModal) auto-shows once per order after delivery.
 - **Communication**: In-app chat with SSE for real-time updates, in-app notification center.
-- **Referral System**: Referral and wallet system to incentivize new users.
+- **Referral System**: Referral and wallet system (`app/profile/referral.tsx`) — code generation, share, stats, wallet balance via `GET /api/referrals/my-code`.
 - **Content Management**: Dedicated modules for categories, ads, and short-form content.
 - **Internationalization**: `i18next` support for English, French, and Arabic (RTL).
 - **Mobile-Specific Features**: Phone OTP authentication, Google Maps integration with live order tracking (SSE), performance optimizations for mobile.
+- **Active Order Banner**: Home screen polls user orders and shows a live banner (with status text) for any in-flight order.
+- **Search Screen** (`app/search.tsx`): Full-screen restaurant search with filter chips (open now, rating 4+, fast delivery, free delivery).
+- **Cart Delivery Options**: Contactless delivery toggle + scheduled delivery time picker (30/60/90/120 min slots) appended to order notes.
 
 **UI/UX and Design:**
 - **Web Frontend**: React with Tailwind CSS and shadcn/ui for a modern, responsive design.
