@@ -11,28 +11,28 @@ build = ["bash", "scripts/build-production.sh"]
   env = { "CI" = "true" }
 
   [workflows]
-  runButton = "Project"
+runButton = "Project"
 
   [[workflows.workflow]]
-  name = "Project"
-  mode = "parallel"
-  author = "agent"
+name = "Project"
+mode = "parallel"
+author = "agent"
 
-  [[workflows.workflow.tasks]]
-  task = "workflow.run"
-  args = "Start application"
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Start application"
 
   [[workflows.workflow]]
-  name = "Start application"
-  author = "agent"
-
-  [[workflows.workflow.tasks]]
-  task = "shell.exec"
-  args = "PORT=5000 BASE_PATH=/ pnpm --filter @workspace/food-delivery run dev"
-  waitForPort = 5000
+name = "Start application"
+author = "agent"
 
   [workflows.workflow.metadata]
-  outputType = "webview"
+outputType = "webview"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "PORT=8080 pnpm --filter @workspace/api-server run dev & PORT=5000 BASE_PATH=/ pnpm --filter @workspace/food-delivery run dev"
+waitForPort = 5000
 
   [[workflows.workflow]]
   name = "Build Android APK (Dev)"
@@ -46,7 +46,7 @@ build = ["bash", "scripts/build-production.sh"]
   outputType = "console"
 
   [agent]
-  stack = "BEST_EFFORT_FALLBACK"
+stack = "BEST_EFFORT_FALLBACK"
 expertMode = true
   integrations = ["twilio:1.0.0"]
 
@@ -56,11 +56,7 @@ expertMode = true
 
 [[ports]]
 localPort = 5000
-externalPort = 5000
-
-[[ports]]
-localPort = 5001
-externalPort = 6000
+externalPort = 80
 
 [[ports]]
 localPort = 8080

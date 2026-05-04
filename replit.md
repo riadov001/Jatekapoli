@@ -1,223 +1,76 @@
-# Workspace
+# Jatek Food Delivery Platform
 
 ## Overview
 
-pnpm workspace monorepo using TypeScript. Each package manages its own dependencies.
+Jatek is a full-stack food delivery platform for Oujda, Morocco, designed as a multi-role application. It aims to provide a comprehensive food delivery experience with advanced features, robust architecture, and a strong focus on user experience across web and mobile platforms. The project utilizes a pnpm workspace monorepo with TypeScript, ensuring a modular and scalable development environment.
 
-## Stack
+## User Preferences
 
-- **Monorepo tool**: pnpm workspaces
-- **Node.js version**: 24
-- **Package manager**: pnpm
-- **TypeScript version**: 5.9
-- **API framework**: Express 5
-- **Database**: PostgreSQL + Drizzle ORM
-- **Validation**: Zod (`zod/v4`), `drizzle-zod`
-- **API codegen**: Orval (from OpenAPI spec)
-- **Build**: esbuild (CJS bundle)
+I prefer clear, concise explanations and detailed documentation for complex features. I expect iterative development with regular updates on progress and any significant architectural decisions. Before making major changes, please ask for confirmation. Do not make changes to the `lib/api-spec/openapi.yaml` file directly; it should only be updated via codegen.
 
-## Key Commands
+## System Architecture
 
-- `pnpm run typecheck` — full typecheck across all packages
-- `pnpm run build` — typecheck + build all packages
-- `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from OpenAPI spec
-- `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
-- `pnpm --filter @workspace/api-server run dev` — run API server locally
+The project is structured as a pnpm monorepo using Node.js 24 and TypeScript 5.9.
 
-See the `pnpm-workspace` skill for workspace structure, TypeScript setup, and package details.
+**Core Technologies:**
+- **API Framework**: Express 5 for the REST API.
+- **Database**: PostgreSQL with Drizzle ORM.
+- **Validation**: Zod.
+- **API Codegen**: Orval, based on an OpenAPI specification (`openapi.yaml`).
+- **Build Tool**: esbuild (CJS bundle).
 
-## Project: Jatek Food Delivery Platform
+**Project Structure:**
+- `artifacts/api-server`: Express 5 REST API handling JWT authentication.
+- `artifacts/food-delivery`: React + Vite frontend using Tailwind, shadcn/ui, wouter, and react-query.
+- `artifacts/jatek-mobile`: Expo (React Native) mobile application.
+- `artifacts/backend-dashboard`: Staff/admin dashboard with RBAC.
+- `lib/api-spec`: Contains the OpenAPI spec (YAML and generated JSON).
+- `lib/api-client-react`: Orval-generated API hooks and a custom fetch client.
+- `lib/api-zod`: Orval-generated Zod schemas for API validation.
+- `lib/db`: Drizzle ORM schema and client.
 
-**Jatek** is a full-stack food delivery app for Oujda, Morocco. Multi-role platform.
+**Key Features:**
+- **User Management**: Comprehensive user roles (customer, driver, admin, owner, employee, super_admin, manager).
+- **Order Management**: Scheduled orders, contactless delivery, one-tap reorder.
+- **Promotion Engine**: Flexible promo code system with various discount types.
+- **Ratings**: Two-way rating system for drivers and customers.
+- **Communication**: In-app chat with SSE for real-time updates, in-app notification center.
+- **Referral System**: Referral and wallet system to incentivize new users.
+- **Content Management**: Dedicated modules for categories, ads, and short-form content.
+- **Internationalization**: `i18next` support for English, French, and Arabic (RTL).
+- **Mobile-Specific Features**: Phone OTP authentication, Google Maps integration with live order tracking (SSE), performance optimizations for mobile.
 
-### Architecture
-- `artifacts/api-server` — Express 5 REST API on port 8080, JWT auth (jsonwebtoken/bcryptjs)
-- `artifacts/food-delivery` — React + Vite frontend (Tailwind, shadcn/ui, wouter, react-query)
-- `lib/api-spec/openapi.yaml` — OpenAPI spec (source of truth)
-- `lib/api-spec/openapi.json` — generated Swagger/OpenAPI JSON export kept in sync with the YAML spec
-- `lib/api-client-react` — Orval-generated hooks + custom-fetch with setAuthTokenGetter
-- `lib/api-zod` — Orval-generated Zod schemas
-- `lib/db` — Drizzle ORM schema + client
+**UI/UX and Design:**
+- **Web Frontend**: React with Tailwind CSS and shadcn/ui for a modern, responsive design.
+- **Mobile App**: React Native with Expo, providing a native-like experience.
+- **Brand Palette**: Talabat-inspired hot pink (`#E2006A`), sunny yellow (`#FFD400`), and turquoise (`#00C2C7`) for a vibrant and consistent brand identity across platforms.
+- **RTL Support**: Dynamic adjustment of `document.documentElement.dir` for Arabic language.
 
-### DB Models
-users, restaurants, menuItems, orders, orderItems, drivers, reviews, categories, ads, shorts, addresses, favorites, otpCodes, userConsents, paymentMethods, supportTickets, quotes, notificationPrefs, dashboardTodos, promoCodes, promoCodeUsages, chatMessages, notifications, referrals
+**Production Hardening (API Server):**
+- **Security**: `helmet` for HTTP headers, CORS allowlist, body size limits.
+- **Performance**: `compression` (gzip) for all responses.
+- **Stability**: Request/response timeouts, graceful shutdown, error logging, global error middleware.
+- **Scalability**: Designed for autoscale deployment, with specific build and start scripts for production.
 
-### Advanced Features (la total)
-- **Scheduled orders** — `deliveryType` (asap/scheduled) + `scheduledFor` timestamp on orders; UI in cart
-- **Contactless delivery** — `isContactless` flag + `proofPhotoUrl` on orders; toggle in cart UI
-- **Promo code engine** — `promo_codes` + `promo_code_usages` tables; `POST /api/promo-codes/validate`, cart UI with apply/remove, automatic discount at checkout (percentage, fixed MAD, free delivery)
-- **Two-way ratings** — `driverRating`/`driverRatingComment`/`customerRating` on orders; `POST /orders/:id/rate-driver`, `POST /orders/:id/rate-customer`; star modal in order detail
-- **In-app chat** — `chat_messages` table; `POST|GET /api/orders/:id/chat`; real-time via SSE fan-out; ChatPanel component in order detail
-- **In-app notification center** — `notifications` table; `GET /api/notifications`, `PATCH .../read`, `PATCH .../read-all`; NotificationBell component in Layout header with live badge
-- **Referral + wallet system** — `referrals` table; `walletBalance`/`referralCode`/`referredBy` on users; `GET /api/referrals/my-code`, `POST /api/referrals/apply`; referrer credited 20 MAD on first order of referred user; new user gets 10 MAD immediately; full UI in rewards page
-- **One-tap reorder** — `POST /orders/:id/reorder` clones items from any past order into new pending order; Recommander button in order detail
-- **Dietary tags on menu items** — `tags` (text[], halal/vegetarian/vegan/spicy/gluten_free), `allergens`, `calories`, `prepTimeMinutes` on menu items; colored badges in restaurant page
-- **pushNotification helper** — `notifications.ts` exports `pushNotification(userId, type, title, body, data)` used by orders route on: new order, referral completion
+**Backend Dashboard:**
+- Dedicated staff/admin dashboard with role-based access control (RBAC).
+- Manages orders, products, categories, shops, reviews, customer accounts, staff, drivers, roles, and promotions.
 
-### Content Management (new)
-- `categories` — shop/restaurant categories with icon, accentColor, parentId (sub-categories), businessType, sortOrder
-- `ads` — promotions: types = `jatek_offer`, `vip_banner`, `promo_banner`; fields: badge, bgColor, accentColor, icon, imageUrl
-- `shorts` — short-form video/image content with restaurantId, restaurantName
-- Public API: `GET /api/categories`, `GET /api/ads?type=X`, `GET /api/shorts`
-- Admin API: `GET|POST /api/backend/categories`, `PATCH|DELETE /api/backend/categories/:id`, same for `/backend/ads` and `/backend/shorts`
+## External Dependencies
 
-### Test Data (seeded)
-- 18 restaurants (Dar Zitoun, Burger Station, Pizza Palace, Sushi Oujda, Tacos Nation, Green Bowl, Rôtisserie, KFC, McDonald's, etc.)
-- 72 menu items spread across all restaurants
-- 6 parent categories (Restauration, Épicerie, Santé, Supermarché, Boutiques, Coursier) with 14 sub-categories
-- 9 ads (4 jatek_offer, 3 vip_banner, 2 promo_banner)
-- 8 shorts with Unsplash food thumbnails
-
-### Production Configuration
-- **Deployment target**: autoscale (Replit)
-- **Build script**: `scripts/build-production.sh` — builds API server + food-delivery (BASE_PATH=/) + backend-dashboard (BASE_PATH=/admin/)
-- **Start script**: `scripts/start-production.sh` — sets NODE_ENV=production, PORT=8080, starts API server
-- **Static serving**: In production, API server serves food-delivery at `/` and backend-dashboard at `/admin/` as SPAs
-- **Seed isolation**: In production (NODE_ENV=production) only `ensureCoreAccounts()` runs (creates admin@jatek.ma). Demo/test data is never seeded in prod.
-- **Admin production credentials**: Set `ADMIN_SEED_EMAIL` + `ADMIN_SEED_PASSWORD` env vars to override defaults
-- **Mobile production URL**: Set `EXPO_PUBLIC_DOMAIN` at EAS build time to point to the production API domain
-- **Parallel dev/test**: Dev environment continues to run alongside production; test data stays in dev DB only
-
-### Production hardening (API server)
-- Security: `helmet` (HSTS, X-Frame, nosniff, no x-powered-by), CORS allowlist with credentials, body size limit 1mb.
-- Rate limiting: 300 req/min global on `/api/*`, 30 req/15min on `/api/auth/*`. SSE `/api/events` and `/healthz` skip the limiter.
-- Performance: `compression` (gzip) on all responses.
-- Stability: 30s request/response timeout, keepAlive 65s, graceful SIGTERM/SIGINT shutdown, `unhandledRejection`/`uncaughtException` loggers, global error middleware returning `{error}` JSON.
-- Listening on `0.0.0.0:$PORT`, `trust proxy = 1` (Replit deploy proxy).
-- Health check: `GET /health` → `{ status: "ok" }` (also `GET /api/healthz`).
-- SSE `/api/events` now requires auth (`requireAuth`, accepts `?token=` for EventSource).
-
-### Development demo data
-- Development DB is populated with realistic Jatek test data: 14 restaurants/shops/pharmacies/courier services, 55 menu/product items, demo orders, order items, favorites, addresses, payment methods, support tickets, quotes, consents, notification preferences, dashboard todos, and staff accounts.
-- New mobile Home filters have data coverage for `businessType`: `restaurant`, `shop`, `pharmacy`, and `courier`.
-
-### Test Accounts (all password: `password123`)
-- customer@jatek.ma (customer)
-- driver@jatek.ma (driver)
-- driver2@jatek.ma (driver)
-- admin@jatek.ma (admin)
-- owner@jatek.ma (restaurant_owner, owns restaurants 1-6)
-- demo.client@jatek.ma (customer with demo orders, addresses, payments, favorites)
-- amina.vip@jatek.ma (VIP customer with preferences/consents)
-- samir.driver@jatek.ma (driver with completed profile and live location)
-- super@jatek.ma (super_admin)
-- manager@jatek.ma (manager)
-- employee@jatek.ma (employee assigned to Jatek Market Al Qods)
-
-### Frontend Routes (food-delivery)
-- `/` — Home (hero, category filter, Support Local, all restaurants)
-- `/restaurants` — Alias for home (same component, all restaurants)
-- `/restaurants/:id` — Restaurant detail + menu
-- `/cart` — Cart checkout
-- `/orders` — My orders list
-- `/orders/:id` — Order detail with progress tracker
-- `/rewards` — Loyalty points & tier (Bronze/Silver/Gold)
-- `/profile` — User profile
-- `/login`, `/register` — Auth
-- `/forgot-password` — Password reset
-- `/legal` — Legal / CGU page
-- `/welcome` — Onboarding address picker (fullscreen, no Layout wrapper)
-- `/admin` — Redirects to `/admin/dashboard`
-- `/admin/dashboard` — Admin stats (all `/admin/*` routes are gated by `AdminRoute` which requires `role === "admin"`)
-- `/admin/users`, `/admin/restaurants`, `/admin/drivers`, `/admin/orders`
-- `/admin/restaurants/:id/menu` — Admin menu CRUD for any restaurant
-- `/admin/reviews` — Admin review moderation
-- `/admin/support` — Admin support tickets management
-- `/admin/promotions` — Admin promotions/ads CRUD (full create/edit/delete via backend ads API)
-- `/admin/settings` — Platform settings (localStorage persistence + role check)
-- `/restaurant/dashboard` — Restaurant owner order management
-- `/restaurant/menu` — Menu CRUD
-- `/driver/dashboard` — Driver availability + earnings
-
-### Internationalisation (i18n)
-- Stack: `i18next` + `react-i18next` + `i18next-browser-languagedetector`
-- Languages: English (`en`), French (`fr`), Arabic (`ar` — RTL)
-- Translation files: `artifacts/food-delivery/src/locales/{en,fr,ar}.json`
-- Config: `artifacts/food-delivery/src/i18n.ts` (imported in `main.tsx`)
-- Language stored in `localStorage` key `jatek_lang`
-- RTL: `document.documentElement.dir` toggled in `Layout.tsx` via `useEffect`
-- Switcher: Globe icon in header dropdown (🇬🇧 English / 🇫🇷 Français / 🇲🇦 العربية)
-- All pages/components use `useTranslation()` hook
-
-### Auth Flow
-JWT stored in localStorage (`jatek_token`). `setAuthTokenGetter` registered in `main.tsx` to inject `Authorization: Bearer` header on all API calls.
-
-### Mobile App (Expo)
-- `artifacts/jatek-mobile` — Expo (React Native) app at preview path `/mobile/`
-- Phone OTP auth (Twilio), shares same backend API
-- State: AuthContext (expo-secure-store token persistence), CartContext (AsyncStorage, fully memoized via useMemo + useCallback)
-- Maps: Google Maps JS API (key `EXPO_PUBLIC_GOOGLE_MAPS_KEY` / `EXPO_PUBLIC_GOOGLE_PLACES_KEY` ⇐ `GOOGLE_API_KEY_2`), Leaflet+OSM fallback when key missing. Components: `GoogleMapPicker` (centered fixed pin with zone circle), `DriverMap` (live driver tracking with brand-coloured SVG markers + dashed route polyline)
-- Live order tracking: SSE channel `order:<id>` + `driver:<id>` for status & GPS updates; map appears as soon as a driver is assigned (any in-flight status), polling fallback at 60s
-- Performance hardening: `babel-plugin-transform-remove-console` strips `console.log/info` from production bundles (keeps `error`/`warn`); `expo-image` with `memory-disk` cachePolicy + blurhash placeholder for restaurant cards; `RestaurantCard` wrapped in `React.memo` with shallow prop check
-- Reliability: SSE hook does exponential-backoff reconnection (1s → 30s) + 60s read-timeout watchdog; all REST calls go through `jsonFetch` with a 15s AbortController timeout and friendly French error messages
-- Workflow: `artifacts/jatek-mobile: expo`
-
-#### Mobile Screens (Expo Router file-based)
-- `(auth)/login` — Phone number input
-- `(auth)/otp` — OTP code verification
-- `(auth)/welcome` — Address picker onboarding (Google Maps / Leaflet)
-- `(tabs)/index` — Home feed (restaurants, categories, ads)
-- `(tabs)/restaurants` — Browse all restaurants
-- `(tabs)/favoris` — Saved favourites
-- `(tabs)/orders` — Orders history
-- `(tabs)/profile` — Profile hub (tab)
-- `(tabs)/deliver` — Driver tab: available deliveries & earnings (role-conditional)
-- `(tabs)/manage` — Restaurant owner tab: order management (role-conditional)
-- `restaurant/[id]` — Restaurant detail + menu
-- `category/[slug]` — Category filtered listings
-- `order/[id]` — Live order tracking with SSE map
-- `cart` — Cart review & checkout
-- `quote/new` — Courier quote / price estimate
-- `driver-onboarding` — Mandatory driver profile setup (vehicle, zone)
-- `restaurant-onboarding` — Mandatory restaurant profile setup
-- `profile/info` — Edit personal info
-- `profile/addresses` — Saved delivery addresses
-- `profile/payments` — Payment methods
-- `profile/favorites` — Favourites management
-- `profile/notifications` — Notification preferences
-- `profile/reorder` — Reorder from past orders
-- `profile/reviews` — My reviews
-- `profile/coupons` — Promo codes / coupons
-- `profile/support` — Contact support
-- `profile/feedback` — Leave feedback
-- `profile/help` — Help & FAQ
-- `profile/language` — Language selector
-- `profile/privacy` — Privacy settings
-- `profile/legal` — Legal / CGU
-- `profile/report` — Report an issue
-
-### Brand palette (Talabat-inspired)
-- Primary **Hot pink** `#E2006A` — main CTAs, brand mark, delivery-time pills
-- Accent **Sunny yellow** `#FFD400` — promo banners, ratings (★), discount pills
-- Accent **Turquoise** `#00C2C7` — info / status (preparing, ready), free-delivery tag, location pill
-- Neutrals: white background `#FFFFFF`, ink `#0A1B3D`, muted `#F5F5F5`, border `#EBEBEB`
-- Tokens:
-  - Web: `artifacts/food-delivery/src/index.css` (`--primary`, `--brand-yellow*`, `--brand-turquoise*`); use Tailwind `bg-brand-yellow`, `text-brand-turquoise`, etc.
-  - Mobile: `artifacts/jatek-mobile/constants/colors.ts` (`primary`, `yellow`, `yellowSoft`, `turquoise`, `turquoiseSoft`); read via `useColors()`
-
-## Backend Dashboard (artifact `backend-dashboard`, path `/admin/`)
-Staff/admin dashboard for Jatek with full RBAC (super_admin, admin, manager, restaurant_owner, employee).
-
-- Routes prefix `/api/backend/*` in `artifacts/api-server/src/routes/backend.ts` — every route checks role + scopes data per role.
-- DB additions: `users.assignedShopId` (employee), `dashboard_todos` table.
-- Demo accounts (password `password123`): super@jatek.ma, admin@jatek.ma, manager@jatek.ma, owner@jatek.ma, employee@jatek.ma.
-- Auth: JWT in `localStorage["jatek_backend_token"]`, attached via `setAuthTokenGetter` from `@workspace/api-client-react`.
-- Frontend: react-vite + tanstack-query + wouter + shadcn, Jatek magenta palette.
-
-### Backend Dashboard Routes
-- `/` — Dashboard (KPI stats, orders chart, todos)
-- `/orders` — Orders management (all roles, scoped by role)
-- `/products` — Menu items / products management
-- `/categories` — Categories & sub-categories management
-- `/shops` — Restaurants & shops management
-- `/reviews` — Customer reviews moderation
-- `/customers` — Customer accounts list & detail
-- `/staff` — Staff accounts management (admin/super_admin only)
-- `/deliverymen` — Driver accounts management
-- `/roles` — Role & permissions management (super_admin only)
-- `/settings` — Platform settings (placeholder)
-- `/promotions` — Promotions & ads management (placeholder)
-- `/wallets` — Wallets & payouts (placeholder)
-- `/notifications` — Push notifications (placeholder)
-- `/reports` — Analytics & reports (placeholder)
-- `/login` — Staff login (email + password, no OTP)
+- **Database**: PostgreSQL
+- **ORMs**: Drizzle ORM
+- **Authentication**: `jsonwebtoken`, `bcryptjs`
+- **Frontend Frameworks**: React, Vite
+- **UI Libraries**: Tailwind CSS, shadcn/ui
+- **Routing**: `wouter`, Expo Router (for mobile)
+- **State Management/Data Fetching**: `react-query` (TanStack Query)
+- **API Codegen**: Orval
+- **Validation**: Zod, `drizzle-zod`
+- **Internationalization**: `i18next`, `react-i18next`, `i18next-browser-languagedetector`
+- **Mobile (Expo)**: `expo-secure-store`, `AsyncStorage`, Google Maps JS API (via `EXPO_PUBLIC_GOOGLE_MAPS_KEY`), Leaflet+OSM (fallback).
+- **SMS Gateway**: Twilio (for phone OTP).
+- **Performance**: `babel-plugin-transform-remove-console`, `expo-image`.
+- **Server Security**: `helmet`
+- **Compression**: `compression`
+- **Cloud Platform**: Replit (as deployment target)
